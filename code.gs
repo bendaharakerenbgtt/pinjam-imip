@@ -132,17 +132,16 @@ function doGet(e) {
       }
       const allPeminjaman = getTableData(SHEET_PEMINJAMAN);
       const cleanNum = query.replace(/[^0-9]/g, "");
-      const normQ = cleanNum.replace(/^62/, "0");
+      const strippedQ = cleanNum.replace(/^(?:62|0)/, "");
 
       // Filter aman: Jangan bocorkan data sensitif (dokumen identitas & catatan internal admin)
       const matches = allPeminjaman.filter(row => {
         const rowWa = (row.kontak_wa || "").toString().replace(/[^0-9]/g, "");
-        const normWa = rowWa.replace(/^62/, "0");
+        const strippedWa = rowWa.replace(/^(?:62|0)/, "");
         const rowNama = (row.nama_peminjam || "").toString().toLowerCase();
         const rowId = (row.id_pinjam || "").toString().toLowerCase();
 
-        const matchWa = (cleanNum.length >= 4 && rowWa.includes(cleanNum)) || 
-                        (normQ.length >= 4 && normWa.includes(normQ));
+        const matchWa = strippedQ.length >= 4 && (strippedWa.includes(strippedQ) || strippedQ.includes(strippedWa));
         const matchNama = rowNama.includes(query) && query.length >= 3;
         const matchId = rowId === query || (query.length >= 4 && rowId.includes(query));
         return matchWa || matchNama || matchId;

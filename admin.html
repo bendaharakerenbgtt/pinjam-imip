@@ -355,12 +355,12 @@
     <!-- MODAL 1: PREVIEW & CETAK DOKUMEN SURAT PERJANJIAN (PRD 10) -->
     <!-- ============================================================== -->
     <div id="modal-surat" class="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-6 modal-backdrop hidden">
-        <div class="ui-card w-full max-w-3xl rounded-2xl max-h-[96vh] overflow-y-auto border border-orange-300 dark:border-white/10 flex flex-col">
+        <div class="ui-card w-full max-w-3xl rounded-2xl max-h-[96vh] overflow-hidden border border-orange-300 dark:border-white/10 flex flex-col">
             <!-- Header Modal -->
-            <div class="p-3.5 sm:p-4 border-b border-orange-200 dark:border-gray-800 flex items-center justify-between no-print">
+            <div class="p-3 sm:p-4 border-b border-orange-200 dark:border-gray-800 flex items-center justify-between no-print bg-white/80 dark:bg-gray-900/80">
                 <div class="flex items-center gap-2">
                     <i class="fa-solid fa-file-contract text-[#FF7300] text-base sm:text-lg"></i>
-                    <h3 class="font-outfit font-bold text-sm sm:text-base ui-heading">Surat Perjanjian Peminjaman Barang</h3>
+                    <h3 class="font-outfit font-bold text-xs sm:text-base ui-heading">Surat Perjanjian Peminjaman</h3>
                 </div>
                 <div class="flex items-center gap-1.5 sm:gap-2">
                     <button onclick="cetakSuratPerjanjian()" class="px-2.5 py-1.5 sm:px-3.5 sm:py-1.5 rounded-xl btn-kabinet text-[11px] sm:text-xs font-bold flex items-center gap-1 shadow-md">
@@ -375,67 +375,74 @@
                 </div>
             </div>
 
-            <!-- KERTAS SURAT RESMI (PRD SECTION 10) -->
-            <div id="printable-surat" class="p-5 sm:p-10 bg-white text-black font-serif text-[11pt] sm:text-[12pt] leading-normal space-y-3 sm:space-y-4">
-                <!-- KOP RESMI DARI BENDAHARA2026 -->
-                <div class="w-full mb-2 text-center">
-                    <img src="surat/assets/kop_spz_official.png" alt="Kop Surat Resmi LDK IMIP" class="w-full h-auto object-contain block" onerror="this.style.display='none'">
-                </div>
+            <!-- Petunjuk Geser Layar HP -->
+            <div class="sm:hidden px-3 py-1.5 bg-orange-500/10 border-b border-orange-500/20 text-[11px] text-[#FF7300] flex items-center justify-between no-print">
+                <span><i class="fa-solid fa-arrows-left-right mr-1"></i> Geser ke samping untuk melihat lembar surat penuh</span>
+            </div>
 
-                <div class="text-center space-y-0.5 border-b-2 border-black pb-2">
-                    <h2 class="font-bold tracking-wider text-xs sm:text-sm uppercase underline" style="font-family: 'Times New Roman', serif;">SURAT PERJANJIAN PEMINJAMAN INVENTARIS BARANG</h2>
-                    <p id="surat-no-dokumen" class="text-[11px] font-mono">Nomor: SPB/20261102/001/LDK-IMIP</p>
-                </div>
-
-                <div class="text-xs space-y-1.5" style="font-family: 'Times New Roman', serif;">
-                    <p>Pada hari ini, telah disetujui perjanjian peminjaman fasilitas/inventaris organisasi Lembaga Dakwah Kampus (LDK IMIP) oleh pihak peminjam dengan rincian sebagai berikut:</p>
-                    
-                    <table class="w-full text-xs border-collapse">
-                        <tr><td class="w-36 py-0.5 font-bold">Nama Peminjam</td><td class="w-3">:</td><td id="surat-peminjam-nama">-</td></tr>
-                        <tr><td class="py-0.5 font-bold">Nomor WhatsApp</td><td>:</td><td id="surat-peminjam-wa">-</td></tr>
-                        <tr><td class="py-0.5 font-bold">Asal Organisasi</td><td>:</td><td id="surat-peminjam-org">-</td></tr>
-                        <tr><td class="py-0.5 font-bold">Penanggung Jawab (PJ)</td><td>:</td><td id="surat-peminjam-pj">-</td></tr>
-                        <tr><td class="py-0.5 font-bold">Tujuan Kegiatan</td><td>:</td><td id="surat-peminjam-tujuan">-</td></tr>
-                        <tr><td class="py-0.5 font-bold">Masa Peminjaman</td><td>:</td><td id="surat-peminjam-periode">-</td></tr>
-                    </table>
-                </div>
-
-                <div class="space-y-1">
-                    <span class="text-xs font-bold block" style="font-family: 'Times New Roman', serif;">Daftar Barang yang Diserahkan:</span>
-                    <table class="w-full text-xs border border-black border-collapse" style="font-family: 'Times New Roman', serif;">
-                        <thead>
-                            <tr class="bg-gray-100 border-b border-black text-center font-bold">
-                                <th class="border border-black p-1 w-8">No</th>
-                                <th class="border border-black p-1 text-left">Nama Barang</th>
-                                <th class="border border-black p-1 w-20">Jumlah</th>
-                                <th class="border border-black p-1 w-28">Kondisi Awal</th>
-                            </tr>
-                        </thead>
-                        <tbody id="surat-items-table"></tbody>
-                    </table>
-                </div>
-
-                <div class="text-[10px] sm:text-[11px] space-y-0.5" style="font-family: 'Times New Roman', serif;">
-                    <span class="font-bold block">Ketentuan & Syarat Peminjaman:</span>
-                    <ol class="list-decimal pl-4 space-y-0.5 leading-tight">
-                        <li>Peminjam bertanggung jawab menjaga barang selama masa peminjaman.</li>
-                        <li>Barang wajib dikembalikan sesuai tanggal yang telah disepakati.</li>
-                        <li>Peminjam tidak diperkenankan memindahtangankan barang kepada pihak lain tanpa persetujuan pengelola.</li>
-                        <li>Kerusakan atau kehilangan wajib segera dilaporkan kepada pengelola.</li>
-                        <li>Peminjam bertanggung jawab atas kerusakan atau kehilangan yang disebabkan oleh kelalaian atau penyalahgunaan sesuai kesepakatan.</li>
-                        <li>Perubahan waktu peminjaman harus dikomunikasikan dan mendapat persetujuan admin.</li>
-                        <li>Kontribusi sukarela tidak bersifat wajib dan tidak menjadi syarat peminjaman.</li>
-                    </ol>
-                </div>
-
-                <div class="pt-3 text-xs flex justify-between" style="font-family: 'Times New Roman', serif;">
-                    <div class="text-center w-44 sm:w-52 space-y-10 sm:space-y-12">
-                        <p>Pihak Peminjam,</p>
-                        <p id="surat-ttd-peminjam" class="font-bold underline">( Nama Lengkap )</p>
+            <!-- KERTAS SURAT RESMI DENGAN CONTAINER SCROLL ANTI GEPENG -->
+            <div class="overflow-x-auto overflow-y-auto flex-1 p-2 sm:p-6 bg-slate-900/70 flex justify-center">
+                <div id="printable-surat" class="w-full min-w-[580px] max-w-2xl bg-white text-black font-serif text-[11pt] sm:text-[12pt] leading-normal p-6 sm:p-10 shadow-2xl space-y-4 rounded-xl border border-gray-200">
+                    <!-- KOP RESMI DARI BENDAHARA2026 -->
+                    <div class="w-full mb-2 text-center">
+                        <img src="surat/assets/kop_spz_official.png" alt="Kop Surat Resmi LDK IMIP" class="w-full h-auto object-contain block" onerror="this.style.display='none'">
                     </div>
-                    <div class="text-center w-44 sm:w-52 space-y-10 sm:space-y-12">
-                        <p id="surat-tgl-cetak">Jakarta, ...</p>
-                        <p class="font-bold underline">Pengurus Inventaris LDK IMIP</p>
+
+                    <div class="text-center space-y-0.5 border-b-2 border-black pb-2">
+                        <h2 class="font-bold tracking-wider text-xs sm:text-sm uppercase underline" style="font-family: 'Times New Roman', serif;">SURAT PERJANJIAN PEMINJAMAN INVENTARIS BARANG</h2>
+                        <p id="surat-no-dokumen" class="text-[11px] font-mono">Nomor: SPB/20261102/001/LDK-IMIP</p>
+                    </div>
+
+                    <div class="text-xs space-y-1.5" style="font-family: 'Times New Roman', serif;">
+                        <p>Pada hari ini, telah disetujui perjanjian peminjaman fasilitas/inventaris organisasi Lembaga Dakwah Kampus (LDK IMIP) oleh pihak peminjam dengan rincian sebagai berikut:</p>
+                        
+                        <table class="w-full text-xs border-collapse">
+                            <tr><td class="w-36 py-0.5 font-bold">Nama Peminjam</td><td class="w-3">:</td><td id="surat-peminjam-nama">-</td></tr>
+                            <tr><td class="py-0.5 font-bold">Nomor WhatsApp</td><td>:</td><td id="surat-peminjam-wa">-</td></tr>
+                            <tr><td class="py-0.5 font-bold">Asal Organisasi</td><td>:</td><td id="surat-peminjam-org">-</td></tr>
+                            <tr><td class="py-0.5 font-bold">Penanggung Jawab (PJ)</td><td>:</td><td id="surat-peminjam-pj">-</td></tr>
+                            <tr><td class="py-0.5 font-bold">Tujuan Kegiatan</td><td>:</td><td id="surat-peminjam-tujuan">-</td></tr>
+                            <tr><td class="py-0.5 font-bold">Masa Peminjaman</td><td>:</td><td id="surat-peminjam-periode">-</td></tr>
+                        </table>
+                    </div>
+
+                    <div class="space-y-1">
+                        <span class="text-xs font-bold block" style="font-family: 'Times New Roman', serif;">Daftar Barang yang Diserahkan:</span>
+                        <table class="w-full text-xs border border-black border-collapse" style="font-family: 'Times New Roman', serif;">
+                            <thead>
+                                <tr class="bg-gray-100 border-b border-black text-center font-bold">
+                                    <th class="border border-black p-1 w-8">No</th>
+                                    <th class="border border-black p-1 text-left">Nama Barang</th>
+                                    <th class="border border-black p-1 w-20">Jumlah</th>
+                                    <th class="border border-black p-1 w-28">Kondisi Awal</th>
+                                </tr>
+                            </thead>
+                            <tbody id="surat-items-table"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="text-[10px] sm:text-[11px] space-y-0.5" style="font-family: 'Times New Roman', serif;">
+                        <span class="font-bold block">Ketentuan & Syarat Peminjaman:</span>
+                        <ol class="list-decimal pl-4 space-y-0.5 leading-tight">
+                            <li>Peminjam bertanggung jawab menjaga barang selama masa peminjaman.</li>
+                            <li>Barang wajib dikembalikan sesuai tanggal yang telah disepakati.</li>
+                            <li>Peminjam tidak diperkenankan memindahtangankan barang kepada pihak lain tanpa persetujuan pengelola.</li>
+                            <li>Kerusakan atau kehilangan wajib segera dilaporkan kepada pengelola.</li>
+                            <li>Peminjam bertanggung jawab atas kerusakan atau kehilangan yang disebabkan oleh kelalaian atau penyalahgunaan sesuai kesepakatan.</li>
+                            <li>Perubahan waktu peminjaman harus dikomunikasikan dan mendapat persetujuan admin.</li>
+                            <li>Kontribusi sukarela tidak bersifat wajib dan tidak menjadi syarat peminjaman.</li>
+                        </ol>
+                    </div>
+
+                    <div class="pt-3 text-xs flex justify-between" style="font-family: 'Times New Roman', serif;">
+                        <div class="text-center w-44 sm:w-52 space-y-10 sm:space-y-12">
+                            <p>Pihak Peminjam,</p>
+                            <p id="surat-ttd-peminjam" class="font-bold underline">( Nama Lengkap )</p>
+                        </div>
+                        <div class="text-center w-44 sm:w-52 space-y-10 sm:space-y-12">
+                            <p id="surat-tgl-cetak">Jakarta, ...</p>
+                            <p class="font-bold underline">Pengurus Inventaris LDK IMIP</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -467,8 +474,7 @@
                 <div>
                     <label class="block ui-heading font-semibold mb-1">Kondisi Barang Saat Kembali <span class="text-rose-500">*</span></label>
                     <select id="kembali-kondisi" class="w-full px-3.5 py-2 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
-                        <option value="Baik & Lengkap">Kondisi Baik & Lengkap</option>
-                        <option value="Baik (Catatan Minor)">Kondisi Baik (Catatan Minor)</option>
+                        <option value="Baik & Lengkap">Baik & Lengkap</option>
                         <option value="Rusak Ringan">Rusak Ringan</option>
                         <option value="Rusak Berat">Rusak Berat</option>
                         <option value="Barang Hilang / Kurang">Barang Hilang / Kurang</option>
@@ -1648,11 +1654,18 @@
 
             document.getElementById('surat-no-dokumen').innerText = `Nomor: ${item.no_surat}`;
             document.getElementById('surat-peminjam-nama').innerText = item.nama_peminjam;
-            document.getElementById('surat-peminjam-wa').innerText = item.kontak_wa;
+
+            let waDisplay = String(item.kontak_wa || "");
+            if (waDisplay.startsWith("8")) waDisplay = "0" + waDisplay;
+            document.getElementById('surat-peminjam-wa').innerText = waDisplay;
+
             document.getElementById('surat-peminjam-org').innerText = `${item.asal_organisasi} (${item.kategori_peminjam || 'Kampus'})`;
             document.getElementById('surat-peminjam-pj').innerText = item.nama_penanggung_jawab || item.nama_peminjam;
             document.getElementById('surat-peminjam-tujuan').innerText = item.tujuan || '-';
-            document.getElementById('surat-peminjam-periode').innerText = `${item.tgl_pengambilan} s.d. ${item.tgl_pengembalian}`;
+
+            const tglAmbilClean = String(item.tgl_pengambilan || "").replace(/ 00:00:00/g, "").replace(/T.*$/, "");
+            const tglKembaliClean = String(item.tgl_pengembalian || "").replace(/ 00:00:00/g, "").replace(/T.*$/, "");
+            document.getElementById('surat-peminjam-periode').innerText = `${tglAmbilClean} s.d. ${tglKembaliClean}`;
             document.getElementById('surat-ttd-peminjam').innerText = `( ${item.nama_peminjam} )`;
 
             const today = new Date();

@@ -117,16 +117,27 @@
                 </p>
             </div>
 
-            <!-- Petunjuk Lupa Kode (User Friendly Hint) -->
-            <div class="p-3 rounded-xl bg-orange-500/10 border border-orange-500/25 text-left space-y-1 text-xs">
-                <div class="flex items-center gap-1.5 font-bold text-[#FF7300]">
-                    <i class="fa-solid fa-lightbulb"></i>
-                    <span>Petunjuk Mudah:</span>
+            <!-- Petunjuk Lupa Kode (Bisa Ditutup / Toggleable) -->
+            <div class="space-y-1.5 text-left">
+                <div class="flex items-center justify-between">
+                    <button type="button" onclick="togglePetunjukInfo()" class="text-[11px] font-bold text-[#FF7300] hover:underline flex items-center gap-1.5 transition-all">
+                        <i class="fa-solid fa-circle-question"></i> <span id="text-toggle-petunjuk">Tutup Petunjuk Bantuan</span>
+                    </button>
                 </div>
-                <p class="text-[11.5px] ui-body leading-relaxed">
-                    • <strong>Paling Mudah:</strong> Cukup masukkan nomor WhatsApp aktif Anda (contoh: <span class="font-mono font-semibold">0857...</span>), sistem langsung melacak seluruh pengajuan Anda.<br>
-                    • <strong>Atau Kode Peminjaman:</strong> Kode berformat <span class="font-mono font-bold text-[#FF7300]">PJM-TANGGAL-XXXX</span> (contoh: <span class="font-mono">PJM-20261102-6614</span>) yang tertera saat selesai mengisi form.
-                </p>
+
+                <div id="info-petunjuk-box" class="p-3 rounded-xl bg-orange-500/10 border border-orange-500/25 relative text-xs transition-all">
+                    <button type="button" onclick="togglePetunjukInfo()" class="absolute top-2 right-2 text-gray-400 hover:text-gray-700 dark:hover:text-white p-1" title="Tutup Petunjuk">
+                        <i class="fa-solid fa-xmark text-sm"></i>
+                    </button>
+                    <div class="flex items-center gap-1.5 font-bold text-[#FF7300] mb-1">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Petunjuk Mudah:</span>
+                    </div>
+                    <p class="text-[11.5px] ui-body leading-relaxed pr-6">
+                        • <strong>Paling Mudah:</strong> Cukup masukkan nomor WhatsApp aktif Anda (contoh: <span class="font-mono font-semibold">0857...</span> atau <span class="font-mono">0859...</span>), sistem langsung melacak seluruh pengajuan Anda.<br>
+                        • <strong>Atau Kode Peminjaman:</strong> Kode berformat <span class="font-mono font-bold text-[#FF7300]">PJM-TANGGAL-XXXX</span> (contoh: <span class="font-mono">PJM-20261102-6614</span>).
+                    </p>
+                </div>
             </div>
 
             <form onsubmit="cariStatus(event)" class="flex flex-col sm:flex-row gap-2">
@@ -201,9 +212,22 @@
             return (localStorage.getItem(STORAGE_KEY_API) || DEFAULT_API_URL).trim();
         }
 
+        function togglePetunjukInfo() {
+            const box = document.getElementById('info-petunjuk-box');
+            const txt = document.getElementById('text-toggle-petunjuk');
+            if (box.classList.contains('hidden')) {
+                box.classList.remove('hidden');
+                txt.innerText = "Tutup Petunjuk Bantuan";
+            } else {
+                box.classList.add('hidden');
+                txt.innerText = "Lihat Petunjuk Bantuan";
+            }
+        }
+
         async function cariStatus(e) {
             e.preventDefault();
-            const query = (document.getElementById('input-query').value || "").trim().toLowerCase();
+            const rawQuery = (document.getElementById('input-query').value || "").trim();
+            const query = rawQuery.toLowerCase();
             const container = document.getElementById('result-container');
             const btn = document.getElementById('btn-cari');
 
@@ -222,23 +246,37 @@
             const apiUrl = getApiUrl();
             if (apiUrl) {
                 try {
-                    const res = await fetch(`${apiUrl}?action=check_status&query=${encodeURIComponent(query)}`);
+                    // Cek jika query adalah nomor telepon, cari dengan versi tanpa 0/62 terlebih dahulu (format spreadsheet)
+                    const digits = query.replace(/[^0-9]/g, "");
+                    let qPrimary = query;
+                    if (digits.length >= 8) {
+                        qPrimary = digits.replace(/^(?:62|0)/, "");
+                    }
+
+                    const res = await fetch(`${apiUrl}?action=check_status&query=${encodeURIComponent(qPrimary)}`);
                     const json = await res.json();
-                    if (json.success && json.hasil) hasil = json.hasil;
+                    if (json.success && json.hasil && json.hasil.length > 0) {
+                        hasil = json.hasil;
+                    } else if (qPrimary !== query) {
+                        // Coba fallback dengan query original
+                        const res2 = await fetch(`${apiUrl}?action=check_status&query=${encodeURIComponent(query)}`);
+                        const json2 = await res2.json();
+                        if (json2.success && json2.hasil) hasil = json2.hasil;
+                    }
                 } catch(err) {}
             }
 
             // Fallback search di data lokal
             if (hasil.length === 0) {
                 const cleanQ = query.replace(/[^0-9]/g, "");
-                const normQ = cleanQ.replace(/^62/, "0");
+                const strippedQ = cleanQ.replace(/^(?:62|0)/, "");
                 hasil = localDB.peminjaman.filter(p => {
-                    const wa = (p.kontak_wa || "").replace(/[^0-9]/g, "");
-                    const normWa = wa.replace(/^62/, "0");
+                    const wa = (p.kontak_wa || "").toString().replace(/[^0-9]/g, "");
+                    const strippedWa = wa.replace(/^(?:62|0)/, "");
                     const nama = (p.nama_peminjam || "").toLowerCase();
                     const id = (p.id_pinjam || "").toLowerCase();
 
-                    const matchWa = (cleanQ.length >= 4 && wa.includes(cleanQ)) || (normQ.length >= 4 && normWa.includes(normQ));
+                    const matchWa = (strippedQ.length >= 4 && (strippedWa.includes(strippedQ) || strippedQ.includes(strippedWa)));
                     const matchNama = nama.includes(query) && query.length >= 3;
                     const matchId = id === query || (query.length >= 4 && id.includes(query));
                     return matchWa || matchNama || matchId;
