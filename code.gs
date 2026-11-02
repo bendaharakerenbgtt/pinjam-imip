@@ -226,6 +226,12 @@ function doPost(e) {
     if (action === "admin_hapus_barang") {
       return handleHapusBarang(payload);
     }
+    if (action === "admin_pulihkan_barang") {
+      return handlePulihkanBarang(payload);
+    }
+    if (action === "admin_hapus_permanen") {
+      return handleHapusPermanenBarang(payload);
+    }
 
     // 5. ADMIN: UPDATE SETTINGS
     if (action === "admin_update_settings") {
@@ -447,7 +453,31 @@ function ubahStokMultiBarang(sheetB, items, direction) {
 function handleTambahBarang(data) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheetB = ss.getSheetByName(SHEET_BARANG);
-  const nextId = "BRG-" + String(Math.floor(100 + Math.random() * 900));
+  const bData = sheetB.getDataRange().getValues();
+  const bHeaders = bData[0].map(h => String(h).trim().toLowerCase());
+  const idxId = bHeaders.indexOf("id_barang");
+  const idxNama = bHeaders.indexOf("nama_barang");
+
+  const targetNama = String(data.nama_barang || "").trim().toLowerCase();
+  const targetId = String(data.id_barang || "").trim();
+
+  // 1. Anti Duplikasi: Cek ID jika dikirim
+  if (targetId) {
+    for (let i = 1; i < bData.length; i++) {
+      if (String(bData[i][idxId]).trim() === targetId) {
+        return jsonResponse({ success: true, message: "Barang sudah ada dalam database.", id_barang: targetId });
+      }
+    }
+  }
+
+  // 2. Anti Duplikasi: Cek apakah nama yang sama baru saja ditambahkan dalam 5 baris terakhir
+  for (let i = bData.length - 1; i >= 1 && i >= bData.length - 5; i--) {
+    if (String(bData[i][idxNama]).trim().toLowerCase() === targetNama) {
+      return jsonResponse({ success: true, message: "Barang dengan nama ini baru saja ditambahkan.", id_barang: String(bData[i][idxId]) });
+    }
+  }
+
+  const nextId = targetId || ("BRG-" + String(Math.floor(100 + Math.random() * 900)));
 
   let fotoUrl = "";
   if (data.foto_url && data.foto_url.startsWith("data:")) {
@@ -474,6 +504,45 @@ function handleTambahBarang(data) {
   ]);
 
   return jsonResponse({ success: true, message: "Barang berhasil ditambahkan!", id_barang: nextId });
+}
+
+function handlePulihkanBarang(data) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheetB = ss.getSheetByName(SHEET_BARANG);
+  const idBarang = data.id_barang;
+
+  const bData = sheetB.getDataRange().getValues();
+  const bHeaders = bData[0].map(h => String(h).trim().toLowerCase());
+  const idxId = bHeaders.indexOf("id_barang");
+  const idxStatus = bHeaders.indexOf("status");
+  const idxUpdated = bHeaders.indexOf("updated_at");
+
+  for (let i = 1; i < bData.length; i++) {
+    if (String(bData[i][idxId]).trim() === String(idBarang).trim()) {
+      sheetB.getRange(i + 1, idxStatus + 1).setValue("Tersedia");
+      sheetB.getRange(i + 1, idxUpdated + 1).setValue(new Date());
+      return jsonResponse({ success: true, message: "Barang berhasil dipulihkan ke status aktif." });
+    }
+  }
+  return jsonResponse({ success: false, message: "Barang tidak ditemukan." });
+}
+
+function handleHapusPermanenBarang(data) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheetB = ss.getSheetByName(SHEET_BARANG);
+  const idBarang = data.id_barang;
+
+  const bData = sheetB.getDataRange().getValues();
+  const bHeaders = bData[0].map(h => String(h).trim().toLowerCase());
+  const idxId = bHeaders.indexOf("id_barang");
+
+  for (let i = 1; i < bData.length; i++) {
+    if (String(bData[i][idxId]).trim() === String(idBarang).trim()) {
+      sheetB.deleteRow(i + 1);
+      return jsonResponse({ success: true, message: "Barang berhasil dihapus secara permanen." });
+    }
+  }
+  return jsonResponse({ success: false, message: "Barang tidak ditemukan." });
 }
 
 function handleEditBarang(data) {
