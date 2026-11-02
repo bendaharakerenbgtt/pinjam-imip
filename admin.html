@@ -401,7 +401,7 @@
                     </div>
 
                     <div class="text-xs space-y-1.5" style="font-family: 'Times New Roman', serif;">
-                        <p>Pada hari ini, telah disetujui perjanjian peminjaman fasilitas/inventaris organisasi Lembaga Dakwah Kampus (LDK IMIP) oleh pihak peminjam dengan rincian sebagai berikut:</p>
+                        <p>Pada hari ini, telah disetujui perjanjian peminjaman fasilitas/inventaris organisasi <span id="surat-org-name-body">Lembaga Dakwah Kampus (LDK IMIP)</span> oleh pihak peminjam dengan rincian sebagai berikut:</p>
                         
                         <table class="w-full text-xs border-collapse">
                             <tr><td class="w-36 py-0.5 font-bold">Nama Peminjam</td><td class="w-3">:</td><td id="surat-peminjam-nama">-</td></tr>
@@ -448,7 +448,7 @@
                         </div>
                         <div class="text-center w-44 sm:w-52 space-y-10 sm:space-y-12">
                             <p id="surat-tgl-cetak">Jakarta, ...</p>
-                            <p class="font-bold underline">Pengurus Inventaris LDK IMIP</p>
+                            <p class="font-bold underline" id="surat-org-name-ttd">Pengurus Inventaris LDK IMIP</p>
                         </div>
                     </div>
                 </div>
@@ -700,11 +700,12 @@
             const tglAmbilClean = formatTglRapi(item.tgl_pengambilan);
             const tglKembaliClean = formatTglRapi(item.tgl_pengembalian);
 
+            const orgName = (appSettings && appSettings.nama_organisasi) ? appSettings.nama_organisasi.split('—')[0].trim() : "LDK IMIP";
             return `Assalamu'alaikum Wr. Wb.
 
 Halo, Saudara *${item.nama_peminjam}*.
 
-Kami dari *LDK IMIP* ingin menginformasikan bahwa pengajuan peminjaman barang Anda (*No: ${item.id_pinjam}*) telah *disetujui secara administratif*.
+Kami dari *${orgName}* ingin menginformasikan bahwa pengajuan peminjaman barang Anda (*No: ${item.id_pinjam}*) telah *disetujui secara administratif*.
 
 *Detail peminjaman:*
 Nama          : ${item.nama_peminjam}
@@ -723,7 +724,7 @@ Apabila menyetujui, silakan konfirmasi melalui balasan pesan ini.
 
 Terima kasih.
 
-*LDK IMIP*`;
+*${orgName}*`;
         }
 
         function getAdminPin() {
@@ -778,6 +779,10 @@ Terima kasih.
             document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
             document.getElementById(`tab-${tabId}`)?.classList.remove('hidden');
 
+            if (tabId === 'pengaturan') {
+                loadSettingsToForm();
+            }
+
             renderDashboard();
         }
 
@@ -797,6 +802,7 @@ Terima kasih.
                     if (json.settings) {
                         appSettings = { ...appSettings, ...json.settings };
                         saveSettingsLocal();
+                        applySettingsToUI();
                     }
                     saveLocalDB();
                 }
@@ -840,6 +846,73 @@ Terima kasih.
             else if (activeTab === 'aktif') renderAktifList();
             else if (activeTab === 'riwayat') renderRiwayat();
             else if (activeTab === 'inventaris') renderInventarisGrid();
+            else if (activeTab === 'pengaturan') loadSettingsToForm();
+        }
+
+        // ==========================================
+        // DETEKSI BENTROK JADWAL PEMINJAMAN
+        // ==========================================
+        function periksaBentrokJadwal(pengajuanTarget, semuaPeminjaman, daftarBarang) {
+            if (!pengajuanTarget || !pengajuanTarget.tgl_pengambilan || !pengajuanTarget.tgl_pengembalian) {
+                return [];
+            }
+
+            const tglMulaiA = (pengajuanTarget.tgl_pengambilan || "").slice(0, 10);
+            const tglSelesaiA = (pengajuanTarget.tgl_pengembalian || "").slice(0, 10);
+            if (!tglMulaiA || !tglSelesaiA) return [];
+
+            let itemsA = [];
+            try {
+                itemsA = typeof pengajuanTarget.items_json === 'string' ? JSON.parse(pengajuanTarget.items_json || "[]") : (pengajuanTarget.items || []);
+            } catch(e) { itemsA = []; }
+
+            if (!Array.isArray(itemsA) || itemsA.length === 0) return [];
+
+            const statusKunci = ["MENUNGGU KONFIRMASI PEMINJAM", "DIKONFIRMASI", "SEDANG DIPINJAM"];
+            const konflikList = [];
+
+            itemsA.forEach(itemA => {
+                const idB = String(itemA.id_barang);
+                const brg = (daftarBarang || []).find(b => String(b.id_barang) === idB);
+                const totalStok = brg ? (parseInt(brg.stok_total, 10) || 1) : 1;
+                const requestedQtyA = parseInt(itemA.jumlah, 10) || 1;
+
+                (semuaPeminjaman || []).forEach(otherP => {
+                    if (String(otherP.id_pinjam) === String(pengajuanTarget.id_pinjam)) return;
+                    const statusO = (otherP.status || "").toUpperCase();
+                    if (!statusKunci.includes(statusO)) return;
+
+                    const tglMulaiB = (otherP.tgl_pengambilan || "").slice(0, 10);
+                    const tglSelesaiB = (otherP.tgl_pengembalian || "").slice(0, 10);
+                    if (!tglMulaiB || !tglSelesaiB) return;
+
+                    // Overlap: (A_start <= B_end) && (A_end >= B_start)
+                    const overlap = (tglMulaiA <= tglSelesaiB) && (tglSelesaiA >= tglMulaiB);
+                    if (overlap) {
+                        let itemsB = [];
+                        try { itemsB = JSON.parse(otherP.items_json || "[]"); } catch(e) {}
+                        const matchItemB = itemsB.find(ib => String(ib.id_barang) === idB);
+                        if (matchItemB) {
+                            const qtyB = parseInt(matchItemB.jumlah, 10) || 1;
+                            if (requestedQtyA + qtyB > totalStok) {
+                                konflikList.push({
+                                    id_barang: idB,
+                                    nama_barang: itemA.nama_barang || (brg ? brg.nama_barang : 'Barang'),
+                                    total_stok: totalStok,
+                                    diminta: requestedQtyA,
+                                    bentrok_dengan_id: otherP.id_pinjam,
+                                    bentrok_dengan_nama: otherP.nama_peminjam,
+                                    bentrok_dengan_status: otherP.status,
+                                    bentrok_periode: `${formatTglRapi(tglMulaiB)} s.d ${formatTglRapi(tglSelesaiB)}`,
+                                    bentrok_qty: qtyB
+                                });
+                            }
+                        }
+                    }
+                });
+            });
+
+            return konflikList;
         }
 
         // ==========================================
@@ -884,6 +957,9 @@ Terima kasih.
                 const isMenungguKonfirmasi = (item.status || "").toUpperCase() === "MENUNGGU KONFIRMASI PEMINJAM";
                 const isDikonfirmasi = (item.status || "").toUpperCase() === "DIKONFIRMASI";
 
+                const konflikJadwal = periksaBentrokJadwal(item, localDB.peminjaman, localDB.barang);
+                const isBentrok = konflikJadwal.length > 0;
+
                 let itemsTableHtml = items.map(it => `
                     <div class="flex items-center justify-between text-xs py-1 border-b border-orange-100 dark:border-gray-800">
                         <span class="font-semibold ui-heading">• ${it.nama_barang}</span>
@@ -895,17 +971,39 @@ Terima kasih.
                 const tglKembaliClean = formatTglRapi(item.tgl_pengembalian);
 
                 const card = document.createElement('div');
-                card.className = "ui-card p-4 sm:p-5 rounded-2xl space-y-3 sm:space-y-4 border-orange-200 dark:border-white/10";
+                card.className = `ui-card p-4 sm:p-5 rounded-2xl space-y-3 sm:space-y-4 border ${isBentrok ? 'border-rose-400 dark:border-rose-500/60 shadow-rose-500/5' : 'border-orange-200 dark:border-white/10'}`;
                 card.innerHTML = `
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-orange-200 dark:border-gray-800 pb-3">
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center flex-wrap gap-2">
                             <span class="font-mono text-xs font-bold ui-pill px-2.5 py-1 rounded text-[#FF7300]">${item.id_pinjam}</span>
                             <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${getStatusClass(item.status)}">
                                 ${item.status}
                             </span>
+                            ${isBentrok ? `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-500 text-white animate-pulse flex items-center gap-1"><i class="fa-solid fa-triangle-exclamation"></i> BENTROK JADWAL</span>` : ''}
                         </div>
                         <span class="text-xs ui-muted"><i class="fa-solid fa-clock mr-1"></i> Diajukan: ${item.created_at || '-'}</span>
                     </div>
+
+                    ${isBentrok ? `
+                        <div class="p-3 rounded-xl bg-rose-500/15 border-2 border-rose-500/40 text-rose-800 dark:text-rose-200 text-xs space-y-1.5 shadow-sm">
+                            <div class="flex items-center gap-1.5 font-black text-rose-600 dark:text-rose-400">
+                                <i class="fa-solid fa-triangle-exclamation text-base"></i>
+                                <span>PERINGATAN: BENTROK JADWAL DENGAN PEMINJAMAN LAIN!</span>
+                            </div>
+                            <ul class="list-disc list-inside space-y-1 text-[11px] font-semibold text-slate-900 dark:text-rose-100">
+                                ${konflikJadwal.map(k => `
+                                    <li>
+                                        <strong>${k.nama_barang}</strong> bertabrakan dengan 
+                                        <span class="font-mono text-[#FF7300] font-bold">${k.bentrok_dengan_id}</span> 
+                                        (${k.bentrok_dengan_nama}) pada periode <em>${k.bentrok_periode}</em>.
+                                    </li>
+                                `).join('')}
+                            </ul>
+                            <p class="text-[10.5px] text-rose-700 dark:text-rose-300 font-medium">
+                                Total stok inventaris (${konflikJadwal[0].total_stok} unit) tidak mencukupi jika kedua peminjaman disetujui bersamaan.
+                            </p>
+                        </div>
+                    ` : ''}
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
                         <div class="space-y-1">
@@ -939,7 +1037,7 @@ Terima kasih.
                                 <button onclick="bukaLightbox('${item.dokumen_identitas}', 'Identitas: ${item.nama_peminjam}')" class="px-3 py-1.5 rounded-xl ui-pill text-xs font-semibold ui-body hover:text-[#FF7300] flex items-center gap-1.5">
                                     <i class="fa-solid fa-id-card text-[#FF7300]"></i> Lihat Identitas
                                 </button>
-                            ` : `<span class="text-xs ui-muted italic">Tanpa dokumen</span>`}
+                            ` : ''}
 
                             <button onclick="bukaModalSuratPerjanjian('${item.id_pinjam}')" class="px-3 py-1.5 rounded-xl ui-pill text-xs font-semibold ui-heading hover:text-[#FF7300] flex items-center gap-1.5">
                                 <i class="fa-solid fa-file-contract text-[#FF7300]"></i> Lihat Surat
@@ -983,6 +1081,22 @@ Terima kasih.
         async function aksiApprove(idPinjam) {
             const item = localDB.peminjaman.find(p => String(p.id_pinjam) === String(idPinjam));
             if (!item) return;
+
+            const konflik = periksaBentrokJadwal(item, localDB.peminjaman, localDB.barang);
+            if (konflik.length > 0) {
+                const listK = konflik.map(k => `• ${k.nama_barang} bertabrakan dg ${k.bentrok_dengan_id} (${k.bentrok_dengan_nama})`).join('\n');
+                const { isConfirmed: lanjutBentrok } = await Swal.fire({
+                    title: '⚠️ Peringatan Bentrok Jadwal!',
+                    html: `<p class="text-xs mb-2 text-rose-600 font-bold">Peminjaman ini bentrok jadwal dengan peminjaman lain:</p><pre class="text-xs bg-gray-100 dark:bg-gray-800 p-2.5 rounded-xl text-left font-sans whitespace-pre-wrap leading-relaxed">${listK}</pre><p class="text-xs mt-2 text-slate-700 dark:text-slate-300">Apakah Anda yakin tetap ingin MENYETUJUI pengajuan ini?</p>`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#F43F5E',
+                    cancelButtonColor: '#6B7280',
+                    confirmButtonText: 'Tetap Setujui',
+                    cancelButtonText: 'Batal / Periksa Kembali'
+                });
+                if (!lanjutBentrok) return;
+            }
 
             const { isConfirmed } = await Swal.fire({
                 title: 'Setujui Pengajuan?',
@@ -1294,30 +1408,30 @@ Terima kasih.
                         <div class="flex flex-wrap items-center gap-2">
                             <span class="font-mono text-xs font-bold text-[#FF7300] bg-orange-500/10 px-2.5 py-0.5 rounded">${item.id_pinjam}</span>
                             <span class="px-2.5 py-0.5 rounded text-[10px] font-bold ${getStatusClass(item.status)}">${item.status}</span>
-                            ${tglKembaliAktualClean && tglKembaliAktualClean !== '-' ? `<span class="text-[11px] font-semibold text-slate-700 dark:text-slate-300"><i class="fa-solid fa-circle-check text-emerald-500 mr-1"></i> Kembali Aktual: ${tglKembaliAktualClean}</span>` : ''}
+                            ${tglKembaliAktualClean && tglKembaliAktualClean !== '-' ? `<span class="text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 dark:bg-emerald-500/20 px-2 py-0.5 rounded"><i class="fa-solid fa-circle-check text-emerald-500 mr-1"></i> Kembali Aktual: ${tglKembaliAktualClean}</span>` : ''}
                         </div>
 
-                        <h4 class="font-bold font-outfit text-sm sm:text-base text-slate-900 dark:text-white">${item.nama_peminjam} <span class="text-xs text-slate-500 dark:text-slate-400 font-normal">(${item.asal_organisasi} • PJ: ${item.nama_penanggung_jawab || item.nama_peminjam})</span></h4>
+                        <h4 class="font-black font-outfit text-sm sm:text-base text-slate-900 dark:text-white">${item.nama_peminjam} <span class="text-xs text-slate-700 dark:text-slate-300 font-semibold">(${item.asal_organisasi} • PJ: ${item.nama_penanggung_jawab || item.nama_peminjam})</span></h4>
                         
-                        <div class="ui-pill p-2.5 rounded-xl text-xs space-y-0.5">
-                            <span class="text-[10px] font-bold uppercase text-slate-600 dark:text-slate-400 block tracking-wider">Barang Dipinjam:</span>
-                            <p class="font-bold text-slate-900 dark:text-slate-100 text-xs">${itemsList || 'Perlengkapan'}</p>
+                        <div class="ui-pill p-2.5 rounded-xl text-xs space-y-0.5 border border-orange-200/50 dark:border-gray-800">
+                            <span class="text-[10px] font-extrabold uppercase text-[#FF7300] dark:text-orange-400 block tracking-wider">Barang Dipinjam:</span>
+                            <p class="font-extrabold text-slate-950 dark:text-white text-xs">${itemsList || 'Perlengkapan'}</p>
                         </div>
 
-                        <p class="text-xs font-semibold text-slate-800 dark:text-slate-200"><i class="fa-solid fa-calendar mr-1.5 text-[#FF7300]"></i> Periode: <strong class="text-slate-900 dark:text-white">${tglAmbilClean} s.d ${tglKembaliClean}</strong></p>
+                        <p class="text-xs font-bold text-slate-900 dark:text-slate-100"><i class="fa-solid fa-calendar mr-1.5 text-[#FF7300]"></i> Periode: <strong class="text-slate-950 dark:text-white">${tglAmbilClean} s.d ${tglKembaliClean}</strong></p>
 
                         ${catatanTampil ? `
-                            <div class="p-3 rounded-xl bg-amber-50/95 dark:bg-amber-950/50 border-l-4 border-l-[#FF7300] border border-amber-300 dark:border-amber-700/60 text-xs shadow-sm space-y-1">
-                                <span class="font-extrabold text-amber-900 dark:text-amber-300 flex items-center gap-1.5 text-xs">
+                            <div class="p-3 rounded-xl bg-orange-500/10 dark:bg-orange-950/40 border-l-4 border-l-[#FF7300] border border-orange-300/40 dark:border-orange-500/30 text-xs shadow-sm space-y-1">
+                                <span class="font-extrabold text-[#FF7300] dark:text-orange-400 flex items-center gap-1.5 text-xs">
                                     <i class="fa-solid fa-note-sticky text-sm"></i> Catatan Admin Inventaris:
                                 </span>
-                                <p class="font-bold text-slate-950 dark:text-amber-100 text-xs pl-0.5 leading-relaxed">${catatanTampil}</p>
+                                <p class="font-bold text-slate-950 dark:text-orange-100 text-xs pl-0.5 leading-relaxed">${catatanTampil}</p>
                             </div>
                         ` : ''}
                     </div>
 
                     <div class="flex sm:flex-col items-center gap-2 self-stretch sm:self-auto sm:min-w-[130px] pt-1">
-                        <a href="${formatWaLink(item.kontak_wa, 'Assalamu\'alaikum wr. wb. ' + item.nama_peminjam + ' (' + item.asal_organisasi + '), ini dari Pengurus Inventaris LDK IMIP mengenai riwayat peminjaman ' + item.id_pinjam + '.')}" target="_blank" class="flex-1 sm:w-full px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm">
+                        <a href="${formatWaLink(item.kontak_wa, 'Assalamu\'alaikum wr. wb. ' + item.nama_peminjam + ' (' + item.asal_organisasi + '), ini dari Pengurus Inventaris ' + (appSettings.nama_organisasi || 'LDK IMIP') + ' mengenai riwayat peminjaman ' + item.id_pinjam + '.')}" target="_blank" class="flex-1 sm:w-full px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm">
                             <i class="fa-brands fa-whatsapp text-sm"></i> Chat WA
                         </a>
                         <button onclick="bukaModalSuratPerjanjian('${item.id_pinjam}')" class="flex-1 sm:w-full px-3 py-1.5 rounded-xl ui-pill font-bold text-xs ui-heading hover:text-[#FF7300] flex items-center justify-center gap-1.5">
@@ -1647,11 +1761,23 @@ Terima kasih.
         // ==========================================
         // TAB 5: PENGATURAN
         // ==========================================
+        function applySettingsToUI() {
+            const orgName = appSettings.nama_organisasi || "LDK IMIP — Lembaga Dakwah Kampus";
+            document.title = `Admin Panel — ${orgName}`;
+            const headerBrand = document.getElementById('top-brand-name');
+            if (headerBrand) headerBrand.innerText = `Pinjamip Admin`;
+            document.querySelectorAll('.org-name-text').forEach(el => el.innerText = orgName);
+        }
+
         function loadSettingsToForm() {
-            document.getElementById('set-nama-organisasi').value = appSettings.nama_organisasi || "LDK IMIP — Lembaga Dakwah Kampus";
-            document.getElementById('set-no-wa').value = appSettings.no_wa_admin || "085770976399";
-            document.getElementById('set-alamat').value = appSettings.alamat || "Politeknik Negeri Media Kreatif Jakarta";
-            document.getElementById('set-pin').value = getAdminPin();
+            const elNama = document.getElementById('set-nama-organisasi');
+            const elWa = document.getElementById('set-no-wa');
+            const elAlamat = document.getElementById('set-alamat');
+            const elPin = document.getElementById('set-pin');
+            if (elNama) elNama.value = appSettings.nama_organisasi || "LDK IMIP — Lembaga Dakwah Kampus";
+            if (elWa) elWa.value = appSettings.no_wa_admin || "085770976399";
+            if (elAlamat) elAlamat.value = appSettings.alamat || "Politeknik Negeri Media Kreatif Jakarta";
+            if (elPin) elPin.value = getAdminPin();
         }
 
         async function simpanPengaturan(e) {
@@ -1660,34 +1786,48 @@ Terima kasih.
             btn.disabled = true;
             btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Menyimpan...`;
 
-            appSettings.nama_organisasi = document.getElementById('set-nama-organisasi').value.trim();
-            appSettings.no_wa_admin = document.getElementById('set-no-wa').value.trim();
-            appSettings.alamat = document.getElementById('set-alamat').value.trim();
+            const currentPin = getAdminPin();
+            const newNama = document.getElementById('set-nama-organisasi').value.trim();
+            const newWa = document.getElementById('set-no-wa').value.trim();
+            const newAlamat = document.getElementById('set-alamat').value.trim();
             const newPin = document.getElementById('set-pin').value.trim();
 
-            if (newPin) localStorage.setItem(STORAGE_KEY_PIN, newPin);
+            if (newNama) appSettings.nama_organisasi = newNama;
+            if (newWa) appSettings.no_wa_admin = newWa;
+            if (newAlamat) appSettings.alamat = newAlamat;
+
+            if (newPin && newPin !== currentPin) {
+                localStorage.setItem(STORAGE_KEY_PIN, newPin);
+            }
             saveSettingsLocal();
+            applySettingsToUI();
 
             const apiUrl = getApiUrl();
             if (apiUrl) {
                 try {
-                    await fetch(apiUrl, {
+                    const res = await fetch(apiUrl, {
                         method: "POST",
                         body: JSON.stringify({
                             action: "admin_update_settings",
-                            pin: newPin || getAdminPin(),
+                            pin: currentPin,
                             nama_organisasi: appSettings.nama_organisasi,
                             no_wa_admin: appSettings.no_wa_admin,
                             alamat: appSettings.alamat,
-                            admin_pin: newPin
+                            admin_pin: newPin || currentPin
                         })
                     });
+                    const resJson = await res.json();
+                    if (resJson && resJson.settings) {
+                        appSettings = { ...appSettings, ...resJson.settings };
+                        saveSettingsLocal();
+                        applySettingsToUI();
+                    }
                 } catch(e) {}
             }
 
             btn.disabled = false;
             btn.innerHTML = `Simpan Perubahan`;
-            Swal.fire({ icon: 'success', title: 'Pengaturan Tersimpan', timer: 1200, showConfirmButton: false });
+            Swal.fire({ icon: 'success', title: 'Pengaturan Berhasil Disimpan', text: 'Nama organisasi dan pengaturan telah diperbarui.', timer: 1500, showConfirmButton: false });
         }
 
         // ==========================================
@@ -1704,6 +1844,12 @@ Terima kasih.
                 item.no_surat = `SPB/${todayStr}/${Math.floor(100 + Math.random() * 900)}/LDK-IMIP`;
                 saveLocalDB();
             }
+
+            const orgName = appSettings.nama_organisasi || "LDK IMIP — Lembaga Dakwah Kampus";
+            const elOrgBody = document.getElementById('surat-org-name-body');
+            if (elOrgBody) elOrgBody.innerText = orgName;
+            const elOrgTtd = document.getElementById('surat-org-name-ttd');
+            if (elOrgTtd) elOrgTtd.innerText = `Pengurus Inventaris ${orgName}`;
 
             document.getElementById('surat-no-dokumen').innerText = `Nomor: ${item.no_surat}`;
             document.getElementById('surat-peminjam-nama').innerText = item.nama_peminjam;
@@ -1774,13 +1920,14 @@ Terima kasih.
 
         function getStatusClass(status) {
             const s = (status || "").toUpperCase();
-            if (s === "MENUNGGU VERIFIKASI") return "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30";
-            if (s === "MENUNGGU KONFIRMASI PEMINJAM") return "bg-[#FF7300]/15 text-[#FF7300] border border-orange-500/30";
-            if (s === "DIKONFIRMASI") return "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30";
-            if (s === "SEDANG DIPINJAM") return "bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30";
-            if (s === "SELESAI") return "bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300";
-            if (s === "DITOLAK") return "bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30";
-            return "bg-gray-200 dark:bg-gray-800 text-gray-500";
+            if (s === "MENUNGGU VERIFIKASI") return "bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/40 font-bold";
+            if (s === "MENUNGGU KONFIRMASI PEMINJAM") return "bg-[#FF7300]/20 text-[#FF7300] border border-orange-500/40 font-bold";
+            if (s === "DIKONFIRMASI") return "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40 font-bold";
+            if (s === "SEDANG DIPINJAM") return "bg-blue-500/20 text-blue-700 dark:text-blue-300 border border-blue-500/40 font-bold";
+            if (s === "SELESAI") return "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40 font-black";
+            if (s === "DITOLAK") return "bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-500/40 font-bold";
+            if (s === "DIBATALKAN") return "bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-400 dark:border-slate-700 font-bold";
+            return "bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold";
         }
 
         function bukaLightbox(imgUrl, caption) {

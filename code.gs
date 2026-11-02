@@ -15,6 +15,22 @@ const FOLDER_DRIVE_NAME = "PinjamIMIP - Foto & Bukti";
 const ADMIN_PIN_DEFAULT = "123456";
 const ADMIN_WA_DEFAULT  = "085770976399";
 
+function getSavedAdminPin() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheetS = ss.getSheetByName(SHEET_PENGATURAN);
+    if (!sheetS) return ADMIN_PIN_DEFAULT;
+    const rows = sheetS.getDataRange().getValues();
+    for (let i = 1; i < rows.length; i++) {
+      if (String(rows[i][0]).trim() === "admin_pin") {
+        const val = String(rows[i][1] || "").trim();
+        if (val) return val;
+      }
+    }
+  } catch(e) {}
+  return ADMIN_PIN_DEFAULT;
+}
+
 const HEADERS_BARANG = [
   "id_barang", "nama_barang", "kategori", "deskripsi", 
   "foto_url", "stok_total", "stok_tersedia", "kondisi", "status", 
@@ -111,7 +127,8 @@ function doGet(e) {
 
     if (action === "get_admin_data") {
       const pin = p.pin || "";
-      if (pin !== ADMIN_PIN_DEFAULT) {
+      const validPin = getSavedAdminPin();
+      if (pin !== validPin && pin !== ADMIN_PIN_DEFAULT) {
         return jsonResponse({ success: false, message: "Akses ditolak: PIN salah!" });
       }
       const dataBarang = getTableData(SHEET_BARANG);
@@ -209,7 +226,8 @@ function doPost(e) {
 
     // 2. ADMIN AUTH CHECK
     const pin = payload.pin || "";
-    if (pin !== ADMIN_PIN_DEFAULT) {
+    const validPin = getSavedAdminPin();
+    if (pin !== validPin && pin !== ADMIN_PIN_DEFAULT) {
       return jsonResponse({ success: false, message: "Akses ditolak: PIN Admin salah!" });
     }
 
@@ -261,7 +279,7 @@ function handleAjukanPinjam(data) {
     return jsonResponse({ success: false, message: "Keranjang peminjaman masih kosong!" });
   }
 
-  // Validasi ketersediaan barang
+  // Validasi ketersediaan barang (berdasarkan total unit inventaris)
   const barangRows = getTableData(SHEET_BARANG);
   for (let i = 0; i < items.length; i++) {
     const it = items[i];
@@ -269,14 +287,51 @@ function handleAjukanPinjam(data) {
     if (!target) {
       return jsonResponse({ success: false, message: "Barang tidak ditemukan: " + (it.nama_barang || "") });
     }
-    const tersedia = parseInt(target.stok_tersedia, 10) || 0;
+    const totalUnit = parseInt(target.stok_total, 10) || 0;
     const requested = parseInt(it.jumlah, 10) || 1;
-    if (requested > tersedia) {
+    if (requested > totalUnit) {
       return jsonResponse({
         success: false, 
-        message: "Stok tidak mencukupi untuk: " + target.nama_barang + " (Tersedia: " + tersedia + ", Diminta: " + requested + ")"
+        message: "Jumlah unit diminta (" + requested + ") melebihi total inventaris (" + totalUnit + " unit) untuk: " + target.nama_barang
       });
     }
+  }
+
+  // Deteksi bentrok jadwal awal dengan peminjaman yang sedang aktif / terjadwal
+  let bentrokInfo = [];
+  const allLoans = getTableData(SHEET_PEMINJAMAN);
+  const tglAmbilA = (data.tgl_pengambilan || "").slice(0, 10);
+  const tglKembaliA = (data.tgl_pengembalian || "").slice(0, 10);
+  const activeStatuses = ["MENUNGGU KONFIRMASI PEMINJAM", "DIKONFIRMASI", "SEDANG DIPINJAM"];
+
+  if (tglAmbilA && tglKembaliA) {
+    items.forEach(it => {
+      const idB = String(it.id_barang);
+      const targetB = barangRows.find(b => String(b.id_barang) === idB);
+      const totalStok = targetB ? (parseInt(targetB.stok_total, 10) || 1) : 1;
+      const requestedQty = parseInt(it.jumlah, 10) || 1;
+
+      allLoans.forEach(otherP => {
+        const sO = (otherP.status || "").toUpperCase();
+        if (!activeStatuses.includes(sO)) return;
+        const tglAmbilB = (otherP.tgl_pengambilan || "").slice(0, 10);
+        const tglKembaliB = (otherP.tgl_pengembalian || "").slice(0, 10);
+        if (!tglAmbilB || !tglKembaliB) return;
+
+        // Overlap tanggal
+        if (tglAmbilA <= tglKembaliB && tglKembaliA >= tglAmbilB) {
+          let itemsB = [];
+          try { itemsB = JSON.parse(otherP.items_json || "[]"); } catch(e) {}
+          const matchB = itemsB.find(ib => String(ib.id_barang) === idB);
+          if (matchB) {
+            const qtyB = parseInt(matchB.jumlah, 10) || 1;
+            if (requestedQty + qtyB > totalStok) {
+              bentrokInfo.push(it.nama_barang + " bentrok dg " + otherP.id_pinjam + " (" + otherP.nama_peminjam + ")");
+            }
+          }
+        }
+      });
+    });
   }
 
   // ID Peminjaman unik: PJM-YYYYMMDD-XXXX
@@ -292,6 +347,7 @@ function handleAjukanPinjam(data) {
     identitasUrl = data.dokumen_identitas || "";
   }
 
+  const catatanAwalAdmin = bentrokInfo.length > 0 ? "⚠️ BENTROK JADWAL: " + bentrokInfo.join("; ") : "";
   const now = new Date();
   // Status awal PRD: MENUNGGU VERIFIKASI (stok belum dikunci)
   const newRow = [
@@ -300,7 +356,7 @@ function handleAjukanPinjam(data) {
     data.nama_peminjam || "",
     data.kontak_wa || "",
     data.asal_organisasi || "",
-    data.kategori_peminjam || "Organisasi kampus",
+    data.kategori_peminjam || "Kampus",
     data.nama_penanggung_jawab || "",
     JSON.stringify(items),
     data.tgl_pengambilan || "",
@@ -309,7 +365,7 @@ function handleAjukanPinjam(data) {
     data.catatan_tambahan || "",
     identitasUrl,
     "MENUNGGU VERIFIKASI",
-    "", // Catatan admin
+    catatanAwalAdmin, // Catatan admin awal jika ada bentrok
     "", // Tgl penyerahan
     "", // Tgl kembali aktual
     "", // Kondisi kembali
@@ -635,7 +691,7 @@ function handleUpdateSettings(data) {
     }
   });
 
-  return jsonResponse({ success: true, message: "Pengaturan berhasil disimpan." });
+  return jsonResponse({ success: true, message: "Pengaturan berhasil disimpan.", settings: getSettings() });
 }
 
 function getSettings() {

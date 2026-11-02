@@ -333,10 +333,9 @@
                     </div>
                     <div>
                         <label class="block ui-heading font-semibold mb-1">Kategori Peminjam <span class="text-rose-500">*</span></label>
-                        <select id="pjm-kategori" class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
-                            <option value="Organisasi kampus">Organisasi Kampus (Prioritas)</option>
-                            <option value="Komunitas">Komunitas</option>
-                            <option value="Umum">Umum / Masyarakat</option>
+                        <select id="pjm-kategori" class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading font-semibold focus:outline-none focus:border-[#FF7300]">
+                            <option value="Kampus">Kampus (Internal Kampus)</option>
+                            <option value="Eksternal">Eksternal (Luar Kampus / Umum)</option>
                         </select>
                     </div>
                 </div>
@@ -345,27 +344,6 @@
                     <label class="block ui-heading font-semibold mb-1">Nama Penanggung Jawab (PJ) <span class="text-rose-500">*</span></label>
                     <input type="text" id="pjm-pj" required placeholder="Nama ketua panitia / pembina / PJ kegiatan"
                            class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
-                </div>
-
-                <!-- Dokumen Identitas (Wajib Sesuai PRD Section 5) -->
-                <div>
-                    <label class="block ui-heading font-semibold mb-1">
-                        Dokumen Identitas (KTM / KTP / Kartu Organisasi) <span class="text-rose-500">* (Wajib)</span>
-                    </label>
-                    <div class="border-2 border-dashed border-orange-200 dark:border-gray-700 hover:border-[#FF7300] rounded-xl p-3 text-center transition-all bg-[#FFF7ED]/50 dark:bg-transparent">
-                        <input type="file" id="pjm-foto-identitas" accept="image/*" class="hidden" onchange="previewFotoIdentitas(event)">
-                        <div id="preview-container-identitas" class="hidden space-y-2">
-                            <img id="preview-img-identitas" src="" class="h-28 mx-auto rounded-lg object-contain border border-orange-200 dark:border-gray-700">
-                            <button type="button" onclick="hapusFotoIdentitas()" class="text-xs text-rose-500 hover:underline">
-                                <i class="fa-solid fa-trash mr-1"></i>Ganti / Hapus Identitas
-                            </button>
-                        </div>
-                        <div id="upload-placeholder-identitas" onclick="document.getElementById('pjm-foto-identitas').click()" class="cursor-pointer space-y-1">
-                            <i class="fa-solid fa-id-card text-2xl text-[#FF7300]"></i>
-                            <p class="text-xs ui-body font-medium">Klik untuk upload foto KTM / KTP / Kartu Identitas</p>
-                            <p class="text-[10px] ui-muted">File otomatis di-compress aman (maksimal 2MB)</p>
-                        </div>
-                    </div>
                 </div>
 
                 <!-- Tanggal & Keperluan -->
@@ -854,8 +832,6 @@
         // ==========================================
         // FORM PENGAJUAN PINJAM
         // ==========================================
-        let base64DokumenIdentitas = "";
-
         function lanjutKeFormPengajuan() {
             if (cart.length === 0) {
                 Swal.fire({ icon: 'warning', title: 'Keranjang Kosong', text: 'Pilih minimal satu barang.', timer: 1500, showConfirmButton: false });
@@ -884,43 +860,11 @@
             document.getElementById('pjm-tgl-kembali').value = today;
             document.getElementById('pjm-tgl-kembali').min = today;
 
-            hapusFotoIdentitas();
             bukaModal('modal-form-pengajuan');
-        }
-
-        function previewFotoIdentitas(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            compressImage(file, 1000, 0.75, (base64) => {
-                base64DokumenIdentitas = base64;
-                document.getElementById('preview-img-identitas').src = base64;
-                document.getElementById('preview-container-identitas').classList.remove('hidden');
-                document.getElementById('upload-placeholder-identitas').classList.add('hidden');
-            });
-        }
-
-        function hapusFotoIdentitas() {
-            base64DokumenIdentitas = "";
-            const fileInput = document.getElementById('pjm-foto-identitas');
-            if (fileInput) fileInput.value = "";
-            document.getElementById('preview-container-identitas')?.classList.add('hidden');
-            document.getElementById('upload-placeholder-identitas')?.classList.remove('hidden');
         }
 
         async function submitFormPengajuan(e) {
             e.preventDefault();
-
-            // Validasi wajib Dokumen Identitas sesuai PRD Section 5
-            if (!base64DokumenIdentitas) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Dokumen Identitas Wajib',
-                    text: 'Silakan unggah foto KTM, KTP, atau kartu identitas organisasi penanggung jawab.',
-                    confirmButtonColor: '#FF7300'
-                });
-                return;
-            }
 
             const tglAmbil = document.getElementById('pjm-tgl-ambil').value;
             const tglKembali = document.getElementById('pjm-tgl-kembali').value;
@@ -944,7 +888,7 @@
                 tgl_pengembalian: tglKembali,
                 tujuan: document.getElementById('pjm-tujuan').value.trim(),
                 catatan_tambahan: document.getElementById('pjm-catatan').value.trim(),
-                dokumen_identitas: base64DokumenIdentitas,
+                dokumen_identitas: "",
                 items: cart.map(it => ({
                     id_barang: it.id_barang,
                     nama_barang: it.nama_barang,
@@ -964,7 +908,15 @@
                     });
                     const resJson = await res.json();
                     if (!resJson.success) {
-                        throw new Error(resJson.message || "Gagal mengirim pengajuan");
+                        btn.disabled = false;
+                        btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Kirim Pengajuan Sekarang`;
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Pengajuan Gagal',
+                            text: resJson.message || 'Gagal mengirim pengajuan ke server database.',
+                            confirmButtonColor: '#FF7300'
+                        });
+                        return;
                     }
                     if (resJson.id_pinjam) idPinjam = resJson.id_pinjam;
                 } catch(err) {
@@ -986,7 +938,7 @@
                 tgl_pengembalian: payload.tgl_pengembalian,
                 tujuan: payload.tujuan,
                 catatan_tambahan: payload.catatan_tambahan,
-                dokumen_identitas: base64DokumenIdentitas,
+                dokumen_identitas: "",
                 status: "MENUNGGU VERIFIKASI",
                 catatan_admin: "",
                 created_at: new Date().toISOString().replace("T", " ").substring(0, 19)
@@ -997,7 +949,6 @@
             cart = [];
             saveCart();
             document.getElementById('form-pengajuan-pinjam').reset();
-            hapusFotoIdentitas();
             tutupModal('modal-form-pengajuan');
 
             btn.disabled = false;
