@@ -409,7 +409,7 @@
                             <tr><td class="w-36 py-0.5 font-bold">Nama Peminjam</td><td class="w-3">:</td><td id="surat-peminjam-nama">-</td></tr>
                             <tr><td class="py-0.5 font-bold">Nomor WhatsApp</td><td>:</td><td id="surat-peminjam-wa">-</td></tr>
                             <tr><td class="py-0.5 font-bold">Asal Organisasi</td><td>:</td><td id="surat-peminjam-org">-</td></tr>
-                            <tr><td class="py-0.5 font-bold">Penanggung Jawab (PJ)</td><td>:</td><td id="surat-peminjam-pj">-</td></tr>
+                            <tr><td class="py-0.5 font-bold">Ketua Pelaksana Kegiatan</td><td>:</td><td id="surat-peminjam-pj">-</td></tr>
                             <tr><td class="py-0.5 font-bold">Tujuan Kegiatan</td><td>:</td><td id="surat-peminjam-tujuan">-</td></tr>
                             <tr><td class="py-0.5 font-bold">Masa Peminjaman</td><td>:</td><td id="surat-peminjam-periode">-</td></tr>
                         </table>
@@ -1009,9 +1009,9 @@ Terima kasih.
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
                         <div class="space-y-1">
-                            <span class="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400 block tracking-wider">Peminjam & Penanggung Jawab</span>
+                            <span class="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400 block tracking-wider">Peminjam & Ketua Pelaksana</span>
                             <p class="font-bold ui-heading text-sm">${item.nama_peminjam}</p>
-                            <p class="ui-body">PJ: ${item.nama_penanggung_jawab || '-'}</p>
+                            <p class="ui-body">Ketua Pelaksana: ${item.nama_penanggung_jawab || '-'}</p>
                             <p class="ui-muted">${item.asal_organisasi} (${item.kategori_peminjam || 'Kampus'})</p>
                             <p class="font-mono text-xs text-[#FF7300] font-semibold">${item.kontak_wa}</p>
                         </div>
@@ -1476,7 +1476,7 @@ Terima kasih.
 
                         <h4 class="font-black font-outfit text-sm sm:text-base ui-heading">
                             ${item.nama_peminjam} 
-                            <span class="text-xs font-semibold ui-muted">(${item.asal_organisasi} • PJ: ${item.nama_penanggung_jawab || item.nama_peminjam})</span>
+                            <span class="text-xs font-semibold ui-muted">(${item.asal_organisasi} • Ketua Pelaksana: ${item.nama_penanggung_jawab || item.nama_peminjam})</span>
                         </h4>
                         
                         <div class="ui-pill p-2.5 rounded-xl text-xs space-y-0.5 border border-orange-200/70 dark:border-gray-800">
