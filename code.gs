@@ -1,27 +1,20 @@
 // ============================================================
-// GOOGLE APPS SCRIPT — PINJAM IMIP BACKEND (INVENTARIS & PEMINJAMAN)
+// GOOGLE APPS SCRIPT — PINJAMIP BACKEND (V2 - PRD ENHANCED)
+// Sistem Katalog & Peminjaman Inventaris LDK IMIP
 // ============================================================
-// CARA SETUP:
-// 1. Buat Spreadsheet baru di Google Drive (misal: "DB Peminjaman Barang IMIP")
-// 2. Klik Extensions > Apps Script
-// 3. Hapus semua kode default, paste SELURUH kode ini ke editor
-// 4. Klik menu dropdown fungsi, pilih "setupSheetsDanDrive" lalu klik Run (Jalankan)
-//    -> Setujui izin akses Google Drive dan Google Sheets
-// 5. Klik Deploy > New Deployment > Web App
-//    - Description: "PinjamIMIP API v1"
-//    - Execute as: "Me" (Email Anda)
-//    - Who has access: "Anyone" (Siapa saja)  <-- PENTING!
-// 6. Copy URL Web App yang didapat, lalu masukkan ke web PinjamIMIP di bagian Admin!
+// Konsep: Multi-Item Loan, Stock Locking, Approval Workflow,
+// Dokumen Perjanjian PDF, & Google Drive Integration.
 // ============================================================
 
-const SHEET_BARANG     = "barang";
-const SHEET_PEMINJAMAN = "peminjaman";
-const FOLDER_DRIVE     = "PinjamIMIP - Foto & Bukti";
+const SHEET_BARANG      = "barang";
+const SHEET_PEMINJAMAN  = "peminjaman";
+const SHEET_PENGATURAN  = "pengaturan";
+const FOLDER_DRIVE_NAME = "PinjamIMIP - Foto & Bukti";
 
-// PIN Admin Default (Bisa Anda ubah di sini)
+// Default PIN & Nomor Kontak Admin
 const ADMIN_PIN_DEFAULT = "123456";
+const ADMIN_WA_DEFAULT  = "085770976399";
 
-// Header Default jika sheet baru dibuat
 const HEADERS_BARANG = [
   "id_barang", "nama_barang", "kategori", "deskripsi", 
   "foto_url", "stok_total", "stok_tersedia", "kondisi", "status", 
@@ -29,47 +22,54 @@ const HEADERS_BARANG = [
 ];
 
 const HEADERS_PEMINJAMAN = [
-  "id_pinjam", "id_barang", "nama_barang", "nama_peminjam", 
-  "kontak_wa", "divisi_instansi", "tgl_pinjam", "tgl_kembali", 
-  "keperluan", "foto_identitas", "status", "catatan_admin", 
-  "created_at", "updated_at"
+  "id_pinjam", "no_surat", "nama_peminjam", "kontak_wa", 
+  "asal_organisasi", "kategori_peminjam", "nama_penanggung_jawab",
+  "items_json", "tgl_pengambilan", "tgl_pengembalian", "tujuan", 
+  "catatan_tambahan", "dokumen_identitas", "status", 
+  "catatan_admin", "tgl_penyerahan", "tgl_kembali_aktual", 
+  "kondisi_kembali", "catatan_kembali", "created_at", "updated_at"
 ];
 
 // ============================================================
-// FUNGSI INISIALISASI OTOMATIS (JALANKAN SEKALI SAAT PERTAMA KALI)
+// FUNGSI SETUP AWAL
 // ============================================================
 function setupSheetsDanDrive() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  
-  // 1. Buat Sheet Barang jika belum ada
+
+  // 1. Sheet Barang
   let sheetB = ss.getSheetByName(SHEET_BARANG);
   if (!sheetB) {
     sheetB = ss.insertSheet(SHEET_BARANG);
     sheetB.appendRow(HEADERS_BARANG);
     sheetB.getRange(1, 1, 1, HEADERS_BARANG.length).setFontWeight("bold").setBackground("#080C14").setFontColor("#FFFFFF");
     
-    // Data contoh awal
     sheetB.appendRow([
       "BRG-001", "Proyektor Epson EB-E500", "Elektronik", 
       "Proyektor HDMI/VGA 3300 Lumens untuk presentasi & kajian",
       "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=600",
-      2, 2, "Bagus", "Tersedia", new Date(), new Date()
+      2, 2, "Bagus / Prima", "Tersedia", new Date(), new Date()
     ]);
     sheetB.appendRow([
       "BRG-002", "Wireless Mic Clip-On (2 Pcs)", "Audio & Sound", 
       "Mic wireless receiver Type-C/Lightning untuk dokumentasi/kajian",
       "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=600",
-      3, 3, "Bagus", "Tersedia", new Date(), new Date()
+      3, 3, "Bagus / Prima", "Tersedia", new Date(), new Date()
     ]);
     sheetB.appendRow([
       "BRG-003", "Kabel Rol Listrik 15 Meter", "Kelistrikan", 
       "Kabel sambung tebal 4 stop kontak",
       "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=600",
-      4, 4, "Bagus", "Tersedia", new Date(), new Date()
+      4, 4, "Bagus / Prima", "Tersedia", new Date(), new Date()
+    ]);
+    sheetB.appendRow([
+      "BRG-004", "Standing Banner Aluminium Portable", "Dekorasi & Logistik", 
+      "Roll-up standing banner kokoh untuk penunjuk arah dan backdrop mini",
+      "https://images.unsplash.com/photo-1542744095-fcf48d80b0fd?w=600",
+      2, 2, "Bagus / Prima", "Tersedia", new Date(), new Date()
     ]);
   }
 
-  // 2. Buat Sheet Peminjaman jika belum ada
+  // 2. Sheet Peminjaman
   let sheetP = ss.getSheetByName(SHEET_PEMINJAMAN);
   if (!sheetP) {
     sheetP = ss.insertSheet(SHEET_PEMINJAMAN);
@@ -77,21 +77,31 @@ function setupSheetsDanDrive() {
     sheetP.getRange(1, 1, 1, HEADERS_PEMINJAMAN.length).setFontWeight("bold").setBackground("#080C14").setFontColor("#FFFFFF");
   }
 
-  // 3. Buat Folder Google Drive jika belum ada
-  getOrCreateFolder(FOLDER_DRIVE);
-  
-  Logger.log("SETUP BERHASIL! Sheet barang, peminjaman, dan folder Drive siap digunakan.");
+  // 3. Sheet Pengaturan Organisasi
+  let sheetS = ss.getSheetByName(SHEET_PENGATURAN);
+  if (!sheetS) {
+    sheetS = ss.insertSheet(SHEET_PENGATURAN);
+    sheetS.appendRow(["key", "value"]);
+    sheetS.appendRow(["nama_organisasi", "LDK IMIP — Lembaga Dakwah Kampus"]);
+    sheetS.appendRow(["no_wa_admin", ADMIN_WA_DEFAULT]);
+    sheetS.appendRow(["alamat", "Politeknik Negeri Media Kreatif Jakarta"]);
+    sheetS.appendRow(["admin_pin", ADMIN_PIN_DEFAULT]);
+  }
+
+  // 4. Folder Drive
+  getOrCreateFolder(FOLDER_DRIVE_NAME);
+  Logger.log("SETUP BERHASIL! Database Pinjamip V2 siap digunakan.");
 }
 
 // ============================================================
-// HANDLER REQUEST GET (READ DATA)
+// HANDLER GET (READ DATA)
 // ============================================================
 function doGet(e) {
   try {
     const p = e.parameter || {};
-    const action = p.action || "get_all";
+    const action = p.action || "get_katalog";
 
-    if (action === "get_all" || action === "get_katalog") {
+    if (action === "get_katalog" || action === "get_all") {
       const dataBarang = getTableData(SHEET_BARANG);
       return jsonResponse({
         success: true,
@@ -102,40 +112,78 @@ function doGet(e) {
     if (action === "get_admin_data") {
       const pin = p.pin || "";
       if (pin !== ADMIN_PIN_DEFAULT) {
-        return jsonResponse({ success: false, message: "PIN Admin salah!" });
+        return jsonResponse({ success: false, message: "Akses ditolak: PIN salah!" });
       }
       const dataBarang = getTableData(SHEET_BARANG);
       const dataPeminjaman = getTableData(SHEET_PEMINJAMAN);
+      const settings = getSettings();
       return jsonResponse({
         success: true,
         barang: dataBarang,
-        peminjaman: dataPeminjaman
+        peminjaman: dataPeminjaman,
+        settings: settings
       });
     }
 
     if (action === "check_status") {
       const query = (p.query || "").toString().trim().toLowerCase();
       if (!query) {
-        return jsonResponse({ success: false, message: "Masukkan nomor WA atau ID Peminjaman!" });
+        return jsonResponse({ success: false, message: "Masukkan nama lengkap atau nomor WhatsApp!" });
       }
       const allPeminjaman = getTableData(SHEET_PEMINJAMAN);
-      const filtered = allPeminjaman.filter(row => {
-        const wa = (row.kontak_wa || "").toString().replace(/[^0-9]/g, "");
-        const cleanQuery = query.replace(/[^0-9]/g, "");
-        const id = (row.id_pinjam || "").toString().toLowerCase();
-        return (cleanQuery && wa.includes(cleanQuery)) || id.includes(query);
+      const cleanNum = query.replace(/[^0-9]/g, "");
+
+      // Filter aman: Jangan bocorkan data sensitif (dokumen identitas & catatan internal admin)
+      const matches = allPeminjaman.filter(row => {
+        const rowWa = (row.kontak_wa || "").toString().replace(/[^0-9]/g, "");
+        const rowNama = (row.nama_peminjam || "").toString().toLowerCase();
+        const rowId = (row.id_pinjam || "").toString().toLowerCase();
+
+        const matchWa = cleanNum.length >= 6 && rowWa.includes(cleanNum);
+        const matchNama = rowNama.includes(query) && query.length >= 3;
+        const matchId = rowId === query;
+        return matchWa || matchNama || matchId;
+      }).map(row => {
+        // Sensor dokumen identitas dan catatan admin internal
+        let parsedItems = [];
+        try {
+          parsedItems = JSON.parse(row.items_json || "[]");
+        } catch(e) {}
+
+        // Masking WA (misal: 0857****6399)
+        const waStr = String(row.kontak_wa || "");
+        let maskedWa = waStr;
+        if (waStr.length > 7) {
+          maskedWa = waStr.substring(0, 4) + "****" + waStr.substring(waStr.length - 4);
+        }
+
+        return {
+          id_pinjam: row.id_pinjam,
+          no_surat: row.no_surat || "-",
+          nama_peminjam: row.nama_peminjam,
+          kontak_wa_masked: maskedWa,
+          asal_organisasi: row.asal_organisasi,
+          tgl_pengambilan: row.tgl_pengambilan,
+          tgl_pengembalian: row.tgl_pengembalian,
+          tujuan: row.tujuan,
+          items: parsedItems,
+          status: row.status,
+          catatan_publik: row.catatan_admin || "",
+          created_at: row.created_at
+        };
       });
-      return jsonResponse({ success: true, hasil: filtered });
+
+      return jsonResponse({ success: true, hasil: matches });
     }
 
-    return jsonResponse({ success: true, message: "PinjamIMIP API is running." });
+    return jsonResponse({ success: true, message: "Pinjamip API V2 is active." });
   } catch (err) {
     return jsonResponse({ success: false, error: err.toString() });
   }
 }
 
 // ============================================================
-// HANDLER REQUEST POST (SUBMIT, APPROVE, REJECT, RETURN, CRUD BARANG)
+// HANDLER POST (SUBMIT, APPROVE, REJECT, ACTION, CRUD)
 // ============================================================
 function doPost(e) {
   try {
@@ -152,35 +200,36 @@ function doPost(e) {
 
     const action = payload.action;
 
-    // 1. PUBLIK: AJUKAN PINJAM BARANG
+    // 1. PUBLIK: AJUKAN PEMINJAMAN (MULTI-ITEM)
     if (action === "ajukan_pinjam") {
       return handleAjukanPinjam(payload);
     }
 
-    // 2. ADMIN: AUTH CHECK
+    // 2. ADMIN AUTH CHECK
     const pin = payload.pin || "";
     if (pin !== ADMIN_PIN_DEFAULT) {
       return jsonResponse({ success: false, message: "Akses ditolak: PIN Admin salah!" });
     }
 
-    // 3. ADMIN: VERIFIKASI / TINJAU PINJAM (TERIMA, TOLAK, KEMBALI)
-    if (action === "admin_tinjau") {
-      return handleAdminTinjau(payload);
+    // 3. ADMIN: APPROVE / REJECT / KONFIRMASI / SERAHKAN / KEMBALI
+    if (action === "admin_update_status") {
+      return handleAdminUpdateStatus(payload);
     }
 
-    // 4. ADMIN: TAMBAH BARANG
+    // 4. ADMIN: CRUD BARANG
     if (action === "admin_tambah_barang") {
       return handleTambahBarang(payload);
     }
-
-    // 5. ADMIN: EDIT BARANG
     if (action === "admin_edit_barang") {
       return handleEditBarang(payload);
     }
-
-    // 6. ADMIN: HAPUS BARANG
     if (action === "admin_hapus_barang") {
       return handleHapusBarang(payload);
+    }
+
+    // 5. ADMIN: UPDATE SETTINGS
+    if (action === "admin_update_settings") {
+      return handleUpdateSettings(payload);
     }
 
     return jsonResponse({ success: false, message: "Action tidak dikenali." });
@@ -190,52 +239,73 @@ function doPost(e) {
 }
 
 // ============================================================
-// LOGIKA BISNIS
+// LOGIKA BISNIS PINJAMIP
 // ============================================================
 
 function handleAjukanPinjam(data) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheetP = ss.getSheetByName(SHEET_PEMINJAMAN);
   const sheetB = ss.getSheetByName(SHEET_BARANG);
-  if (!sheetP || !sheetB) throw new Error("Sheet tidak ditemukan. Jalankan setup terlebih dahulu.");
+  if (!sheetP || !sheetB) throw new Error("Database belum disetup.");
+
+  const items = data.items || [];
+  if (!Array.isArray(items) || items.length === 0) {
+    return jsonResponse({ success: false, message: "Keranjang peminjaman masih kosong!" });
+  }
 
   // Validasi ketersediaan barang
   const barangRows = getTableData(SHEET_BARANG);
-  const targetBarang = barangRows.find(b => String(b.id_barang) === String(data.id_barang));
-  if (!targetBarang) {
-    return jsonResponse({ success: false, message: "Barang tidak ditemukan!" });
-  }
-  if (parseInt(targetBarang.stok_tersedia, 10) <= 0) {
-    return jsonResponse({ success: false, message: "Mohon maaf, stok barang ini sedang habis / dipinjam." });
+  for (let i = 0; i < items.length; i++) {
+    const it = items[i];
+    const target = barangRows.find(b => String(b.id_barang) === String(it.id_barang));
+    if (!target) {
+      return jsonResponse({ success: false, message: "Barang tidak ditemukan: " + (it.nama_barang || "") });
+    }
+    const tersedia = parseInt(target.stok_tersedia, 10) || 0;
+    const requested = parseInt(it.jumlah, 10) || 1;
+    if (requested > tersedia) {
+      return jsonResponse({
+        success: false, 
+        message: "Stok tidak mencukupi untuk: " + target.nama_barang + " (Tersedia: " + tersedia + ", Diminta: " + requested + ")"
+      });
+    }
   }
 
-  // Generate ID Pinjam: PJM-YYYYMMDD-XXXX
+  // ID Peminjaman unik: PJM-YYYYMMDD-XXXX
   const todayStr = Utilities.formatDate(new Date(), "Asia/Jakarta", "yyyyMMdd");
   const randomSuffix = Math.floor(1000 + Math.random() * 9000);
   const idPinjam = "PJM-" + todayStr + "-" + randomSuffix;
 
-  // Upload foto identitas / KTM jika ada
-  let fotoUrl = "";
-  if (data.foto_identitas && data.foto_identitas.startsWith("data:")) {
-    fotoUrl = saveImageToDrive(data.foto_identitas, "ID_" + idPinjam);
+  // Upload dokumen identitas / KTM jika ada base64
+  let identitasUrl = "";
+  if (data.dokumen_identitas && data.dokumen_identitas.startsWith("data:")) {
+    identitasUrl = saveImageToDrive(data.dokumen_identitas, "KTM_" + idPinjam);
   } else {
-    fotoUrl = data.foto_identitas || "";
+    identitasUrl = data.dokumen_identitas || "";
   }
 
   const now = new Date();
+  // Status awal PRD: MENUNGGU VERIFIKASI (stok belum dikunci)
   const newRow = [
     idPinjam,
-    data.id_barang,
-    targetBarang.nama_barang,
+    "", // No surat perjanjian akan di-generate saat approve
     data.nama_peminjam || "",
     data.kontak_wa || "",
-    data.divisi_instansi || "",
-    data.tgl_pinjam || "",
-    data.tgl_kembali || "",
-    data.keperluan || "",
-    fotoUrl,
-    "MENUNGGU", // Status awal
-    "",         // Catatan admin
+    data.asal_organisasi || "",
+    data.kategori_peminjam || "Organisasi kampus",
+    data.nama_penanggung_jawab || "",
+    JSON.stringify(items),
+    data.tgl_pengambilan || "",
+    data.tgl_pengembalian || "",
+    data.tujuan || "",
+    data.catatan_tambahan || "",
+    identitasUrl,
+    "MENUNGGU VERIFIKASI",
+    "", // Catatan admin
+    "", // Tgl penyerahan
+    "", // Tgl kembali aktual
+    "", // Kondisi kembali
+    "", // Catatan kembali
     now,
     now
   ];
@@ -244,67 +314,108 @@ function handleAjukanPinjam(data) {
 
   return jsonResponse({
     success: true,
-    message: "Pengajuan berhasil dikirim! Silakan tunggu konfirmasi admin.",
-    id_pinjam: idPinjam,
-    nama_barang: targetBarang.nama_barang
+    message: "Pengajuan berhasil dikirim! Menunggu verifikasi admin.",
+    id_pinjam: idPinjam
   });
 }
 
-function handleAdminTinjau(data) {
+function handleAdminUpdateStatus(data) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheetP = ss.getSheetByName(SHEET_PEMINJAMAN);
   const sheetB = ss.getSheetByName(SHEET_BARANG);
-  
+
   const idPinjam = data.id_pinjam;
-  const statusBaru = (data.status || "").toUpperCase(); // DISETUJUI, DITOLAK, DIKEMBALIKAN
+  const statusBaru = (data.status || "").toUpperCase();
   const catatan = data.catatan || "";
 
   const pData = sheetP.getDataRange().getValues();
   const pHeaders = pData[0].map(h => String(h).trim().toLowerCase());
-  const idxIdPinjam = pHeaders.indexOf("id_pinjam");
-  const idxIdBarang = pHeaders.indexOf("id_barang");
+  
+  const idxId = pHeaders.indexOf("id_pinjam");
+  const idxNoSurat = pHeaders.indexOf("no_surat");
+  const idxItems = pHeaders.indexOf("items_json");
   const idxStatus = pHeaders.indexOf("status");
   const idxCatatan = pHeaders.indexOf("catatan_admin");
+  const idxTglSerah = pHeaders.indexOf("tgl_penyerahan");
+  const idxTglKembali = pHeaders.indexOf("tgl_kembali_aktual");
+  const idxKondisiKembali = pHeaders.indexOf("kondisi_kembali");
+  const idxCatatanKembali = pHeaders.indexOf("catatan_kembali");
   const idxUpdated = pHeaders.indexOf("updated_at");
 
-  let targetRowIdx = -1;
-  let idBarang = "";
+  let rowIdx = -1;
   let oldStatus = "";
+  let itemsJsonStr = "[]";
+  let curNoSurat = "";
 
   for (let i = 1; i < pData.length; i++) {
-    if (String(pData[i][idxIdPinjam]).trim() === String(idPinjam).trim()) {
-      targetRowIdx = i + 1; // 1-based index
-      idBarang = String(pData[i][idxIdBarang]).trim();
+    if (String(pData[i][idxId]).trim() === String(idPinjam).trim()) {
+      rowIdx = i + 1;
       oldStatus = String(pData[i][idxStatus]).trim().toUpperCase();
+      itemsJsonStr = String(pData[i][idxItems] || "[]");
+      curNoSurat = String(pData[i][idxNoSurat] || "");
       break;
     }
   }
 
-  if (targetRowIdx === -1) {
-    return jsonResponse({ success: false, message: "Data peminjaman tidak ditemukan!" });
+  if (rowIdx === -1) {
+    return jsonResponse({ success: false, message: "Pengajuan tidak ditemukan!" });
   }
 
-  // Update status peminjaman
-  sheetP.getRange(targetRowIdx, idxStatus + 1).setValue(statusBaru);
-  if (catatan) {
-    sheetP.getRange(targetRowIdx, idxCatatan + 1).setValue(catatan);
-  }
-  sheetP.getRange(targetRowIdx, idxUpdated + 1).setValue(new Date());
+  let items = [];
+  try { items = JSON.parse(itemsJsonStr); } catch(e) {}
 
-  // Update stok barang jika status berubah
-  if (statusBaru === "DISETUJUI" && oldStatus !== "DISETUJUI") {
-    ubahStokBarang(sheetB, idBarang, -1);
-  } else if (statusBaru === "DIKEMBALIKAN" && oldStatus === "DISETUJUI") {
-    ubahStokBarang(sheetB, idBarang, 1);
+  // ALUR 1: APPROVE -> MENUNGGU KONFIRMASI PEMINJAM (Stok Dikunci)
+  if (statusBaru === "MENUNGGU KONFIRMASI PEMINJAM") {
+    // Generate no surat otomatis jika belum ada: SPB-YYYYMMDD-XXXX
+    if (!curNoSurat) {
+      const todayStr = Utilities.formatDate(new Date(), "Asia/Jakarta", "yyyyMMdd");
+      const noUrut = Math.floor(100 + Math.random() * 900);
+      curNoSurat = "SPB/" + todayStr + "/" + noUrut + "/LDK-IMIP";
+      sheetP.getRange(rowIdx, idxNoSurat + 1).setValue(curNoSurat);
+    }
+
+    // Kunci stok untuk barang yang disetujui (jika sebelumnya belum terkunci)
+    if (oldStatus === "MENUNGGU VERIFIKASI") {
+      ubahStokMultiBarang(sheetB, items, -1);
+    }
   }
+
+  // ALUR 2: DITOLAK ATAU DIBATALKAN -> Lepaskan stok yang terkunci
+  if (statusBaru === "DITOLAK" || statusBaru === "DIBATALKAN") {
+    if (oldStatus === "MENUNGGU KONFIRMASI PEMINJAM" || oldStatus === "DIKONFIRMASI") {
+      ubahStokMultiBarang(sheetB, items, 1); // Kembalikan stok
+    }
+  }
+
+  // ALUR 3: SERAHKAN BARANG -> SEDANG DIPINJAM
+  if (statusBaru === "SEDANG DIPINJAM") {
+    sheetP.getRange(rowIdx, idxTglSerah + 1).setValue(data.tgl_penyerahan || new Date());
+  }
+
+  // ALUR 4: VERIFIKASI PENGEMBALIAN -> SELESAI
+  if (statusBaru === "SELESAI") {
+    sheetP.getRange(rowIdx, idxTglKembali + 1).setValue(data.tgl_kembali_aktual || new Date());
+    sheetP.getRange(rowIdx, idxKondisiKembali + 1).setValue(data.kondisi_kembali || "Baik");
+    if (data.catatan_kembali) sheetP.getRange(rowIdx, idxCatatanKembali + 1).setValue(data.catatan_kembali);
+
+    // Kembalikan stok yang layak pakai ke inventaris
+    const returnedItems = data.returned_items || items;
+    ubahStokMultiBarang(sheetB, returnedItems, 1);
+  }
+
+  // Update Status umum
+  sheetP.getRange(rowIdx, idxStatus + 1).setValue(statusBaru);
+  if (catatan) sheetP.getRange(rowIdx, idxCatatan + 1).setValue(catatan);
+  sheetP.getRange(rowIdx, idxUpdated + 1).setValue(new Date());
 
   return jsonResponse({
     success: true,
-    message: "Status peminjaman berhasil diubah menjadi: " + statusBaru
+    message: "Status peminjaman berhasil diperbarui menjadi: " + statusBaru,
+    no_surat: curNoSurat
   });
 }
 
-function ubahStokBarang(sheetB, idBarang, delta) {
+function ubahStokMultiBarang(sheetB, items, direction) {
   const bData = sheetB.getDataRange().getValues();
   const bHeaders = bData[0].map(h => String(h).trim().toLowerCase());
   const idxId = bHeaders.indexOf("id_barang");
@@ -312,27 +423,32 @@ function ubahStokBarang(sheetB, idBarang, delta) {
   const idxTotal = bHeaders.indexOf("stok_total");
   const idxStatus = bHeaders.indexOf("status");
 
-  for (let i = 1; i < bData.length; i++) {
-    if (String(bData[i][idxId]).trim() === String(idBarang).trim()) {
-      const curTersedia = parseInt(bData[i][idxTersedia], 10) || 0;
-      const total = parseInt(bData[i][idxTotal], 10) || 1;
-      let newTersedia = curTersedia + delta;
-      if (newTersedia < 0) newTersedia = 0;
-      if (newTersedia > total) newTersedia = total;
+  items.forEach(it => {
+    const qty = parseInt(it.jumlah, 10) || 1;
+    const delta = qty * direction;
 
-      sheetB.getRange(i + 1, idxTersedia + 1).setValue(newTersedia);
-      sheetB.getRange(i + 1, idxStatus + 1).setValue(newTersedia > 0 ? "Tersedia" : "Dipinjam");
-      break;
+    for (let i = 1; i < bData.length; i++) {
+      if (String(bData[i][idxId]).trim() === String(it.id_barang).trim()) {
+        const curTersedia = parseInt(bData[i][idxTersedia], 10) || 0;
+        const total = parseInt(bData[i][idxTotal], 10) || 1;
+        let newTersedia = curTersedia + delta;
+        if (newTersedia < 0) newTersedia = 0;
+        if (newTersedia > total) newTersedia = total;
+
+        sheetB.getRange(i + 1, idxTersedia + 1).setValue(newTersedia);
+        sheetB.getRange(i + 1, idxStatus + 1).setValue(newTersedia > 0 ? "Tersedia" : "Sedang tidak tersedia");
+        bData[i][idxTersedia] = newTersedia;
+        break;
+      }
     }
-  }
+  });
 }
 
 function handleTambahBarang(data) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheetB = ss.getSheetByName(SHEET_BARANG);
-
   const nextId = "BRG-" + String(Math.floor(100 + Math.random() * 900));
-  
+
   let fotoUrl = "";
   if (data.foto_url && data.foto_url.startsWith("data:")) {
     fotoUrl = saveImageToDrive(data.foto_url, nextId);
@@ -350,18 +466,14 @@ function handleTambahBarang(data) {
     data.deskripsi || "",
     fotoUrl,
     stok,
-    stok, // Stok tersedia awal sama dengan stok total
-    data.kondisi || "Bagus",
+    stok,
+    data.kondisi || "Bagus / Prima",
     "Tersedia",
     now,
     now
   ]);
 
-  return jsonResponse({
-    success: true,
-    message: "Barang baru berhasil ditambahkan!",
-    id_barang: nextId
-  });
+  return jsonResponse({ success: true, message: "Barang berhasil ditambahkan!", id_barang: nextId });
 }
 
 function handleEditBarang(data) {
@@ -379,44 +491,33 @@ function handleEditBarang(data) {
   const idxTotal = bHeaders.indexOf("stok_total");
   const idxTersedia = bHeaders.indexOf("stok_tersedia");
   const idxKondisi = bHeaders.indexOf("kondisi");
-  const idxStatus = bHeaders.indexOf("status");
   const idxUpdated = bHeaders.indexOf("updated_at");
 
-  let rowIdx = -1;
   for (let i = 1; i < bData.length; i++) {
     if (String(bData[i][idxId]).trim() === String(idBarang).trim()) {
-      rowIdx = i + 1;
-      break;
+      const rowIdx = i + 1;
+      if (data.nama_barang) sheetB.getRange(rowIdx, idxNama + 1).setValue(data.nama_barang);
+      if (data.kategori) sheetB.getRange(rowIdx, idxKategori + 1).setValue(data.kategori);
+      if (data.deskripsi) sheetB.getRange(rowIdx, idxDeskripsi + 1).setValue(data.deskripsi);
+      if (data.kondisi) sheetB.getRange(rowIdx, idxKondisi + 1).setValue(data.kondisi);
+
+      if (data.foto_url && data.foto_url.startsWith("data:")) {
+        const newFoto = saveImageToDrive(data.foto_url, idBarang + "_edit");
+        sheetB.getRange(rowIdx, idxFoto + 1).setValue(newFoto);
+      }
+
+      if (data.stok_total !== undefined) {
+        const newTotal = parseInt(data.stok_total, 10) || 1;
+        sheetB.getRange(rowIdx, idxTotal + 1).setValue(newTotal);
+        const curTersedia = parseInt(bData[i][idxTersedia], 10) || 0;
+        if (curTersedia > newTotal) sheetB.getRange(rowIdx, idxTersedia + 1).setValue(newTotal);
+      }
+
+      sheetB.getRange(rowIdx, idxUpdated + 1).setValue(new Date());
+      return jsonResponse({ success: true, message: "Data barang diperbarui." });
     }
   }
-
-  if (rowIdx === -1) {
-    return jsonResponse({ success: false, message: "Barang tidak ditemukan!" });
-  }
-
-  if (data.nama_barang !== undefined) sheetB.getRange(rowIdx, idxNama + 1).setValue(data.nama_barang);
-  if (data.kategori !== undefined) sheetB.getRange(rowIdx, idxKategori + 1).setValue(data.kategori);
-  if (data.deskripsi !== undefined) sheetB.getRange(rowIdx, idxDeskripsi + 1).setValue(data.deskripsi);
-  if (data.kondisi !== undefined) sheetB.getRange(rowIdx, idxKondisi + 1).setValue(data.kondisi);
-
-  if (data.foto_url && data.foto_url.startsWith("data:")) {
-    const newFoto = saveImageToDrive(data.foto_url, idBarang + "_update");
-    sheetB.getRange(rowIdx, idxFoto + 1).setValue(newFoto);
-  }
-
-  if (data.stok_total !== undefined) {
-    const newTotal = parseInt(data.stok_total, 10) || 1;
-    sheetB.getRange(rowIdx, idxTotal + 1).setValue(newTotal);
-    // Sesuaikan stok tersedia jika stok baru lebih kecil
-    const curTersedia = parseInt(bData[rowIdx - 1][idxTersedia], 10) || 0;
-    if (curTersedia > newTotal) {
-      sheetB.getRange(rowIdx, idxTersedia + 1).setValue(newTotal);
-    }
-  }
-
-  sheetB.getRange(rowIdx, idxUpdated + 1).setValue(new Date());
-
-  return jsonResponse({ success: true, message: "Data barang berhasil diperbarui!" });
+  return jsonResponse({ success: false, message: "Barang tidak ditemukan." });
 }
 
 function handleHapusBarang(data) {
@@ -427,21 +528,68 @@ function handleHapusBarang(data) {
   const bData = sheetB.getDataRange().getValues();
   const bHeaders = bData[0].map(h => String(h).trim().toLowerCase());
   const idxId = bHeaders.indexOf("id_barang");
+  const idxStatus = bHeaders.indexOf("status");
 
   for (let i = 1; i < bData.length; i++) {
     if (String(bData[i][idxId]).trim() === String(idBarang).trim()) {
-      sheetB.deleteRow(i + 1);
-      return jsonResponse({ success: true, message: "Barang berhasil dihapus." });
+      // Sesuai PRD: Soft delete (tandai diarsipkan/nonaktif) agar tidak merusak relasi riwayat
+      sheetB.getRange(i + 1, idxStatus + 1).setValue("Diarsipkan");
+      return jsonResponse({ success: true, message: "Barang berhasil diarsipkan." });
     }
   }
-
   return jsonResponse({ success: false, message: "Barang tidak ditemukan." });
 }
 
-// ============================================================
-// HELPER DRIVE & SPREADSHEET
-// ============================================================
+function handleUpdateSettings(data) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheetS = ss.getSheetByName(SHEET_PENGATURAN);
+  if (!sheetS) {
+    sheetS = ss.insertSheet(SHEET_PENGATURAN);
+    sheetS.appendRow(["key", "value"]);
+  }
 
+  const sData = sheetS.getDataRange().getValues();
+  const keys = ["nama_organisasi", "no_wa_admin", "alamat", "admin_pin"];
+  keys.forEach(k => {
+    if (data[k] !== undefined) {
+      let found = false;
+      for (let r = 1; r < sData.length; r++) {
+        if (String(sData[r][0]).trim() === k) {
+          sheetS.getRange(r + 1, 2).setValue(data[k]);
+          found = true;
+          break;
+        }
+      }
+      if (!found) sheetS.appendRow([k, data[k]]);
+    }
+  });
+
+  return jsonResponse({ success: true, message: "Pengaturan berhasil disimpan." });
+}
+
+function getSettings() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheetS = ss.getSheetByName(SHEET_PENGATURAN);
+  const defaultSettings = {
+    nama_organisasi: "LDK IMIP — Lembaga Dakwah Kampus",
+    no_wa_admin: ADMIN_WA_DEFAULT,
+    alamat: "Politeknik Negeri Media Kreatif Jakarta"
+  };
+  if (!sheetS) return defaultSettings;
+
+  const rows = sheetS.getDataRange().getValues();
+  const result = { ...defaultSettings };
+  for (let i = 1; i < rows.length; i++) {
+    const k = String(rows[i][0]).trim();
+    const v = String(rows[i][1] || "").trim();
+    if (k) result[k] = v;
+  }
+  return result;
+}
+
+// ============================================================
+// HELPER DRIVE & TABLES
+// ============================================================
 function getTableData(sheetName) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName(sheetName);
@@ -501,14 +649,13 @@ function saveImageToDrive(base64Data, filenamePrefix) {
     const bytes = Utilities.base64Decode(rawBase64);
     const blob = Utilities.newBlob(bytes, mimeType, filenamePrefix + "_" + Date.now() + ext);
 
-    const folder = getOrCreateFolder(FOLDER_DRIVE);
+    const folder = getOrCreateFolder(FOLDER_DRIVE_NAME);
     const file = folder.createFile(blob);
     try {
       file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
     } catch(e) {}
 
     const fileId = file.getId();
-    // Gunakan direct thumbnail URL agar mudah diakses tanpa kendala izin browser
     return "https://drive.google.com/thumbnail?id=" + fileId + "&sz=w1000";
   } catch (err) {
     Logger.log("Error saveImage: " + err.toString());

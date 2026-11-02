@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pinjamip — Peminjaman Barang IMIP</title>
+    <title>Pinjamip — Katalog & Peminjaman Inventaris LDK IMIP</title>
     <link rel="icon" href="icons/icon-192.png" type="image/png">
     <meta name="theme-color" content="#FAF5EF">
     <meta name="mobile-web-app-capable" content="yes">
@@ -21,10 +21,6 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
-        /* =========================================================
-           LIGHT MODE (DEFAULT) - Nuansa Web Keuangan IMIP
-           Official Cabinet Colors (#FF7300, #FFA500) on Cream (#FAF5EF)
-           ========================================================= */
         :root {
             --bg-main: #FAF5EF;              /* Warm Cream */
             --bg-card: #FFFFFF;              /* Crisp White */
@@ -36,17 +32,11 @@
             --text-muted: #64748B;           /* Slate 500 */
 
             --accent: #FF7300;               /* Official Cabinet Orange */
-            --accent-hover: #EA580C;         /* Darker Orange */
-            --accent-bg: rgba(255, 115, 0, 0.10);
-            --accent-border: rgba(255, 115, 0, 0.35);
-
-            --bg-pill: #FFF7ED;              /* Warm Cream Pill */
+            --accent-hover: #EA580C;
+            --bg-pill: #FFF7ED;
             --shadow-card: 0 8px 24px -6px rgba(255, 115, 0, 0.10);
         }
 
-        /* =========================================================
-           DARK MODE - Nuansa Deep Obsidian IMIP
-           ========================================================= */
         html.dark-mode {
             --bg-main: #080C14;
             --bg-card: #111827;
@@ -59,9 +49,6 @@
 
             --accent: #FF7300;
             --accent-hover: #FFA500;
-            --accent-bg: rgba(255, 115, 0, 0.15);
-            --accent-border: rgba(255, 115, 0, 0.4);
-
             --bg-pill: rgba(30, 41, 59, 0.7);
             --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
         }
@@ -86,11 +73,7 @@
         .ui-heading { color: var(--text-heading) !important; }
         .ui-body { color: var(--text-body) !important; }
         .ui-muted { color: var(--text-muted) !important; }
-
-        .ui-pill {
-            background: var(--bg-pill);
-            border: 1px solid var(--border-muted);
-        }
+        .ui-pill { background: var(--bg-pill); border: 1px solid var(--border-muted); }
 
         .btn-kabinet {
             background-color: #FF7300;
@@ -102,17 +85,13 @@
             box-shadow: 0 6px 20px -2px rgba(255, 115, 0, 0.4);
         }
 
-        .text-kabinet {
-            color: #FF7300;
-        }
-
         .modal-backdrop {
             background-color: rgba(15, 23, 42, 0.65);
             backdrop-filter: blur(4px);
         }
     </style>
 </head>
-<body class="selection:bg-orange-500 selection:text-white">
+<body class="selection:bg-orange-500 selection:text-white pb-24">
 
     <!-- TOP NAVBAR -->
     <header class="sticky top-0 z-40 w-full px-3 sm:px-6 pt-3 pb-2">
@@ -123,17 +102,28 @@
                 <span class="font-outfit font-extrabold text-2xl tracking-tight bg-gradient-to-r from-[#FF7300] to-[#FFA500] bg-clip-text text-transparent">Pinjamip</span>
             </a>
 
-            <!-- Right Actions: Theme Toggle -->
-            <div class="flex items-center gap-2">
+            <!-- Right Actions: Cek Status, Theme Toggle, & Cart Button -->
+            <div class="flex items-center gap-2 sm:gap-3">
+                <a href="status.html" class="px-3 py-2 rounded-xl ui-pill text-xs font-bold ui-heading hover:text-[#FF7300] transition-all flex items-center gap-1.5" title="Lacak Pengajuan">
+                    <i class="fa-solid fa-magnifying-glass text-[#FF7300]"></i> <span class="hidden sm:inline">Cek Status</span>
+                </a>
+
                 <button onclick="toggleTheme()" class="w-9 h-9 rounded-xl ui-pill flex items-center justify-center ui-body hover:text-[#FF7300] transition-all" title="Ubah Mode Tampilan">
                     <i id="theme-icon" class="fa-solid fa-moon text-sm"></i>
+                </button>
+
+                <!-- Keranjang Floating/Header Button -->
+                <button onclick="bukaModalKeranjang()" class="relative px-3.5 py-2 rounded-xl btn-kabinet text-xs font-bold flex items-center gap-2 shadow-md">
+                    <i class="fa-solid fa-cart-shopping"></i>
+                    <span class="hidden sm:inline">Keranjang</span>
+                    <span id="cart-badge-count" class="w-5 h-5 rounded-full bg-white text-[#FF7300] text-[11px] font-black flex items-center justify-center">0</span>
                 </button>
             </div>
         </div>
     </header>
 
     <!-- MAIN CONTENT -->
-    <main class="max-w-6xl mx-auto px-4 sm:px-6 pt-2 pb-16 space-y-6">
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 pt-2 space-y-6">
 
         <!-- Clean Hero Section -->
         <div class="ui-card rounded-2xl p-6 sm:p-8 border border-orange-200 dark:border-white/10 bg-gradient-to-br from-orange-500/10 via-amber-500/5 to-transparent">
@@ -146,7 +136,7 @@
         <div class="space-y-3">
             <div class="relative">
                 <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-orange-500/70 text-sm"></i>
-                <input type="text" id="katalog-search" oninput="renderKatalog()" placeholder="Cari barang (Proyektor, Mic, Kabel)..." 
+                <input type="text" id="katalog-search" oninput="renderKatalog()" placeholder="Cari nama barang (Proyektor, Mic, Kabel)..." 
                        class="w-full pl-10 pr-4 py-2.5 rounded-xl ui-card text-sm ui-heading placeholder:text-gray-400 focus:outline-none focus:border-[#FF7300] focus:ring-1 focus:ring-[#FF7300] transition-all">
             </div>
 
@@ -180,115 +170,244 @@
 
     </main>
 
+    <!-- FLOATING CART BAR (MOBILE/BOTTOM QUICK ACCESS) -->
+    <div id="floating-cart-bar" class="fixed bottom-4 left-4 right-4 z-30 max-w-lg mx-auto ui-card p-3 rounded-2xl border border-orange-300 dark:border-white/10 shadow-2xl flex items-center justify-between hidden">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-orange-500/10 text-[#FF7300] flex items-center justify-center font-bold">
+                <i class="fa-solid fa-cart-shopping"></i>
+            </div>
+            <div>
+                <p id="floating-cart-summary" class="text-xs font-bold ui-heading">0 Barang Dipilih</p>
+                <p class="text-[11px] ui-muted">Siap diajukan sekaligus</p>
+            </div>
+        </div>
+        <button onclick="bukaModalKeranjang()" class="px-4 py-2 rounded-xl btn-kabinet text-xs font-bold shadow-md">
+            Lihat Keranjang
+        </button>
+    </div>
+
     <!-- FOOTER -->
     <footer class="max-w-6xl mx-auto px-4 py-6 border-t border-orange-200/60 dark:border-gray-800 text-center text-xs ui-muted flex flex-col sm:flex-row items-center justify-between gap-3">
         <p>© 2026 Pinjamip — LDK IMIP</p>
-        <a href="admin.html" class="hover:text-[#FF7300] font-medium transition-all">
-            <i class="fa-solid fa-shield-halved mr-1"></i> Area Pengurus
-        </a>
+        <div class="flex items-center gap-4">
+            <a href="status.html" class="hover:text-[#FF7300] font-medium transition-all">
+                <i class="fa-solid fa-magnifying-glass mr-1 text-[#FF7300]"></i> Cek Status
+            </a>
+            <span class="text-gray-300 dark:text-gray-700">|</span>
+            <a href="admin.html" class="hover:text-[#FF7300] font-medium transition-all">
+                <i class="fa-solid fa-shield-halved mr-1 text-[#FF7300]"></i> Area Pengurus
+            </a>
+        </div>
     </footer>
 
-    <!-- MODAL: FORM PENGAJUAN PINJAM -->
-    <div id="modal-pinjam" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden">
+
+    <!-- ============================================================== -->
+    <!-- MODAL 1: DETAIL BARANG -->
+    <!-- ============================================================== -->
+    <div id="modal-detail" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden">
+        <div class="ui-card w-full max-w-md rounded-2xl overflow-hidden border border-orange-300 dark:border-white/10 space-y-4">
+            <div class="relative h-56 bg-gray-200 dark:bg-gray-800">
+                <img id="detail-foto" src="" class="w-full h-full object-cover">
+                <button onclick="tutupModal('modal-detail')" class="absolute top-3 right-3 bg-black/60 hover:bg-black text-white w-8 h-8 rounded-full flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+                <span id="detail-badge-stok" class="absolute bottom-3 left-3 px-3 py-1 rounded-lg text-xs font-bold uppercase backdrop-blur-md"></span>
+            </div>
+            <div class="p-5 pt-0 space-y-3">
+                <span id="detail-kategori" class="text-xs font-bold text-[#FF7300] uppercase"></span>
+                <h3 id="detail-nama" class="font-outfit font-extrabold text-xl ui-heading leading-snug"></h3>
+                <p id="detail-deskripsi" class="text-xs ui-body leading-relaxed"></p>
+                <div class="p-3 rounded-xl ui-pill text-xs space-y-1">
+                    <p class="ui-heading font-semibold"><i class="fa-solid fa-circle-check text-[#FF7300] mr-1"></i> Kondisi: <span id="detail-kondisi" class="font-normal ui-body"></span></p>
+                    <p class="ui-heading font-semibold"><i class="fa-solid fa-boxes-stacked text-[#FF7300] mr-1"></i> Total Inventaris: <span id="detail-total-stok" class="font-normal ui-body"></span> unit</p>
+                </div>
+                <div class="pt-2">
+                    <button id="detail-btn-cart" class="w-full py-2.5 rounded-xl btn-kabinet font-bold text-xs flex items-center justify-center gap-2 shadow-md">
+                        <i class="fa-solid fa-cart-plus"></i> Tambah ke Keranjang
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ============================================================== -->
+    <!-- MODAL 2: KERANJANG PEMINJAMAN (MULTI-ITEM) -->
+    <!-- ============================================================== -->
+    <div id="modal-keranjang" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden">
         <div class="ui-card w-full max-w-lg rounded-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto border border-orange-300 dark:border-white/10">
             <div class="flex items-center justify-between border-b border-orange-200 dark:border-gray-800 pb-3">
                 <div class="flex items-center gap-2">
-                    <i class="fa-solid fa-clipboard-check text-[#FF7300]"></i>
-                    <h3 class="font-outfit font-bold text-lg ui-heading">Formulir Peminjaman</h3>
+                    <i class="fa-solid fa-cart-shopping text-[#FF7300] text-lg"></i>
+                    <h3 class="font-outfit font-bold text-lg ui-heading">Keranjang Peminjaman</h3>
                 </div>
-                <button onclick="tutupModal('modal-pinjam')" class="ui-muted hover:text-gray-900 dark:hover:text-white p-1">
+                <button onclick="tutupModal('modal-keranjang')" class="ui-muted hover:text-gray-900 dark:hover:text-white p-1">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
 
-            <!-- Preview Barang Dipilih -->
-            <div class="ui-pill p-3 rounded-xl flex items-center gap-3">
-                <img id="form-pinjam-foto" src="" class="w-14 h-14 rounded-lg object-cover bg-gray-200 dark:bg-gray-800 border border-orange-200 dark:border-gray-700">
-                <div>
-                    <h4 id="form-pinjam-nama" class="font-bold text-sm ui-heading">Nama Barang</h4>
-                    <span id="form-pinjam-kategori" class="text-xs text-[#FF7300] font-semibold">Kategori</span>
-                    <p id="form-pinjam-stok" class="text-xs ui-muted">Sisa Stok: 1 unit</p>
+            <!-- List Item di Keranjang -->
+            <div id="cart-items-container" class="space-y-2.5">
+                <!-- Dynamically populated -->
+            </div>
+
+            <!-- Empty cart state -->
+            <div id="cart-empty-state" class="py-10 text-center space-y-2 hidden">
+                <i class="fa-solid fa-basket-shopping text-4xl ui-muted"></i>
+                <p class="text-sm font-bold ui-heading">Keranjang Masih Kosong</p>
+                <p class="text-xs ui-muted">Pilih perlengkapan dari katalog untuk menambahkan ke keranjang.</p>
+            </div>
+
+            <div id="cart-action-container" class="pt-3 border-t border-orange-200 dark:border-gray-800 flex items-center justify-between gap-2">
+                <button onclick="kosongkanKeranjang()" class="text-xs text-rose-500 hover:underline font-semibold">
+                    <i class="fa-solid fa-trash mr-1"></i>Kosongkan
+                </button>
+                <div class="flex gap-2">
+                    <button onclick="tutupModal('modal-keranjang')" class="px-4 py-2 rounded-xl ui-pill text-xs font-semibold ui-body">
+                        Tambah Barang Lain
+                    </button>
+                    <button onclick="lanjutKeFormPengajuan()" class="px-5 py-2 rounded-xl btn-kabinet text-xs font-bold shadow-md flex items-center gap-1.5">
+                        Lanjut ke Formulir <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ============================================================== -->
+    <!-- MODAL 3: FORMULIR PENGAJUAN LENGKAP (PRD SECTION 5) -->
+    <!-- ============================================================== -->
+    <div id="modal-form-pengajuan" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden">
+        <div class="ui-card w-full max-w-xl rounded-2xl p-6 space-y-4 max-h-[92vh] overflow-y-auto border border-orange-300 dark:border-white/10">
+            <div class="flex items-center justify-between border-b border-orange-200 dark:border-gray-800 pb-3">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-file-signature text-[#FF7300]"></i>
+                    <h3 class="font-outfit font-bold text-lg ui-heading">Formulir Pengajuan Peminjaman</h3>
+                </div>
+                <button onclick="tutupModal('modal-form-pengajuan')" class="ui-muted hover:text-gray-900 dark:hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Ringkasan Barang yang Dipinjam -->
+            <div class="ui-pill p-3.5 rounded-xl space-y-2">
+                <span class="text-[11px] font-bold text-[#FF7300] uppercase tracking-wider block">Ringkasan Barang Dipilih:</span>
+                <div id="form-summary-items" class="space-y-1 text-xs">
+                    <!-- populated dynamically -->
                 </div>
             </div>
 
-            <form id="form-pengajuan" onsubmit="submitFormPinjam(event)" class="space-y-3.5 text-xs sm:text-sm">
-                <input type="hidden" id="pinjam-id-barang">
-
-                <div>
-                    <label class="block ui-heading font-semibold mb-1">Nama Lengkap Peminjam <span class="text-rose-500">*</span></label>
-                    <input type="text" id="pinjam-nama" required placeholder="Masukkan nama Anda"
-                           class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading placeholder:text-gray-400 focus:outline-none focus:border-[#FF7300]">
-                </div>
-
+            <form id="form-pengajuan-pinjam" onsubmit="submitFormPengajuan(event)" class="space-y-3.5 text-xs sm:text-sm">
+                <!-- Data Peminjam -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                        <label class="block ui-heading font-semibold mb-1">Nomor WhatsApp <span class="text-rose-500">*</span></label>
-                        <input type="tel" id="pinjam-wa" required placeholder="08xxxxxxxxxx"
-                               class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading placeholder:text-gray-400 focus:outline-none focus:border-[#FF7300]">
+                        <label class="block ui-heading font-semibold mb-1">Nama Lengkap Peminjam <span class="text-rose-500">*</span></label>
+                        <input type="text" id="pjm-nama" required placeholder="Nama pemohon"
+                               class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
                     </div>
                     <div>
-                        <label class="block ui-heading font-semibold mb-1">Divisi / Asal Lembaga <span class="text-rose-500">*</span></label>
-                        <input type="text" id="pinjam-divisi" required placeholder="Contoh: Panitia / BPI"
-                               class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading placeholder:text-gray-400 focus:outline-none focus:border-[#FF7300]">
+                        <label class="block ui-heading font-semibold mb-1">Nomor WhatsApp Aktif <span class="text-rose-500">*</span></label>
+                        <input type="tel" id="pjm-wa" required placeholder="Contoh: 081234567890"
+                               class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                        <label class="block ui-heading font-semibold mb-1">Tanggal Mulai Pinjam <span class="text-rose-500">*</span></label>
-                        <input type="date" id="pinjam-tgl-mulai" required
+                        <label class="block ui-heading font-semibold mb-1">Asal Organisasi / Delegasi <span class="text-rose-500">*</span></label>
+                        <input type="text" id="pjm-organisasi" required placeholder="Contoh: BEM / UKM Musik / Panitia ..."
                                class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
                     </div>
                     <div>
-                        <label class="block ui-heading font-semibold mb-1">Tanggal Selesai/Kembali <span class="text-rose-500">*</span></label>
-                        <input type="date" id="pinjam-tgl-selesai" required
-                               class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
+                        <label class="block ui-heading font-semibold mb-1">Kategori Peminjam <span class="text-rose-500">*</span></label>
+                        <select id="pjm-kategori" class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
+                            <option value="Organisasi kampus">Organisasi Kampus (Prioritas)</option>
+                            <option value="Komunitas">Komunitas</option>
+                            <option value="Umum">Umum / Masyarakat</option>
+                        </select>
                     </div>
                 </div>
 
                 <div>
-                    <label class="block ui-heading font-semibold mb-1">Keperluan Peminjaman <span class="text-rose-500">*</span></label>
-                    <textarea id="pinjam-keperluan" rows="2" required placeholder="Sebutkan kegiatan atau keperluan barang..."
-                              class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading placeholder:text-gray-400 focus:outline-none focus:border-[#FF7300]"></textarea>
+                    <label class="block ui-heading font-semibold mb-1">Nama Penanggung Jawab (PJ) <span class="text-rose-500">*</span></label>
+                    <input type="text" id="pjm-pj" required placeholder="Nama ketua panitia / pembina / PJ kegiatan"
+                           class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
                 </div>
 
-                <!-- Upload Foto Identitas/KTM -->
+                <!-- Dokumen Identitas (Wajib Sesuai PRD Section 5) -->
                 <div>
                     <label class="block ui-heading font-semibold mb-1">
-                        Foto Identitas / KTM <span class="ui-muted text-xs font-normal">(Opsional)</span>
+                        Dokumen Identitas (KTM / KTP / Kartu Organisasi) <span class="text-rose-500">* (Wajib)</span>
                     </label>
                     <div class="border-2 border-dashed border-orange-200 dark:border-gray-700 hover:border-[#FF7300] rounded-xl p-3 text-center transition-all bg-[#FFF7ED]/50 dark:bg-transparent">
-                        <input type="file" id="pinjam-foto-identitas" accept="image/*" class="hidden" onchange="previewImagePinjam(event)">
-                        <div id="preview-container-pinjam" class="hidden space-y-2">
-                            <img id="preview-img-pinjam" src="" class="h-28 mx-auto rounded-lg object-contain border border-orange-200 dark:border-gray-700">
-                            <button type="button" onclick="hapusPreviewPinjam()" class="text-xs text-rose-500 hover:underline">
-                                <i class="fa-solid fa-trash mr-1"></i>Hapus Foto
+                        <input type="file" id="pjm-foto-identitas" accept="image/*" class="hidden" onchange="previewFotoIdentitas(event)">
+                        <div id="preview-container-identitas" class="hidden space-y-2">
+                            <img id="preview-img-identitas" src="" class="h-28 mx-auto rounded-lg object-contain border border-orange-200 dark:border-gray-700">
+                            <button type="button" onclick="hapusFotoIdentitas()" class="text-xs text-rose-500 hover:underline">
+                                <i class="fa-solid fa-trash mr-1"></i>Ganti / Hapus Identitas
                             </button>
                         </div>
-                        <div id="upload-placeholder-pinjam" onclick="document.getElementById('pinjam-foto-identitas').click()" class="cursor-pointer space-y-1">
+                        <div id="upload-placeholder-identitas" onclick="document.getElementById('pjm-foto-identitas').click()" class="cursor-pointer space-y-1">
                             <i class="fa-solid fa-id-card text-2xl text-[#FF7300]"></i>
-                            <p class="text-xs ui-body font-medium">Klik untuk upload foto KTM / KTP</p>
-                            <p class="text-[10px] ui-muted">Otomatis di-compress agar upload kilat</p>
+                            <p class="text-xs ui-body font-medium">Klik untuk upload foto KTM / KTP / Kartu Identitas</p>
+                            <p class="text-[10px] ui-muted">File otomatis di-compress aman (maksimal 2MB)</p>
                         </div>
                     </div>
+                </div>
+
+                <!-- Tanggal & Keperluan -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block ui-heading font-semibold mb-1">Tanggal Pengambilan <span class="text-rose-500">*</span></label>
+                        <input type="date" id="pjm-tgl-ambil" required
+                               class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
+                    </div>
+                    <div>
+                        <label class="block ui-heading font-semibold mb-1">Tanggal Pengembalian <span class="text-rose-500">*</span></label>
+                        <input type="date" id="pjm-tgl-kembali" required
+                               class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block ui-heading font-semibold mb-1">Tujuan / Keperluan Peminjaman <span class="text-rose-500">*</span></label>
+                    <textarea id="pjm-tujuan" rows="2" required placeholder="Sebutkan nama kegiatan dan peruntukan barang..."
+                              class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]"></textarea>
+                </div>
+
+                <div>
+                    <label class="block ui-heading font-semibold mb-1">Catatan Tambahan <span class="ui-muted font-normal text-xs">(Opsional)</span></label>
+                    <input type="text" id="pjm-catatan" placeholder="Kebutuhan khusus atau catatan lain..."
+                           class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
+                </div>
+
+                <!-- Info Ketentuan Singkat -->
+                <div class="p-3 rounded-xl bg-orange-500/10 border border-orange-500/20 text-[11px] ui-body leading-relaxed">
+                    <p><i class="fa-solid fa-circle-info text-[#FF7300] mr-1"></i> <strong>Catatan:</strong> Pengajuan ini tidak langsung mengurangi stok. Admin logistik akan memverifikasi ketersediaan barang dan menghubungi Anda melalui WhatsApp beserta Surat Perjanjian Peminjaman.</p>
                 </div>
 
                 <div class="pt-2 flex justify-end gap-2">
-                    <button type="button" onclick="tutupModal('modal-pinjam')" class="px-4 py-2.5 rounded-xl ui-pill ui-body font-semibold">Batal</button>
-                    <button type="submit" id="btn-submit-pinjam" class="px-5 py-2.5 rounded-xl btn-kabinet font-bold flex items-center gap-2 shadow-md">
-                        <i class="fa-solid fa-paper-plane"></i> Kirim Pengajuan
+                    <button type="button" onclick="tutupModal('modal-form-pengajuan')" class="px-4 py-2.5 rounded-xl ui-pill ui-body font-semibold">Batal</button>
+                    <button type="submit" id="btn-submit-pengajuan" class="px-5 py-2.5 rounded-xl btn-kabinet font-bold flex items-center gap-2 shadow-md">
+                        <i class="fa-solid fa-paper-plane"></i> Kirim Pengajuan Sekarang
                     </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- SCRIPT -->
+
+    <!-- ============================================================== -->
+    <!-- JAVASCRIPT LOGIKA UTAMA KATALOG & KERANJANG -->
+    <!-- ============================================================== -->
     <script>
         const STORAGE_KEY_API   = "PINJAM_IMIP_API_URL";
+        const STORAGE_KEY_CART  = "PINJAM_IMIP_CART";
         const STORAGE_KEY_LOCAL = "PINJAM_IMIP_LOCAL_DB";
 
         let currentCategory = "Semua";
+        let cart = []; // Array of { id_barang, nama_barang, foto_url, kategori, kondisi, jumlah, max_stok }
 
         let localDB = {
             barang: [
@@ -340,22 +459,31 @@
             peminjaman: []
         };
 
+        // Load local memory
         try {
-            const saved = localStorage.getItem(STORAGE_KEY_LOCAL);
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                if (parsed.barang && parsed.barang.length) localDB.barang = parsed.barang;
+            const savedLocal = localStorage.getItem(STORAGE_KEY_LOCAL);
+            if (savedLocal) {
+                const parsed = JSON.parse(savedLocal);
+                if (parsed.barang) localDB.barang = parsed.barang;
                 if (parsed.peminjaman) localDB.peminjaman = parsed.peminjaman;
             }
+            const savedCart = localStorage.getItem(STORAGE_KEY_CART);
+            if (savedCart) cart = JSON.parse(savedCart);
         } catch(e) {}
 
         function saveLocalDB() {
             localStorage.setItem(STORAGE_KEY_LOCAL, JSON.stringify(localDB));
         }
 
+        function saveCart() {
+            localStorage.setItem(STORAGE_KEY_CART, JSON.stringify(cart));
+            updateCartBadge();
+        }
+
         window.addEventListener('DOMContentLoaded', () => {
             initTheme();
-            refreshData();
+            updateCartBadge();
+            refreshKatalogOnline();
         });
 
         function initTheme() {
@@ -387,13 +515,12 @@
             return (localStorage.getItem(STORAGE_KEY_API) || "").trim();
         }
 
-        async function refreshData() {
+        async function refreshKatalogOnline() {
             const apiUrl = getApiUrl();
             if (!apiUrl) {
                 renderKatalog();
                 return;
             }
-
             document.getElementById('katalog-loading').classList.remove('hidden');
             try {
                 const res = await fetch(`${apiUrl}?action=get_katalog`);
@@ -402,12 +529,9 @@
                     localDB.barang = json.barang;
                     saveLocalDB();
                 }
-            } catch (err) {
-                console.warn("API offline, fallback lokal:", err);
-            } finally {
-                document.getElementById('katalog-loading').classList.add('hidden');
-                renderKatalog();
-            }
+            } catch(e) {}
+            document.getElementById('katalog-loading').classList.add('hidden');
+            renderKatalog();
         }
 
         function setCategoryFilter(cat) {
@@ -429,6 +553,7 @@
             if (!grid) return;
 
             const filtered = localDB.barang.filter(item => {
+                if (item.status === "Diarsipkan") return false;
                 const matchCat = (currentCategory === "Semua") || (item.kategori === currentCategory);
                 const matchQuery = (item.nama_barang || "").toLowerCase().includes(query) || 
                                    (item.deskripsi || "").toLowerCase().includes(query);
@@ -444,26 +569,36 @@
 
             filtered.forEach(item => {
                 const tersedia = parseInt(item.stok_tersedia, 10) || 0;
-                const isAvailable = tersedia > 0;
+                let statusLabel = "Tersedia";
+                let statusBadgeClass = "bg-[#FF7300] text-white";
+
+                if (tersedia <= 0) {
+                    statusLabel = "Sedang tidak tersedia";
+                    statusBadgeClass = "bg-rose-600 text-white";
+                } else if (tersedia === 1) {
+                    statusLabel = "Stok Terbatas (1)";
+                    statusBadgeClass = "bg-amber-500 text-white";
+                } else {
+                    statusLabel = `Tersedia (${tersedia})`;
+                    statusBadgeClass = "bg-[#FF7300] text-white";
+                }
 
                 const card = document.createElement('div');
                 card.className = "ui-card rounded-2xl overflow-hidden flex flex-col justify-between hover:border-orange-400 transition-all duration-300";
                 card.innerHTML = `
-                    <div>
-                        <!-- Foto Barang -->
+                    <div class="cursor-pointer" onclick="bukaModalDetail('${item.id_barang}')">
                         <div class="relative h-48 w-full bg-gray-200 dark:bg-gray-800 overflow-hidden">
                             <img src="${item.foto_url || 'IMIP.png'}" alt="${item.nama_barang}" 
                                  class="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                                  onerror="this.src='IMIP.png'">
-                            <span class="absolute top-3 left-3 px-2.5 py-1 rounded-lg text-xs font-bold uppercase backdrop-blur-md ${isAvailable ? 'bg-[#FF7300] text-white shadow-md' : 'bg-rose-600 text-white'}">
-                                ${isAvailable ? `Tersedia (${tersedia})` : 'Sedang Habis'}
+                            <span class="absolute top-3 left-3 px-2.5 py-1 rounded-lg text-xs font-bold uppercase backdrop-blur-md ${statusBadgeClass} shadow-md">
+                                ${statusLabel}
                             </span>
                             <span class="absolute top-3 right-3 px-2.5 py-1 rounded-lg text-xs font-semibold bg-black/60 text-white">
                                 ${item.kategori || 'Umum'}
                             </span>
                         </div>
 
-                        <!-- Info Barang (Teks Tajam & Jelas) -->
                         <div class="p-5 space-y-2">
                             <h3 class="font-outfit font-extrabold text-lg ui-heading leading-snug">
                                 ${item.nama_barang}
@@ -471,18 +606,21 @@
                             <p class="text-xs ui-muted leading-relaxed line-clamp-2">
                                 ${item.deskripsi || 'Tidak ada deskripsi tambahan.'}
                             </p>
-                            <div class="pt-2 text-xs flex items-center gap-1.5 font-semibold text-[#FF7300]">
-                                <i class="fa-solid fa-circle-check text-[11px]"></i>
-                                <span>Kondisi: ${item.kondisi || 'Bagus / Prima'}</span>
+                            <div class="pt-2 text-xs flex items-center justify-between">
+                                <span class="font-semibold text-[#FF7300]">
+                                    <i class="fa-solid fa-circle-check text-[11px] mr-1"></i>${item.kondisi || 'Bagus'}
+                                </span>
+                                <span class="text-xs ui-muted font-medium">
+                                    Total: ${item.stok_total || 1} unit
+                                </span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Tombol Aksi -->
                     <div class="p-5 pt-0">
-                        <button onclick="bukaModalPinjam('${item.id_barang}')" ${!isAvailable ? 'disabled' : ''} 
-                                class="w-full py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 ${isAvailable ? 'btn-kabinet shadow-md' : 'bg-gray-300 dark:bg-gray-800 text-gray-500 cursor-not-allowed'}">
-                            <i class="fa-solid fa-hand-holding-hand"></i> ${isAvailable ? 'Ajukan Peminjaman' : 'Stok Sedang Habis'}
+                        <button onclick="tambahKeKeranjang('${item.id_barang}')" ${tersedia <= 0 ? 'disabled' : ''} 
+                                class="w-full py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 ${tersedia > 0 ? 'btn-kabinet shadow-md' : 'bg-gray-300 dark:bg-gray-800 text-gray-500 cursor-not-allowed'}">
+                            <i class="fa-solid fa-cart-plus"></i> ${tersedia > 0 ? 'Tambah ke Keranjang' : 'Stok Habis'}
                         </button>
                     </div>
                 `;
@@ -490,68 +628,275 @@
             });
         }
 
-        // PENGAJUAN PINJAM
-        let base64FotoKtm = "";
+        // ==========================================
+        // MODAL DETAIL BARANG
+        // ==========================================
+        function bukaModalDetail(idBarang) {
+            const item = localDB.barang.find(b => String(b.id_barang) === String(idBarang));
+            if (!item) return;
 
-        function bukaModalPinjam(idBarang) {
-            const barang = localDB.barang.find(b => String(b.id_barang) === String(idBarang));
-            if (!barang) return;
+            document.getElementById('detail-foto').src = item.foto_url || 'IMIP.png';
+            document.getElementById('detail-nama').innerText = item.nama_barang;
+            document.getElementById('detail-kategori').innerText = item.kategori;
+            document.getElementById('detail-deskripsi').innerText = item.deskripsi || 'Tidak ada deskripsi tambahan.';
+            document.getElementById('detail-kondisi').innerText = item.kondisi || 'Bagus / Prima';
+            document.getElementById('detail-total-stok').innerText = item.stok_total || 1;
 
-            document.getElementById('pinjam-id-barang').value = barang.id_barang;
-            document.getElementById('form-pinjam-nama').innerText = barang.nama_barang;
-            document.getElementById('form-pinjam-kategori').innerText = barang.kategori;
-            document.getElementById('form-pinjam-stok').innerText = `Sisa Stok: ${barang.stok_tersedia} unit`;
-            document.getElementById('form-pinjam-foto').src = barang.foto_url || 'IMIP.png';
+            const tersedia = parseInt(item.stok_tersedia, 10) || 0;
+            const badge = document.getElementById('detail-badge-stok');
+            const btnCart = document.getElementById('detail-btn-cart');
 
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('pinjam-tgl-mulai').value = today;
-            document.getElementById('pinjam-tgl-mulai').min = today;
-            document.getElementById('pinjam-tgl-selesai').value = today;
-            document.getElementById('pinjam-tgl-selesai').min = today;
+            if (tersedia <= 0) {
+                badge.innerText = "Sedang tidak tersedia";
+                badge.className = "absolute bottom-3 left-3 px-3 py-1 rounded-lg text-xs font-bold uppercase bg-rose-600 text-white";
+                btnCart.disabled = true;
+                btnCart.className = "w-full py-2.5 rounded-xl bg-gray-300 dark:bg-gray-800 text-gray-500 font-bold text-xs cursor-not-allowed";
+                btnCart.innerText = "Stok Sedang Habis";
+            } else {
+                badge.innerText = `Tersedia: ${tersedia} Unit`;
+                badge.className = "absolute bottom-3 left-3 px-3 py-1 rounded-lg text-xs font-bold uppercase bg-[#FF7300] text-white";
+                btnCart.disabled = false;
+                btnCart.className = "w-full py-2.5 rounded-xl btn-kabinet font-bold text-xs flex items-center justify-center gap-2 shadow-md";
+                btnCart.innerHTML = `<i class="fa-solid fa-cart-plus"></i> Tambah ke Keranjang`;
+                btnCart.onclick = () => {
+                    tutupModal('modal-detail');
+                    tambahKeKeranjang(item.id_barang);
+                };
+            }
 
-            hapusPreviewPinjam();
-            bukaModal('modal-pinjam');
+            bukaModal('modal-detail');
         }
 
-        function previewImagePinjam(e) {
-            const file = e.target.files[0];
-            if (!file) return;
+        // ==========================================
+        // LOGIKA KERANJANG (MULTI-ITEM CART)
+        // ==========================================
+        function tambahKeKeranjang(idBarang) {
+            const item = localDB.barang.find(b => String(b.id_barang) === String(idBarang));
+            if (!item) return;
 
-            compressImage(file, 900, 0.7, (base64) => {
-                base64FotoKtm = base64;
-                document.getElementById('preview-img-pinjam').src = base64;
-                document.getElementById('preview-container-pinjam').classList.remove('hidden');
-                document.getElementById('upload-placeholder-pinjam').classList.add('hidden');
+            const tersedia = parseInt(item.stok_tersedia, 10) || 0;
+            if (tersedia <= 0) {
+                Swal.fire({ icon: 'warning', title: 'Stok Habis', text: 'Barang ini sedang tidak tersedia.', timer: 1500, showConfirmButton: false });
+                return;
+            }
+
+            const existing = cart.find(c => String(c.id_barang) === String(idBarang));
+            if (existing) {
+                if (existing.jumlah < tersedia) {
+                    existing.jumlah += 1;
+                    Swal.fire({ icon: 'success', title: 'Jumlah Ditambah', text: `${item.nama_barang} (${existing.jumlah} unit)`, timer: 1000, showConfirmButton: false });
+                } else {
+                    Swal.fire({ icon: 'info', title: 'Batas Stok Tercapai', text: `Maksimal unit tersedia saat ini adalah ${tersedia}.`, timer: 1500, showConfirmButton: false });
+                }
+            } else {
+                cart.push({
+                    id_barang: item.id_barang,
+                    nama_barang: item.nama_barang,
+                    foto_url: item.foto_url || 'IMIP.png',
+                    kategori: item.kategori,
+                    kondisi: item.kondisi || 'Bagus',
+                    jumlah: 1,
+                    max_stok: tersedia
+                });
+                Swal.fire({ icon: 'success', title: 'Masuk Keranjang!', text: item.nama_barang, timer: 1000, showConfirmButton: false });
+            }
+
+            saveCart();
+        }
+
+        function updateCartBadge() {
+            const totalQty = cart.reduce((acc, it) => acc + (it.jumlah || 1), 0);
+            const badge = document.getElementById('cart-badge-count');
+            if (badge) badge.innerText = totalQty;
+
+            const floating = document.getElementById('floating-cart-bar');
+            const floatingText = document.getElementById('floating-cart-summary');
+            if (totalQty > 0) {
+                if (floating) floating.classList.remove('hidden');
+                if (floatingText) floatingText.innerText = `${totalQty} Unit Barang Dipilih`;
+            } else {
+                if (floating) floating.classList.add('hidden');
+            }
+        }
+
+        function bukaModalKeranjang() {
+            renderKeranjang();
+            bukaModal('modal-keranjang');
+        }
+
+        function renderKeranjang() {
+            const container = document.getElementById('cart-items-container');
+            const emptyState = document.getElementById('cart-empty-state');
+            const actionContainer = document.getElementById('cart-action-container');
+            if (!container) return;
+
+            container.innerHTML = "";
+            if (cart.length === 0) {
+                emptyState.classList.remove('hidden');
+                actionContainer.classList.add('hidden');
+                return;
+            }
+            emptyState.classList.add('hidden');
+            actionContainer.classList.remove('hidden');
+
+            cart.forEach((it, idx) => {
+                const el = document.createElement('div');
+                el.className = "ui-pill p-3 rounded-xl flex items-center justify-between gap-3";
+                el.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <img src="${it.foto_url || 'IMIP.png'}" class="w-12 h-12 rounded-lg object-cover bg-gray-200 dark:bg-gray-800 border border-orange-200 dark:border-gray-700">
+                        <div>
+                            <h4 class="font-bold text-xs sm:text-sm ui-heading leading-tight">${it.nama_barang}</h4>
+                            <span class="text-[11px] text-[#FF7300] font-semibold">${it.kategori || 'Umum'}</span>
+                            <p class="text-[10px] ui-muted">Maksimal: ${it.max_stok} unit</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <button onclick="ubahJumlahItemKeranjang(${idx}, -1)" class="w-7 h-7 rounded-lg bg-gray-200 dark:bg-gray-800 text-xs font-bold ui-heading hover:bg-[#FF7300] hover:text-white transition-all flex items-center justify-center">
+                            <i class="fa-solid fa-minus"></i>
+                        </button>
+                        <span class="w-6 text-center font-bold text-sm ui-heading">${it.jumlah}</span>
+                        <button onclick="ubahJumlahItemKeranjang(${idx}, 1)" class="w-7 h-7 rounded-lg bg-gray-200 dark:bg-gray-800 text-xs font-bold ui-heading hover:bg-[#FF7300] hover:text-white transition-all flex items-center justify-center">
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
+                        <button onclick="hapusItemKeranjang(${idx})" class="w-7 h-7 rounded-lg text-rose-500 hover:bg-rose-500/10 transition-all flex items-center justify-center ml-1">
+                            <i class="fa-solid fa-trash text-xs"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(el);
             });
         }
 
-        function hapusPreviewPinjam() {
-            base64FotoKtm = "";
-            const fileInput = document.getElementById('pinjam-foto-identitas');
-            if (fileInput) fileInput.value = "";
-            document.getElementById('preview-container-pinjam')?.classList.add('hidden');
-            document.getElementById('upload-placeholder-pinjam')?.classList.remove('hidden');
+        function ubahJumlahItemKeranjang(idx, delta) {
+            if (!cart[idx]) return;
+            const newQty = cart[idx].jumlah + delta;
+            if (newQty <= 0) {
+                hapusItemKeranjang(idx);
+                return;
+            }
+            if (newQty > cart[idx].max_stok) {
+                Swal.fire({ icon: 'info', title: 'Batas Stok', text: `Maksimal tersedia adalah ${cart[idx].max_stok} unit.`, timer: 1500, showConfirmButton: false });
+                return;
+            }
+            cart[idx].jumlah = newQty;
+            saveCart();
+            renderKeranjang();
         }
 
-        async function submitFormPinjam(e) {
-            e.preventDefault();
-            const btn = document.getElementById('btn-submit-pinjam');
-            btn.disabled = true;
-            btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Mengirim...`;
+        function hapusItemKeranjang(idx) {
+            cart.splice(idx, 1);
+            saveCart();
+            renderKeranjang();
+        }
 
-            const idBarang = document.getElementById('pinjam-id-barang').value;
-            const targetBarang = localDB.barang.find(b => String(b.id_barang) === String(idBarang));
+        function kosongkanKeranjang() {
+            cart = [];
+            saveCart();
+            renderKeranjang();
+        }
+
+        // ==========================================
+        // FORM PENGAJUAN PINJAM
+        // ==========================================
+        let base64DokumenIdentitas = "";
+
+        function lanjutKeFormPengajuan() {
+            if (cart.length === 0) {
+                Swal.fire({ icon: 'warning', title: 'Keranjang Kosong', text: 'Pilih minimal satu barang.', timer: 1500, showConfirmButton: false });
+                return;
+            }
+
+            tutupModal('modal-keranjang');
+
+            // Render summary items in form
+            const summaryEl = document.getElementById('form-summary-items');
+            summaryEl.innerHTML = "";
+            cart.forEach(it => {
+                const row = document.createElement('div');
+                row.className = "flex items-center justify-between text-xs ui-body border-b border-orange-200/50 dark:border-gray-800 pb-1";
+                row.innerHTML = `
+                    <span class="font-semibold ui-heading">• ${it.nama_barang}</span>
+                    <span class="font-bold text-[#FF7300]">${it.jumlah} unit</span>
+                `;
+                summaryEl.appendChild(row);
+            });
+
+            // Set default dates (hari ini & lusa)
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('pjm-tgl-ambil').value = today;
+            document.getElementById('pjm-tgl-ambil').min = today;
+            document.getElementById('pjm-tgl-kembali').value = today;
+            document.getElementById('pjm-tgl-kembali').min = today;
+
+            hapusFotoIdentitas();
+            bukaModal('modal-form-pengajuan');
+        }
+
+        function previewFotoIdentitas(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            compressImage(file, 1000, 0.75, (base64) => {
+                base64DokumenIdentitas = base64;
+                document.getElementById('preview-img-identitas').src = base64;
+                document.getElementById('preview-container-identitas').classList.remove('hidden');
+                document.getElementById('upload-placeholder-identitas').classList.add('hidden');
+            });
+        }
+
+        function hapusFotoIdentitas() {
+            base64DokumenIdentitas = "";
+            const fileInput = document.getElementById('pjm-foto-identitas');
+            if (fileInput) fileInput.value = "";
+            document.getElementById('preview-container-identitas')?.classList.add('hidden');
+            document.getElementById('upload-placeholder-identitas')?.classList.remove('hidden');
+        }
+
+        async function submitFormPengajuan(e) {
+            e.preventDefault();
+
+            // Validasi wajib Dokumen Identitas sesuai PRD Section 5
+            if (!base64DokumenIdentitas) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Dokumen Identitas Wajib',
+                    text: 'Silakan unggah foto KTM, KTP, atau kartu identitas organisasi penanggung jawab.',
+                    confirmButtonColor: '#FF7300'
+                });
+                return;
+            }
+
+            const tglAmbil = document.getElementById('pjm-tgl-ambil').value;
+            const tglKembali = document.getElementById('pjm-tgl-kembali').value;
+            if (tglKembali < tglAmbil) {
+                Swal.fire({ icon: 'warning', title: 'Tanggal Tidak Valid', text: 'Tanggal pengembalian tidak boleh lebih awal dari tanggal pengambilan.', confirmButtonColor: '#FF7300' });
+                return;
+            }
+
+            const btn = document.getElementById('btn-submit-pengajuan');
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Mengirim Pengajuan...`;
 
             const payload = {
                 action: "ajukan_pinjam",
-                id_barang: idBarang,
-                nama_peminjam: document.getElementById('pinjam-nama').value.trim(),
-                kontak_wa: document.getElementById('pinjam-wa').value.trim(),
-                divisi_instansi: document.getElementById('pinjam-divisi').value.trim(),
-                tgl_pinjam: document.getElementById('pinjam-tgl-mulai').value,
-                tgl_kembali: document.getElementById('pinjam-tgl-selesai').value,
-                keperluan: document.getElementById('pinjam-keperluan').value.trim(),
-                foto_identitas: base64FotoKtm
+                nama_peminjam: document.getElementById('pjm-nama').value.trim(),
+                kontak_wa: document.getElementById('pjm-wa').value.trim(),
+                asal_organisasi: document.getElementById('pjm-organisasi').value.trim(),
+                kategori_peminjam: document.getElementById('pjm-kategori').value,
+                nama_penanggung_jawab: document.getElementById('pjm-pj').value.trim(),
+                tgl_pengambilan: tglAmbil,
+                tgl_pengembalian: tglKembali,
+                tujuan: document.getElementById('pjm-tujuan').value.trim(),
+                catatan_tambahan: document.getElementById('pjm-catatan').value.trim(),
+                dokumen_identitas: base64DokumenIdentitas,
+                items: cart.map(it => ({
+                    id_barang: it.id_barang,
+                    nama_barang: it.nama_barang,
+                    jumlah: it.jumlah,
+                    kondisi: it.kondisi
+                }))
             };
 
             const apiUrl = getApiUrl();
@@ -564,52 +909,67 @@
                         body: JSON.stringify(payload)
                     });
                     const resJson = await res.json();
+                    if (!resJson.success) {
+                        throw new Error(resJson.message || "Gagal mengirim pengajuan");
+                    }
                     if (resJson.id_pinjam) idPinjam = resJson.id_pinjam;
                 } catch(err) {
-                    console.warn("Gagal POST ke API:", err);
+                    console.warn("Gagal POST ke API, fallback simpan lokal:", err);
                 }
             }
 
+            // Simpan ke local DB
             localDB.peminjaman.unshift({
                 id_pinjam: idPinjam,
-                id_barang: idBarang,
-                nama_barang: targetBarang ? targetBarang.nama_barang : "Barang",
+                no_surat: "",
                 nama_peminjam: payload.nama_peminjam,
                 kontak_wa: payload.kontak_wa,
-                divisi_instansi: payload.divisi_instansi,
-                tgl_pinjam: payload.tgl_pinjam,
-                tgl_kembali: payload.tgl_kembali,
-                keperluan: payload.keperluan,
-                foto_identitas: base64FotoKtm,
-                status: "MENUNGGU",
+                asal_organisasi: payload.asal_organisasi,
+                kategori_peminjam: payload.kategori_peminjam,
+                nama_penanggung_jawab: payload.nama_penanggung_jawab,
+                items_json: JSON.stringify(payload.items),
+                tgl_pengambilan: payload.tgl_pengambilan,
+                tgl_pengembalian: payload.tgl_pengembalian,
+                tujuan: payload.tujuan,
+                catatan_tambahan: payload.catatan_tambahan,
+                dokumen_identitas: base64DokumenIdentitas,
+                status: "MENUNGGU VERIFIKASI",
                 catatan_admin: "",
                 created_at: new Date().toISOString().replace("T", " ").substring(0, 19)
             });
             saveLocalDB();
 
+            // Reset cart & form
+            cart = [];
+            saveCart();
+            document.getElementById('form-pengajuan-pinjam').reset();
+            hapusFotoIdentitas();
+            tutupModal('modal-form-pengajuan');
+
             btn.disabled = false;
-            btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Kirim Pengajuan`;
-            tutupModal('modal-pinjam');
-            document.getElementById('form-pengajuan').reset();
-            hapusPreviewPinjam();
+            btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Kirim Pengajuan Sekarang`;
 
             Swal.fire({
                 icon: 'success',
                 title: 'Pengajuan Berhasil Dikirim!',
                 html: `
-                    <p class="text-xs text-gray-500 mb-2">Simpan ID Peminjaman Anda:</p>
-                    <div class="p-2.5 rounded-xl bg-orange-100 dark:bg-gray-800 text-[#FF7300] font-mono font-bold text-sm select-all">
+                    <p class="text-xs ui-muted mb-2">Simpan Nomor Referensi Anda:</p>
+                    <div class="p-3 rounded-xl bg-orange-100 dark:bg-gray-800 text-[#FF7300] font-mono font-bold text-base select-all">
                         ${idPinjam}
                     </div>
-                    <p class="text-xs text-gray-500 mt-2">Pengurus akan segera meninjau dan menghubungi Anda melalui WhatsApp.</p>
+                    <p class="text-xs ui-muted mt-3">
+                        Status saat ini: <strong class="text-amber-500">MENUNGGU VERIFIKASI</strong>.<br>
+                        Anda dapat memeriksa perkembangan pengajuan kapan saja di halaman <a href="status.html" class="text-[#FF7300] font-bold underline">Cek Status Peminjaman</a>.
+                    </p>
                 `,
                 confirmButtonText: 'Tutup',
                 confirmButtonColor: '#FF7300'
             });
-
-            renderKatalog();
         }
 
+        // ==========================================
+        // HELPERS
+        // ==========================================
         function bukaModal(id) { document.getElementById(id)?.classList.remove('hidden'); }
         function tutupModal(id) { document.getElementById(id)?.classList.add('hidden'); }
 

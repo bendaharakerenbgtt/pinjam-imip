@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pinjamip — Panel Admin & Logistik</title>
+    <title>Pinjamip — Dashboard Pengurus Logistik</title>
     <link rel="icon" href="icons/icon-192.png" type="image/png">
     <meta name="theme-color" content="#FAF5EF">
 
@@ -67,11 +67,7 @@
         .ui-heading { color: var(--text-heading) !important; }
         .ui-body { color: var(--text-body) !important; }
         .ui-muted { color: var(--text-muted) !important; }
-
-        .ui-pill {
-            background: var(--bg-pill);
-            border: 1px solid var(--border-muted);
-        }
+        .ui-pill { background: var(--bg-pill); border: 1px solid var(--border-muted); }
 
         .btn-kabinet {
             background-color: #FF7300;
@@ -87,12 +83,31 @@
             background-color: rgba(15, 23, 42, 0.65);
             backdrop-filter: blur(4px);
         }
+
+        /* Printable Letter Format */
+        @media print {
+            body * { visibility: hidden; }
+            #printable-surat, #printable-surat * { visibility: visible; }
+            #printable-surat {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                margin: 0;
+                padding: 1.5cm;
+                box-shadow: none;
+                border: none;
+                background: #FFFFFF !important;
+                color: #000000 !important;
+            }
+            .no-print { display: none !important; }
+        }
     </style>
 </head>
-<body class="selection:bg-orange-500 selection:text-white pb-16">
+<body class="selection:bg-orange-500 selection:text-white pb-20">
 
     <!-- TOP NAVBAR ADMIN -->
-    <header class="sticky top-0 z-40 w-full px-3 sm:px-6 pt-3 pb-2">
+    <header class="sticky top-0 z-40 w-full px-3 sm:px-6 pt-3 pb-2 no-print">
         <div class="max-w-6xl mx-auto ui-card rounded-2xl px-4 py-3 flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <a href="index.html" class="flex items-center gap-2 text-xs font-semibold ui-muted hover:text-[#FF7300]">
@@ -106,9 +121,6 @@
                 <button onclick="toggleTheme()" class="w-9 h-9 rounded-xl ui-pill flex items-center justify-center ui-body hover:text-[#FF7300]">
                     <i id="theme-icon" class="fa-solid fa-moon text-sm"></i>
                 </button>
-                <button onclick="bukaModalPengaturanApi()" class="px-3 py-2 rounded-xl ui-pill text-xs font-semibold ui-body hover:text-[#FF7300] flex items-center gap-1.5" title="Koneksi Google Script">
-                    <i class="fa-solid fa-gear text-[#FF7300]"></i> <span class="hidden sm:inline">Google Script</span>
-                </button>
                 <button id="btn-logout" onclick="logoutAdmin()" class="hidden px-3 py-2 rounded-xl bg-rose-500/15 text-rose-500 border border-rose-500/30 text-xs font-semibold hover:bg-rose-500/25 flex items-center gap-1.5">
                     <i class="fa-solid fa-right-from-bracket"></i> Keluar
                 </button>
@@ -116,17 +128,17 @@
         </div>
     </header>
 
-    <!-- CONTENT WRAPPER -->
-    <main class="max-w-6xl mx-auto px-4 sm:px-6 pt-4">
+    <!-- MAIN CONTENT -->
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 pt-4 space-y-6 no-print">
 
-        <!-- 1. LOGIN FORM -->
+        <!-- 1. LOGIN CONTAINER -->
         <div id="section-login" class="max-w-md mx-auto my-12 ui-card rounded-2xl p-6 sm:p-8 space-y-5 text-center border-orange-200">
             <div class="w-14 h-14 rounded-2xl bg-orange-500/10 text-[#FF7300] border border-orange-500/20 flex items-center justify-center mx-auto text-2xl">
                 <i class="fa-solid fa-shield-halved"></i>
             </div>
             <div>
                 <h2 class="text-xl font-bold font-outfit ui-heading">Verifikasi Pengurus</h2>
-                <p class="text-xs ui-muted mt-1">Masukkan PIN Admin untuk meninjau data peminjaman.</p>
+                <p class="text-xs ui-muted mt-1">Masukkan PIN Admin untuk mengakses dashboard peminjaman inventaris.</p>
             </div>
 
             <form onsubmit="submitLoginAdmin(event)" class="space-y-4">
@@ -139,83 +151,354 @@
             </form>
         </div>
 
-        <!-- 2. DASHBOARD CONTAINER -->
+        <!-- 2. DASHBOARD CONTAINER (AFTER LOGIN) -->
         <div id="section-dashboard" class="space-y-6 hidden">
-            <!-- Metric Cards -->
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+
+            <!-- Ringkasan Statistik Operasional (PRD Section 7.1) -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
                 <div class="ui-card p-4 rounded-2xl border-l-4 border-l-[#FF7300]">
-                    <span class="text-[11px] ui-muted font-bold uppercase">Menunggu Tinjau</span>
+                    <span class="text-[10px] ui-muted font-bold uppercase">Menunggu Verifikasi</span>
                     <div class="flex items-baseline justify-between mt-1">
                         <span id="stat-menunggu" class="text-2xl font-extrabold font-outfit text-[#FF7300]">0</span>
                         <i class="fa-solid fa-hourglass-half text-orange-400/40 text-lg"></i>
                     </div>
                 </div>
-                <div class="ui-card p-4 rounded-2xl border-l-4 border-l-emerald-500">
-                    <span class="text-[11px] ui-muted font-bold uppercase">Sedang Dipinjam</span>
+                <div class="ui-card p-4 rounded-2xl border-l-4 border-l-blue-500">
+                    <span class="text-[10px] ui-muted font-bold uppercase">Peminjaman Aktif</span>
                     <div class="flex items-baseline justify-between mt-1">
-                        <span id="stat-dipinjam" class="text-2xl font-extrabold font-outfit text-emerald-600 dark:text-emerald-400">0</span>
-                        <i class="fa-solid fa-hand-holding-hand text-emerald-500/40 text-lg"></i>
+                        <span id="stat-aktif" class="text-2xl font-extrabold font-outfit text-blue-500">0</span>
+                        <i class="fa-solid fa-hand-holding-hand text-blue-500/40 text-lg"></i>
+                    </div>
+                </div>
+                <div class="ui-card p-4 rounded-2xl border-l-4 border-l-rose-500">
+                    <span class="text-[10px] ui-muted font-bold uppercase">Terlambat Kembali</span>
+                    <div class="flex items-baseline justify-between mt-1">
+                        <span id="stat-terlambat" class="text-2xl font-extrabold font-outfit text-rose-500">0</span>
+                        <i class="fa-solid fa-triangle-exclamation text-rose-500/40 text-lg"></i>
                     </div>
                 </div>
                 <div class="ui-card p-4 rounded-2xl border-l-4 border-l-amber-500">
-                    <span class="text-[11px] ui-muted font-bold uppercase">Total Barang</span>
+                    <span class="text-[10px] ui-muted font-bold uppercase">Barang Dipinjam</span>
                     <div class="flex items-baseline justify-between mt-1">
-                        <span id="stat-total-barang" class="text-2xl font-extrabold font-outfit text-amber-500">0</span>
-                        <i class="fa-solid fa-boxes-stacked text-amber-500/40 text-lg"></i>
+                        <span id="stat-barang-dipinjam" class="text-2xl font-extrabold font-outfit text-amber-500">0</span>
+                        <i class="fa-solid fa-boxes-packing text-amber-500/40 text-lg"></i>
                     </div>
                 </div>
-                <div class="ui-card p-4 rounded-2xl border-l-4 border-l-blue-500">
-                    <span class="text-[11px] ui-muted font-bold uppercase">Total Riwayat</span>
+                <div class="ui-card p-4 rounded-2xl border-l-4 border-l-emerald-500 col-span-2 sm:col-span-1">
+                    <span class="text-[10px] ui-muted font-bold uppercase">Barang Tersedia</span>
                     <div class="flex items-baseline justify-between mt-1">
-                        <span id="stat-total-riwayat" class="text-2xl font-extrabold font-outfit text-blue-500">0</span>
-                        <i class="fa-solid fa-clipboard-list text-blue-500/40 text-lg"></i>
+                        <span id="stat-barang-tersedia" class="text-2xl font-extrabold font-outfit text-emerald-600 dark:text-emerald-400">0</span>
+                        <i class="fa-solid fa-boxes-stacked text-emerald-500/40 text-lg"></i>
                     </div>
                 </div>
             </div>
 
-            <!-- Sub Navigation Tabs -->
-            <div class="flex items-center justify-between border-b border-orange-200 dark:border-gray-800 pb-2">
-                <div class="flex gap-2">
-                    <button onclick="switchAdminTab('tinjau')" id="tab-btn-tinjau" class="px-4 py-2 rounded-xl text-xs font-bold transition-all btn-kabinet shadow-sm flex items-center gap-1.5">
-                        <i class="fa-solid fa-inbox"></i> Permintaan Masuk
-                        <span id="badge-menunggu" class="hidden px-1.5 py-0.2 rounded-full bg-white text-[#FF7300] text-[10px] font-bold">0</span>
-                    </button>
-                    <button onclick="switchAdminTab('barang')" id="tab-btn-barang" class="px-4 py-2 rounded-xl text-xs font-bold transition-all ui-pill ui-body hover:text-[#FF7300] flex items-center gap-1.5">
-                        <i class="fa-solid fa-boxes-stacked"></i> Kelola Barang
-                    </button>
-                </div>
-
-                <button onclick="bukaModalTambahBarang()" id="btn-tambah-barang-quick" class="hidden px-4 py-2 rounded-xl btn-kabinet text-xs font-bold transition-all flex items-center gap-1.5 shadow-md">
-                    <i class="fa-solid fa-plus"></i> Tambah Barang
+            <!-- Main Tabs Navigation -->
+            <div class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar border-b border-orange-200 dark:border-gray-800">
+                <button onclick="switchTab('pengajuan')" id="tab-btn-pengajuan" class="tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all btn-kabinet flex items-center gap-1.5 whitespace-nowrap">
+                    <i class="fa-solid fa-inbox"></i> Pengajuan Masuk
+                    <span id="badge-tab-menunggu" class="hidden px-1.5 py-0.2 rounded-full bg-white text-[#FF7300] text-[10px] font-bold">0</span>
+                </button>
+                <button onclick="switchTab('aktif')" id="tab-btn-aktif" class="tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all ui-pill ui-body hover:text-[#FF7300] flex items-center gap-1.5 whitespace-nowrap">
+                    <i class="fa-solid fa-clock-rotate-left"></i> Peminjaman Aktif
+                </button>
+                <button onclick="switchTab('riwayat')" id="tab-btn-riwayat" class="tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all ui-pill ui-body hover:text-[#FF7300] flex items-center gap-1.5 whitespace-nowrap">
+                    <i class="fa-solid fa-clipboard-list"></i> Riwayat
+                </button>
+                <button onclick="switchTab('inventaris')" id="tab-btn-inventaris" class="tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all ui-pill ui-body hover:text-[#FF7300] flex items-center gap-1.5 whitespace-nowrap">
+                    <i class="fa-solid fa-boxes-stacked"></i> Kelola Inventaris
+                </button>
+                <button onclick="switchTab('pengaturan')" id="tab-btn-pengaturan" class="tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all ui-pill ui-body hover:text-[#FF7300] flex items-center gap-1.5 whitespace-nowrap">
+                    <i class="fa-solid fa-gear"></i> Pengaturan
                 </button>
             </div>
 
-            <!-- SUB-TAB 1: TINJAUAN PERMINTAAN -->
-            <div id="subtab-tinjau" class="space-y-4">
+            <!-- ========================================================= -->
+            <!-- TAB 1: PENGAJUAN MASUK & APPROVAL FLOW (PRD SECTION 7 & 8) -->
+            <!-- ========================================================= -->
+            <div id="tab-pengajuan" class="tab-content space-y-4">
                 <div class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar text-xs">
-                    <button onclick="filterAdminPeminjaman('SEMUA')" class="filter-pjm-btn px-3.5 py-1.5 rounded-lg btn-kabinet font-semibold">Semua</button>
-                    <button onclick="filterAdminPeminjaman('MENUNGGU')" class="filter-pjm-btn px-3.5 py-1.5 rounded-lg ui-pill text-[#FF7300]">Menunggu Tinjau</button>
-                    <button onclick="filterAdminPeminjaman('DISETUJUI')" class="filter-pjm-btn px-3.5 py-1.5 rounded-lg ui-pill text-emerald-600 dark:text-emerald-400">Disetujui</button>
-                    <button onclick="filterAdminPeminjaman('DIKEMBALIKAN')" class="filter-pjm-btn px-3.5 py-1.5 rounded-lg ui-pill text-blue-500">Sudah Kembali</button>
-                    <button onclick="filterAdminPeminjaman('DITOLAK')" class="filter-pjm-btn px-3.5 py-1.5 rounded-lg ui-pill text-rose-500">Ditolak</button>
+                    <button onclick="filterPengajuan('SEMUA')" class="filter-pjm-btn px-3.5 py-1.5 rounded-lg btn-kabinet font-semibold">Semua</button>
+                    <button onclick="filterPengajuan('MENUNGGU VERIFIKASI')" class="filter-pjm-btn px-3.5 py-1.5 rounded-lg ui-pill text-[#FF7300]">Menunggu Verifikasi</button>
+                    <button onclick="filterPengajuan('MENUNGGU KONFIRMASI PEMINJAM')" class="filter-pjm-btn px-3.5 py-1.5 rounded-lg ui-pill text-amber-500">Menunggu Konfirmasi</button>
+                    <button onclick="filterPengajuan('DIKONFIRMASI')" class="filter-pjm-btn px-3.5 py-1.5 rounded-lg ui-pill text-emerald-600 dark:text-emerald-400">Dikonfirmasi (Siap Diambil)</button>
                 </div>
 
-                <div id="admin-peminjaman-list" class="space-y-3">
-                    <!-- Rendered dynamically -->
+                <div id="list-pengajuan" class="space-y-4">
+                    <!-- populated dynamically -->
                 </div>
             </div>
 
-            <!-- SUB-TAB 2: KELOLA BARANG -->
-            <div id="subtab-barang" class="space-y-4 hidden">
-                <div id="admin-barang-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                    <!-- Rendered dynamically -->
+            <!-- ========================================================= -->
+            <!-- TAB 2: PEMINJAMAN AKTIF & RETURN VERIFICATION (PRD 11 & 12) -->
+            <!-- ========================================================= -->
+            <div id="tab-aktif" class="tab-content space-y-4 hidden">
+                <div id="list-peminjaman-aktif" class="space-y-4">
+                    <!-- populated dynamically -->
                 </div>
             </div>
+
+            <!-- ========================================================= -->
+            <!-- TAB 3: RIWAYAT PEMINJAMAN (PRD SECTION 14) -->
+            <!-- ========================================================= -->
+            <div id="tab-riwayat" class="tab-content space-y-4 hidden">
+                <div class="flex flex-col sm:flex-row gap-2.5">
+                    <div class="relative flex-1">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 ui-muted text-sm"></i>
+                        <input type="text" id="riwayat-search" oninput="renderRiwayat()" placeholder="Cari nama peminjam atau organisasi..." 
+                               class="w-full pl-10 pr-4 py-2 rounded-xl ui-card text-xs ui-heading focus:outline-none focus:border-[#FF7300]">
+                    </div>
+                </div>
+
+                <div id="list-riwayat" class="space-y-3">
+                    <!-- populated dynamically -->
+                </div>
+            </div>
+
+            <!-- ========================================================= -->
+            <!-- TAB 4: KELOLA INVENTARIS (CRUD BARANG - PRD SECTION 13) -->
+            <!-- ========================================================= -->
+            <div id="tab-inventaris" class="tab-content space-y-4 hidden">
+                <div class="flex justify-between items-center">
+                    <p class="text-xs ui-muted">Daftar perlengkapan dan ketersediaan barang inventaris</p>
+                    <button onclick="bukaModalTambahBarang()" class="px-4 py-2 rounded-xl btn-kabinet text-xs font-bold flex items-center gap-1.5 shadow-md">
+                        <i class="fa-solid fa-plus"></i> Tambah Barang Baru
+                    </button>
+                </div>
+
+                <div id="list-inventaris-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <!-- populated dynamically -->
+                </div>
+            </div>
+
+            <!-- ========================================================= -->
+            <!-- TAB 5: PENGATURAN ORGANISASI (PRD SECTION 15) -->
+            <!-- ========================================================= -->
+            <div id="tab-pengaturan" class="tab-content space-y-4 hidden">
+                <div class="ui-card rounded-2xl p-6 max-w-xl space-y-4 border-orange-200">
+                    <h3 class="font-outfit font-bold text-lg ui-heading">Informasi Organisasi & Kontak</h3>
+
+                    <form onsubmit="simpanPengaturan(event)" class="space-y-3.5 text-xs sm:text-sm">
+                        <div>
+                            <label class="block ui-heading font-semibold mb-1">Nama Organisasi:</label>
+                            <input type="text" id="set-nama-organisasi" required value="LDK IMIP — Lembaga Dakwah Kampus"
+                                   class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
+                        </div>
+
+                        <div>
+                            <label class="block ui-heading font-semibold mb-1">Nomor WhatsApp Admin (Tujuan Chat & Kontak):</label>
+                            <input type="tel" id="set-no-wa" required value="085770976399"
+                                   class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
+                            <p class="text-[10px] ui-muted mt-0.5">Digunakan sebagai nomor pengirim & kontak resmi organisasi.</p>
+                        </div>
+
+                        <div>
+                            <label class="block ui-heading font-semibold mb-1">Alamat Institusi Kampus:</label>
+                            <input type="text" id="set-alamat" required value="Politeknik Negeri Media Kreatif Jakarta"
+                                   class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
+                        </div>
+
+                        <div>
+                            <label class="block ui-heading font-semibold mb-1">PIN Akses Admin:</label>
+                            <input type="password" id="set-pin" maxlength="10" value="123456"
+                                   class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
+                        </div>
+
+                        <div class="pt-2 border-t border-orange-200 dark:border-gray-800">
+                            <label class="block ui-heading font-semibold mb-1">Deployment URL Google Apps Script:</label>
+                            <input type="url" id="set-api-url" placeholder="https://script.google.com/macros/s/.../exec"
+                                   class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading text-xs focus:outline-none focus:border-[#FF7300]">
+                        </div>
+
+                        <div class="pt-2 flex justify-end">
+                            <button type="submit" class="px-5 py-2.5 rounded-xl btn-kabinet font-bold text-xs shadow-md">
+                                Simpan Perubahan
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
         </div>
 
     </main>
 
-    <!-- MODAL: TAMBAH / EDIT BARANG -->
+
+    <!-- ============================================================== -->
+    <!-- MODAL 1: PREVIEW & CETAK DOKUMEN SURAT PERJANJIAN (PRD 10) -->
+    <!-- ============================================================== -->
+    <div id="modal-surat" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 modal-backdrop hidden">
+        <div class="ui-card w-full max-w-3xl rounded-2xl max-h-[95vh] overflow-y-auto border border-orange-300 dark:border-white/10 flex flex-col">
+            <!-- Header Modal -->
+            <div class="p-4 border-b border-orange-200 dark:border-gray-800 flex items-center justify-between no-print">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-file-contract text-[#FF7300] text-lg"></i>
+                    <h3 class="font-outfit font-bold text-base ui-heading">Surat Perjanjian Peminjaman Barang</h3>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="cetakSuratPerjanjian()" class="px-3.5 py-1.5 rounded-xl btn-kabinet text-xs font-bold flex items-center gap-1.5 shadow-md">
+                        <i class="fa-solid fa-print"></i> Cetak / Simpan PDF
+                    </button>
+                    <button id="surat-btn-wa" onclick="kirimSuratViaWa()" class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-md">
+                        <i class="fa-brands fa-whatsapp"></i> Chat Peminjam
+                    </button>
+                    <button onclick="tutupModal('modal-surat')" class="ui-muted hover:text-gray-900 dark:hover:text-white p-1">
+                        <i class="fa-solid fa-xmark text-lg"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- KERTAS SURAT RESMI DENGAN KOP RESMI (PRD SECTION 10) -->
+            <div id="printable-surat" class="p-6 sm:p-10 bg-white text-black font-serif text-[12pt] leading-normal space-y-4">
+                <!-- KOP SURAT RESMI DARI BENDHARA2026 -->
+                <div class="w-full mb-3 text-center">
+                    <img src="surat/assets/kop_spz_official.png" alt="Kop Surat Resmi LDK IMIP" class="w-full h-auto object-contain block" onerror="this.style.display='none'">
+                </div>
+
+                <!-- Judul Surat -->
+                <div class="text-center space-y-0.5 border-b-2 border-black pb-2">
+                    <h2 class="font-bold tracking-wider text-sm uppercase underline" style="font-family: 'Times New Roman', serif;">SURAT PERJANJIAN PEMINJAMAN INVENTARIS BARANG</h2>
+                    <p id="surat-no-dokumen" class="text-xs font-mono">Nomor: SPB/20261102/001/LDK-IMIP</p>
+                </div>
+
+                <!-- Pembuka & Pihak Peminjam -->
+                <div class="text-xs space-y-2" style="font-family: 'Times New Roman', serif;">
+                    <p>Pada hari ini, telah disetujui perjanjian peminjaman fasilitas/inventaris organisasi Lembaga Dakwah Kampus (LDK IMIP) oleh pihak peminjam dengan rincian sebagai berikut:</p>
+                    
+                    <table class="w-full text-xs border-collapse">
+                        <tr>
+                            <td class="w-36 py-0.5 font-bold">Nama Peminjam</td>
+                            <td class="w-4">:</td>
+                            <td id="surat-peminjam-nama">-</td>
+                        </tr>
+                        <tr>
+                            <td class="py-0.5 font-bold">Nomor WhatsApp</td>
+                            <td>:</td>
+                            <td id="surat-peminjam-wa">-</td>
+                        </tr>
+                        <tr>
+                            <td class="py-0.5 font-bold">Asal Organisasi</td>
+                            <td>:</td>
+                            <td id="surat-peminjam-org">-</td>
+                        </tr>
+                        <tr>
+                            <td class="py-0.5 font-bold">Penanggung Jawab (PJ)</td>
+                            <td>:</td>
+                            <td id="surat-peminjam-pj">-</td>
+                        </tr>
+                        <tr>
+                            <td class="py-0.5 font-bold">Tujuan Kegiatan</td>
+                            <td>:</td>
+                            <td id="surat-peminjam-tujuan">-</td>
+                        </tr>
+                        <tr>
+                            <td class="py-0.5 font-bold">Masa Peminjaman</td>
+                            <td>:</td>
+                            <td id="surat-peminjam-periode">-</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Tabel Barang yang Dipinjam -->
+                <div class="space-y-1">
+                    <span class="text-xs font-bold block" style="font-family: 'Times New Roman', serif;">Daftar Barang yang Diserahkan:</span>
+                    <table class="w-full text-xs border border-black border-collapse" style="font-family: 'Times New Roman', serif;">
+                        <thead>
+                            <tr class="bg-gray-100 border-b border-black text-center font-bold">
+                                <th class="border border-black p-1 w-10">No</th>
+                                <th class="border border-black p-1 text-left">Nama Barang</th>
+                                <th class="border border-black p-1 w-24">Jumlah</th>
+                                <th class="border border-black p-1 w-32">Kondisi Awal</th>
+                            </tr>
+                        </thead>
+                        <tbody id="surat-items-table">
+                            <!-- populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 7 Ketentuan Perjanjian Resmi (PRD Section 10) -->
+                <div class="text-[11px] space-y-1" style="font-family: 'Times New Roman', serif;">
+                    <span class="font-bold block">Ketentuan & Syarat Peminjaman:</span>
+                    <ol class="list-decimal pl-5 space-y-0.5 leading-tight">
+                        <li>Peminjam bertanggung jawab menjaga barang selama masa peminjaman.</li>
+                        <li>Barang wajib dikembalikan sesuai tanggal yang telah disepakati.</li>
+                        <li>Peminjam tidak diperkenankan memindahtangankan barang kepada pihak lain tanpa persetujuan pengelola.</li>
+                        <li>Kerusakan atau kehilangan wajib segera dilaporkan kepada pengelola.</li>
+                        <li>Peminjam bertanggung jawab atas kerusakan atau kehilangan yang disebabkan oleh kelalaian atau penyalahgunaan sesuai kesepakatan.</li>
+                        <li>Perubahan waktu peminjaman harus dikomunikasikan dan mendapat persetujuan admin.</li>
+                        <li>Kontribusi sukarela tidak bersifat wajib dan tidak menjadi syarat peminjaman.</li>
+                    </ol>
+                </div>
+
+                <!-- Penutup & Tanda Persetujuan Administratif -->
+                <div class="pt-4 text-xs flex justify-between" style="font-family: 'Times New Roman', serif;">
+                    <div class="text-center w-52 space-y-12">
+                        <p>Pihak Peminjam,</p>
+                        <p id="surat-ttd-peminjam" class="font-bold underline">( Nama Lengkap )</p>
+                    </div>
+                    <div class="text-center w-52 space-y-12">
+                        <p id="surat-tgl-cetak">Jakarta, ...</p>
+                        <p class="font-bold underline">Pengurus Logistik LDK IMIP</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ============================================================== -->
+    <!-- MODAL 2: VERIFIKASI PENGEMBALIAN BARANG (PRD SECTION 12) -->
+    <!-- ============================================================== -->
+    <div id="modal-kembali" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden">
+        <div class="ui-card w-full max-w-md rounded-2xl p-6 space-y-4 border border-orange-300 dark:border-white/10">
+            <div class="flex items-center justify-between border-b border-orange-200 dark:border-gray-800 pb-3">
+                <h3 class="font-outfit font-bold text-base ui-heading">Verifikasi Pengembalian Barang</h3>
+                <button onclick="tutupModal('modal-kembali')" class="ui-muted hover:text-gray-900 dark:hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form id="form-kembali" onsubmit="submitVerifikasiKembali(event)" class="space-y-3.5 text-xs sm:text-sm">
+                <input type="hidden" id="kembali-id-pinjam">
+
+                <div>
+                    <label class="block ui-heading font-semibold mb-1">Tanggal Pengembalian Aktual <span class="text-rose-500">*</span></label>
+                    <input type="date" id="kembali-tgl-aktual" required
+                           class="w-full px-3.5 py-2 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
+                </div>
+
+                <div>
+                    <label class="block ui-heading font-semibold mb-1">Kondisi Barang Saat Kembali <span class="text-rose-500">*</span></label>
+                    <select id="kembali-kondisi" class="w-full px-3.5 py-2 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
+                        <option value="Baik">Baik & Lengkap (Stok Utuh Kembali)</option>
+                        <option value="Rusak ringan">Rusak Ringan</option>
+                        <option value="Rusak berat">Rusak Berat</option>
+                        <option value="Hilang">Ada Barang Hilang</option>
+                        <option value="Tidak lengkap">Tidak Lengkap</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block ui-heading font-semibold mb-1">Catatan Kerusakan / Kehilangan / Keterangan:</label>
+                    <textarea id="kembali-catatan" rows="2" placeholder="Sebutkan kondisi detail atau kelengkapan yang kurang..."
+                              class="w-full px-3.5 py-2 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]"></textarea>
+                </div>
+
+                <div class="pt-2 flex justify-end gap-2">
+                    <button type="button" onclick="tutupModal('modal-kembali')" class="px-4 py-2 rounded-xl ui-pill ui-body font-semibold">Batal</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl btn-kabinet font-bold shadow-md">
+                        Selesaikan Pengembalian
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- ============================================================== -->
+    <!-- MODAL 3: TAMBAH / EDIT INVENTARIS BARANG -->
+    <!-- ============================================================== -->
     <div id="modal-barang" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden">
         <div class="ui-card w-full max-w-lg rounded-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto border border-orange-300 dark:border-white/10">
             <div class="flex items-center justify-between border-b border-orange-200 dark:border-gray-800 pb-3">
@@ -231,13 +514,13 @@
                 <div>
                     <label class="block ui-heading font-semibold mb-1">Nama Barang <span class="text-rose-500">*</span></label>
                     <input type="text" id="barang-nama" required placeholder="Contoh: Proyektor Epson EB-E500"
-                           class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
+                           class="w-full px-3.5 py-2 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="block ui-heading font-semibold mb-1">Kategori <span class="text-rose-500">*</span></label>
-                        <select id="barang-kategori" class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
+                        <select id="barang-kategori" class="w-full px-3.5 py-2 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
                             <option value="Elektronik">Elektronik</option>
                             <option value="Audio & Sound">Audio & Sound</option>
                             <option value="Kelistrikan">Kelistrikan</option>
@@ -246,15 +529,15 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block ui-heading font-semibold mb-1">Total Stok Unit <span class="text-rose-500">*</span></label>
+                        <label class="block ui-heading font-semibold mb-1">Total Unit Inventaris <span class="text-rose-500">*</span></label>
                         <input type="number" id="barang-stok" required min="1" value="1"
-                               class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
+                               class="w-full px-3.5 py-2 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
                     </div>
                 </div>
 
                 <div>
                     <label class="block ui-heading font-semibold mb-1">Kondisi Barang</label>
-                    <select id="barang-kondisi" class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
+                    <select id="barang-kondisi" class="w-full px-3.5 py-2 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
                         <option value="Bagus / Prima">Bagus / Prima</option>
                         <option value="Cukup Baik">Cukup Baik</option>
                         <option value="Perlu Perbaikan">Perlu Perbaikan</option>
@@ -263,8 +546,8 @@
 
                 <div>
                     <label class="block ui-heading font-semibold mb-1">Deskripsi & Kelengkapan</label>
-                    <textarea id="barang-deskripsi" rows="2" placeholder="Kelengkapan, tas, kabel..."
-                              class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]"></textarea>
+                    <textarea id="barang-deskripsi" rows="2" placeholder="Kelengkapan kabel power, tas..."
+                              class="w-full px-3.5 py-2 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]"></textarea>
                 </div>
 
                 <!-- Foto Barang -->
@@ -275,7 +558,7 @@
                         <div id="preview-container-barang" class="hidden space-y-2">
                             <img id="preview-img-barang" src="" class="h-28 mx-auto rounded-lg object-contain border border-orange-200 dark:border-gray-700">
                             <button type="button" onclick="hapusPreviewBarang()" class="text-xs text-rose-500 hover:underline">
-                                <i class="fa-solid fa-trash mr-1"></i>Ganti / Hapus Foto
+                                <i class="fa-solid fa-trash mr-1"></i>Ganti Foto
                             </button>
                         </div>
                         <div id="upload-placeholder-barang" onclick="document.getElementById('barang-foto-input').click()" class="cursor-pointer space-y-1">
@@ -286,16 +569,19 @@
                 </div>
 
                 <div class="pt-2 flex justify-end gap-2">
-                    <button type="button" onclick="tutupModal('modal-barang')" class="px-4 py-2.5 rounded-xl ui-pill ui-body font-semibold">Batal</button>
-                    <button type="submit" id="btn-submit-barang" class="px-5 py-2.5 rounded-xl btn-kabinet font-bold shadow-md">
-                        <i class="fa-solid fa-floppy-disk"></i> Simpan Barang
+                    <button type="button" onclick="tutupModal('modal-barang')" class="px-4 py-2 rounded-xl ui-pill ui-body font-semibold">Batal</button>
+                    <button type="submit" id="btn-submit-barang" class="px-5 py-2 rounded-xl btn-kabinet font-bold shadow-md">
+                        Simpan Barang
                     </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- MODAL: LIGHTBOX FOTO KTM -->
+
+    <!-- ============================================================== -->
+    <!-- MODAL 4: LIGHTBOX FOTO KTM / IDENTITAS -->
+    <!-- ============================================================== -->
     <div id="modal-lightbox" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden" onclick="tutupModal('modal-lightbox')">
         <div class="relative max-w-2xl max-h-[90vh] p-2 ui-card rounded-2xl" onclick="event.stopPropagation()">
             <button onclick="tutupModal('modal-lightbox')" class="absolute top-3 right-3 bg-black/70 hover:bg-black text-white w-8 h-8 rounded-full flex items-center justify-center">
@@ -306,57 +592,49 @@
         </div>
     </div>
 
-    <!-- MODAL: PENGATURAN API GOOGLE APPS SCRIPT -->
-    <div id="modal-api-setting" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden">
-        <div class="ui-card w-full max-w-md rounded-2xl p-6 space-y-4 border border-orange-300 dark:border-white/10">
-            <div class="flex items-center justify-between border-b border-orange-200 dark:border-gray-800 pb-3">
-                <h3 class="font-outfit font-bold text-lg ui-heading">Koneksi Google Apps Script</h3>
-                <button onclick="tutupModal('modal-api-setting')" class="ui-muted hover:text-gray-900 dark:hover:text-white p-1">
-                    <i class="fa-solid fa-xmark text-lg"></i>
-                </button>
-            </div>
 
-            <div class="space-y-3 text-xs sm:text-sm">
-                <div>
-                    <label class="block ui-heading font-semibold mb-1">Web App Deployment URL:</label>
-                    <input type="url" id="input-api-url" placeholder="https://script.google.com/macros/s/.../exec"
-                           class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading text-xs focus:outline-none focus:border-[#FF7300]">
-                </div>
-
-                <div class="flex justify-end gap-2 pt-2">
-                    <button onclick="simpanApiUrl()" class="px-5 py-2.5 rounded-xl btn-kabinet font-bold text-xs shadow-md">
-                        Simpan Koneksi
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- SCRIPT LOGIKA ADMIN -->
+    <!-- ============================================================== -->
+    <!-- JAVASCRIPT DASHBOARD ADMIN (LOGIKA WORKFLOW & PDF) -->
+    <!-- ============================================================== -->
     <script>
         const STORAGE_KEY_API   = "PINJAM_IMIP_API_URL";
         const STORAGE_KEY_PIN   = "PINJAM_IMIP_ADMIN_PIN";
         const STORAGE_KEY_LOCAL = "PINJAM_IMIP_LOCAL_DB";
+        const STORAGE_KEY_SET   = "PINJAM_IMIP_SETTINGS";
 
-        let activeAdminTab = "tinjau";
-        let currentAdminFilter = "SEMUA";
+        let activeTab = "pengajuan";
+        let currentFilterPengajuan = "SEMUA";
+        let currentSuratItem = null; // Reference object for Surat Perjanjian
 
         let localDB = {
             barang: [],
             peminjaman: []
         };
 
+        let appSettings = {
+            nama_organisasi: "LDK IMIP — Lembaga Dakwah Kampus",
+            no_wa_admin: "085770976399",
+            alamat: "Politeknik Negeri Media Kreatif Jakarta"
+        };
+
+        // Load storage
         try {
-            const saved = localStorage.getItem(STORAGE_KEY_LOCAL);
-            if (saved) {
-                const parsed = JSON.parse(saved);
+            const savedLocal = localStorage.getItem(STORAGE_KEY_LOCAL);
+            if (savedLocal) {
+                const parsed = JSON.parse(savedLocal);
                 if (parsed.barang) localDB.barang = parsed.barang;
                 if (parsed.peminjaman) localDB.peminjaman = parsed.peminjaman;
             }
+            const savedSettings = localStorage.getItem(STORAGE_KEY_SET);
+            if (savedSettings) appSettings = JSON.parse(savedSettings);
         } catch(e) {}
 
         function saveLocalDB() {
             localStorage.setItem(STORAGE_KEY_LOCAL, JSON.stringify(localDB));
+        }
+
+        function saveSettingsLocal() {
+            localStorage.setItem(STORAGE_KEY_SET, JSON.stringify(appSettings));
         }
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -389,13 +667,18 @@
             }
         }
 
+        function getAdminPin() {
+            return (localStorage.getItem(STORAGE_KEY_PIN) || "123456").trim();
+        }
+
         function checkAuth() {
-            const savedPin = localStorage.getItem(STORAGE_KEY_PIN);
-            if (savedPin === "123456") {
+            const saved = localStorage.getItem("PINJAM_ADMIN_AUTH");
+            if (saved === "true") {
                 document.getElementById('section-login').classList.add('hidden');
                 document.getElementById('section-dashboard').classList.remove('hidden');
                 document.getElementById('btn-logout').classList.remove('hidden');
-                renderAdminDashboard();
+                loadSettingsToForm();
+                renderDashboard();
             } else {
                 document.getElementById('section-login').classList.remove('hidden');
                 document.getElementById('section-dashboard').classList.add('hidden');
@@ -405,120 +688,121 @@
 
         function submitLoginAdmin(e) {
             e.preventDefault();
-            const pin = document.getElementById('admin-pin-input').value.trim();
-            if (pin === "123456") {
-                localStorage.setItem(STORAGE_KEY_PIN, pin);
+            const inputPin = document.getElementById('admin-pin-input').value.trim();
+            if (inputPin === getAdminPin()) {
+                localStorage.setItem("PINJAM_ADMIN_AUTH", "true");
                 document.getElementById('admin-pin-input').value = "";
                 checkAuth();
-                Swal.fire({ icon: 'success', title: 'Berhasil Masuk', timer: 1200, showConfirmButton: false });
+                Swal.fire({ icon: 'success', title: 'Berhasil Masuk', timer: 1000, showConfirmButton: false });
             } else {
-                Swal.fire({ icon: 'error', title: 'PIN Salah!', text: 'Gunakan PIN default: 123456', timer: 2000, showConfirmButton: false });
+                Swal.fire({ icon: 'error', title: 'PIN Salah', text: 'Periksa kembali PIN admin Anda.', timer: 1800, showConfirmButton: false });
             }
         }
 
         function logoutAdmin() {
-            localStorage.removeItem(STORAGE_KEY_PIN);
+            localStorage.removeItem("PINJAM_ADMIN_AUTH");
             checkAuth();
+        }
+
+        function switchTab(tabId) {
+            activeTab = tabId;
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.className = "tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all ui-pill ui-body hover:text-[#FF7300] flex items-center gap-1.5 whitespace-nowrap";
+            });
+            const activeBtn = document.getElementById(`tab-btn-${tabId}`);
+            if (activeBtn) activeBtn.className = "tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all btn-kabinet flex items-center gap-1.5 whitespace-nowrap shadow-sm";
+
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            document.getElementById(`tab-${tabId}`)?.classList.remove('hidden');
+
+            renderDashboard();
         }
 
         function getApiUrl() {
             return (localStorage.getItem(STORAGE_KEY_API) || "").trim();
         }
 
-        function bukaModalPengaturanApi() {
-            document.getElementById('input-api-url').value = getApiUrl();
-            bukaModal('modal-api-setting');
-        }
-
-        function simpanApiUrl() {
-            const val = (document.getElementById('input-api-url').value || "").trim();
-            localStorage.setItem(STORAGE_KEY_API, val);
-            tutupModal('modal-api-setting');
-            Swal.fire({ icon: 'success', title: 'Tersimpan!', timer: 1200, showConfirmButton: false });
-            renderAdminDashboard();
-        }
-
-        function switchAdminTab(tabName) {
-            activeAdminTab = tabName;
-            const btnTinjau = document.getElementById('tab-btn-tinjau');
-            const btnBarang = document.getElementById('tab-btn-barang');
-            const subTinjau = document.getElementById('subtab-tinjau');
-            const subBarang = document.getElementById('subtab-barang');
-            const btnTambahQuick = document.getElementById('btn-tambah-barang-quick');
-
-            if (tabName === 'tinjau') {
-                btnTinjau.className = "px-4 py-2 rounded-xl text-xs font-bold transition-all btn-kabinet shadow-sm flex items-center gap-1.5";
-                btnBarang.className = "px-4 py-2 rounded-xl text-xs font-bold transition-all ui-pill ui-body hover:text-[#FF7300] flex items-center gap-1.5";
-                subTinjau.classList.remove('hidden');
-                subBarang.classList.add('hidden');
-                btnTambahQuick.classList.add('hidden');
-            } else {
-                btnBarang.className = "px-4 py-2 rounded-xl text-xs font-bold transition-all btn-kabinet shadow-sm flex items-center gap-1.5";
-                btnTinjau.className = "px-4 py-2 rounded-xl text-xs font-bold transition-all ui-pill ui-body hover:text-[#FF7300] flex items-center gap-1.5";
-                subBarang.classList.remove('hidden');
-                subTinjau.classList.add('hidden');
-                btnTambahQuick.classList.remove('hidden');
-            }
-            renderAdminDashboard();
-        }
-
-        function filterAdminPeminjaman(status) {
-            currentAdminFilter = status;
-            document.querySelectorAll('.filter-pjm-btn').forEach(btn => {
-                btn.className = "filter-pjm-btn px-3.5 py-1.5 rounded-lg ui-pill ui-body";
-            });
-            event.target.className = "filter-pjm-btn px-3.5 py-1.5 rounded-lg btn-kabinet font-semibold";
-            renderAdminPeminjamanList();
-        }
-
         async function fetchAdminDataOnline() {
             const apiUrl = getApiUrl();
-            const pin = localStorage.getItem(STORAGE_KEY_PIN) || "123456";
             if (!apiUrl) return;
-
             try {
-                const res = await fetch(`${apiUrl}?action=get_admin_data&pin=${encodeURIComponent(pin)}`);
+                const res = await fetch(`${apiUrl}?action=get_admin_data&pin=${encodeURIComponent(getAdminPin())}`);
                 const json = await res.json();
                 if (json.success) {
                     if (json.barang) localDB.barang = json.barang;
                     if (json.peminjaman) localDB.peminjaman = json.peminjaman;
+                    if (json.settings) {
+                        appSettings = { ...appSettings, ...json.settings };
+                        saveSettingsLocal();
+                    }
                     saveLocalDB();
                 }
             } catch(e) {}
         }
 
-        async function renderAdminDashboard() {
+        async function renderDashboard() {
             await fetchAdminDataOnline();
 
-            const totalBarang = localDB.barang.length;
-            const menunggu = localDB.peminjaman.filter(p => (p.status || "").toUpperCase() === "MENUNGGU").length;
-            const dipinjam = localDB.peminjaman.filter(p => (p.status || "").toUpperCase() === "DISETUJUI").length;
-            const totalRiwayat = localDB.peminjaman.length;
+            // Hitung statistik PRD Section 7.1
+            const waitingVerification = localDB.peminjaman.filter(p => (p.status || "").toUpperCase() === "MENUNGGU VERIFIKASI").length;
+            const activeLoans = localDB.peminjaman.filter(p => (p.status || "").toUpperCase() === "SEDANG DIPINJAM").length;
+            
+            // Keterlambatan otomatis
+            const todayStr = new Date().toISOString().slice(0, 10);
+            const lateLoans = localDB.peminjaman.filter(p => {
+                const isDipinjam = (p.status || "").toUpperCase() === "SEDANG DIPINJAM";
+                return isDipinjam && p.tgl_pengembalian && p.tgl_pengembalian < todayStr;
+            }).length;
 
-            document.getElementById('stat-total-barang').innerText = totalBarang;
-            document.getElementById('stat-menunggu').innerText = menunggu;
-            document.getElementById('stat-dipinjam').innerText = dipinjam;
-            document.getElementById('stat-total-riwayat').innerText = totalRiwayat;
+            const totalTersedia = localDB.barang.reduce((acc, b) => acc + (parseInt(b.stok_tersedia, 10) || 0), 0);
+            const totalDipinjam = localDB.barang.reduce((acc, b) => {
+                const total = parseInt(b.stok_total, 10) || 0;
+                const av = parseInt(b.stok_tersedia, 10) || 0;
+                return acc + Math.max(0, total - av);
+            }, 0);
 
-            const badgeMenunggu = document.getElementById('badge-menunggu');
-            if (menunggu > 0) {
-                badgeMenunggu.innerText = menunggu;
+            document.getElementById('stat-menunggu').innerText = waitingVerification;
+            document.getElementById('stat-aktif').innerText = activeLoans;
+            document.getElementById('stat-terlambat').innerText = lateLoans;
+            document.getElementById('stat-barang-dipinjam').innerText = totalDipinjam;
+            document.getElementById('stat-barang-tersedia').innerText = totalTersedia;
+
+            const badgeMenunggu = document.getElementById('badge-tab-menunggu');
+            if (waitingVerification > 0) {
+                badgeMenunggu.innerText = waitingVerification;
                 badgeMenunggu.classList.remove('hidden');
             } else {
                 badgeMenunggu.classList.add('hidden');
             }
 
-            renderAdminPeminjamanList();
-            renderAdminBarangList();
+            if (activeTab === 'pengajuan') renderPengajuanList();
+            else if (activeTab === 'aktif') renderAktifList();
+            else if (activeTab === 'riwayat') renderRiwayat();
+            else if (activeTab === 'inventaris') renderInventarisGrid();
         }
 
-        function renderAdminPeminjamanList() {
-            const listEl = document.getElementById('admin-peminjaman-list');
+        // ==========================================
+        // TAB 1: PENGAJUAN & APPROVAL FLOW
+        // ==========================================
+        function filterPengajuan(st) {
+            currentFilterPengajuan = st;
+            document.querySelectorAll('.filter-pjm-btn').forEach(btn => {
+                btn.className = "filter-pjm-btn px-3.5 py-1.5 rounded-lg ui-pill ui-body";
+            });
+            event.target.className = "filter-pjm-btn px-3.5 py-1.5 rounded-lg btn-kabinet font-semibold";
+            renderPengajuanList();
+        }
+
+        function renderPengajuanList() {
+            const listEl = document.getElementById('list-pengajuan');
             if (!listEl) return;
 
+            const allowed = ["MENUNGGU VERIFIKASI", "MENUNGGU KONFIRMASI PEMINJAM", "DIKONFIRMASI"];
             const filtered = localDB.peminjaman.filter(p => {
-                if (currentAdminFilter === "SEMUA") return true;
-                return (p.status || "").toUpperCase() === currentAdminFilter;
+                const s = (p.status || "").toUpperCase();
+                if (!allowed.includes(s) && currentFilterPengajuan === "SEMUA") return false;
+                if (currentFilterPengajuan === "SEMUA") return true;
+                return s === currentFilterPengajuan;
             });
 
             listEl.innerHTML = "";
@@ -526,79 +810,100 @@
                 listEl.innerHTML = `
                     <div class="ui-card p-8 rounded-2xl text-center ui-muted text-xs">
                         <i class="fa-solid fa-inbox text-3xl mb-2"></i>
-                        <p>Tidak ada data peminjaman untuk status ini.</p>
+                        <p>Tidak ada pengajuan yang membutuhkan tindakan.</p>
                     </div>
                 `;
                 return;
             }
 
             filtered.forEach(item => {
-                const statusMeta = getStatusBadge(item.status);
-                const isMenunggu = (item.status || "").toUpperCase() === "MENUNGGU";
-                const isDisetujui = (item.status || "").toUpperCase() === "DISETUJUI";
-                
+                let items = [];
+                try { items = JSON.parse(item.items_json || "[]"); } catch(e) {}
+                const isMenungguVerifikasi = (item.status || "").toUpperCase() === "MENUNGGU VERIFIKASI";
+                const isMenungguKonfirmasi = (item.status || "").toUpperCase() === "MENUNGGU KONFIRMASI PEMINJAM";
+                const isDikonfirmasi = (item.status || "").toUpperCase() === "DIKONFIRMASI";
+
+                let itemsTableHtml = items.map(it => `
+                    <div class="flex items-center justify-between text-xs py-1 border-b border-orange-100 dark:border-gray-800">
+                        <span class="font-semibold ui-heading">• ${it.nama_barang}</span>
+                        <span class="font-bold text-[#FF7300]">${it.jumlah} unit (${it.kondisi || 'Baik'})</span>
+                    </div>
+                `).join("");
+
                 let cleanWa = (item.kontak_wa || "").replace(/[^0-9]/g, "");
                 if (cleanWa.startsWith("0")) cleanWa = "62" + cleanWa.slice(1);
-                const pesanWa = encodeURIComponent(`Halo ${item.nama_peminjam}, kami dari Pengurus Logistik IMIP terkait peminjaman barang: *${item.nama_barang}* (${item.id_pinjam})...`);
 
                 const card = document.createElement('div');
-                card.className = "ui-card p-5 rounded-2xl space-y-3 transition-all";
+                card.className = "ui-card p-5 rounded-2xl space-y-4 border-orange-200 dark:border-white/10";
                 card.innerHTML = `
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-orange-200 dark:border-gray-800 pb-3">
                         <div class="flex items-center gap-2">
-                            <span class="font-mono text-xs font-bold ui-pill px-2.5 py-1 rounded-md text-[#FF7300]">${item.id_pinjam}</span>
-                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${statusMeta.badgeClass}">
-                                ${statusMeta.label}
+                            <span class="font-mono text-xs font-bold ui-pill px-2.5 py-1 rounded text-[#FF7300]">${item.id_pinjam}</span>
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${getStatusClass(item.status)}">
+                                ${item.status}
                             </span>
                         </div>
-                        <span class="text-xs ui-muted"><i class="fa-solid fa-clock mr-1"></i> ${item.created_at || '-'}</span>
+                        <span class="text-xs ui-muted"><i class="fa-solid fa-clock mr-1"></i> Diajukan: ${item.created_at || '-'}</span>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
                         <div class="space-y-1">
-                            <span class="ui-muted text-[10px] uppercase font-bold tracking-wider">Peminjam</span>
+                            <span class="text-[10px] uppercase font-bold text-gray-400">Peminjam & Penanggung Jawab</span>
                             <p class="font-bold ui-heading text-sm">${item.nama_peminjam}</p>
-                            <p class="ui-muted">${item.divisi_instansi} • ${item.kontak_wa}</p>
+                            <p class="ui-body">PJ: ${item.nama_penanggung_jawab || '-'}</p>
+                            <p class="ui-muted">${item.asal_organisasi} (${item.kategori_peminjam || 'Kampus'})</p>
+                            <p class="font-mono text-xs text-[#FF7300]">${item.kontak_wa}</p>
                         </div>
                         <div class="space-y-1">
-                            <span class="ui-muted text-[10px] uppercase font-bold tracking-wider">Barang & Tanggal</span>
-                            <p class="font-bold text-[#FF7300] text-sm">${item.nama_barang}</p>
-                            <p class="ui-muted"><i class="fa-solid fa-calendar-days mr-1"></i> ${item.tgl_pinjam} s.d ${item.tgl_kembali}</p>
+                            <span class="text-[10px] uppercase font-bold text-gray-400">Jadwal Pengambilan & Kembali</span>
+                            <p class="font-semibold ui-heading"><i class="fa-solid fa-calendar mr-1 text-[#FF7300]"></i> Ambil: ${item.tgl_pengambilan}</p>
+                            <p class="font-semibold ui-heading"><i class="fa-solid fa-calendar-check mr-1 text-emerald-500"></i> Kembali: ${item.tgl_pengembalian}</p>
+                            <p class="ui-muted italic pt-1">"${item.tujuan || '-'}"</p>
                         </div>
-                        <div class="space-y-1">
-                            <span class="ui-muted text-[10px] uppercase font-bold tracking-wider">Keperluan</span>
-                            <p class="ui-body italic">"${item.keperluan || '-'}"</p>
-                            ${item.catatan_admin ? `<p class="text-[#FF7300] font-semibold pt-1"><i class="fa-solid fa-comment mr-1"></i> Catatan: ${item.catatan_admin}</p>` : ''}
+                        <div class="space-y-1.5">
+                            <span class="text-[10px] uppercase font-bold text-gray-400">Rincian Barang yang Diminta:</span>
+                            <div class="ui-pill p-2.5 rounded-xl">
+                                ${itemsTableHtml || 'Tidak ada detail barang'}
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Tombol Aksi -->
+                    <!-- Tombol Aksi Lengkap Sesuai PRD Section 8 -->
                     <div class="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-orange-200 dark:border-gray-800">
                         <div class="flex items-center gap-2">
-                            ${item.foto_identitas ? `
-                                <button onclick="bukaLightbox('${item.foto_identitas}', 'Foto KTM: ${item.nama_peminjam}')" class="px-3 py-1.5 rounded-xl ui-pill text-xs font-semibold ui-body hover:text-[#FF7300] flex items-center gap-1.5">
-                                    <i class="fa-solid fa-id-card text-[#FF7300]"></i> Lihat KTM
+                            ${item.dokumen_identitas ? `
+                                <button onclick="bukaLightbox('${item.dokumen_identitas}', 'Identitas: ${item.nama_peminjam}')" class="px-3 py-1.5 rounded-xl ui-pill text-xs font-semibold ui-body hover:text-[#FF7300] flex items-center gap-1.5">
+                                    <i class="fa-solid fa-id-card text-[#FF7300]"></i> Lihat Dokumen Identitas
                                 </button>
-                            ` : `<span class="text-xs ui-muted italic">Tanpa foto KTM</span>`}
+                            ` : `<span class="text-xs ui-muted italic">Tanpa dokumen</span>`}
 
-                            <a href="https://wa.me/${cleanWa}?text=${pesanWa}" target="_blank" class="px-3 py-1.5 rounded-xl bg-emerald-600/10 text-emerald-600 dark:text-emerald-400 border border-emerald-600/30 text-xs font-semibold hover:bg-emerald-600/20 flex items-center gap-1.5">
-                                <i class="fa-brands fa-whatsapp"></i> Chat WA
-                            </a>
+                            <button onclick="bukaModalSuratPerjanjian('${item.id_pinjam}')" class="px-3 py-1.5 rounded-xl ui-pill text-xs font-semibold ui-heading hover:text-[#FF7300] flex items-center gap-1.5">
+                                <i class="fa-solid fa-file-contract text-[#FF7300]"></i> Lihat Surat Perjanjian
+                            </button>
                         </div>
 
-                        <div class="flex items-center gap-2">
-                            ${isMenunggu ? `
-                                <button onclick="tinjauAksiAdmin('${item.id_pinjam}', 'TOLAK')" class="px-3.5 py-1.5 rounded-xl bg-rose-500/15 text-rose-500 border border-rose-500/30 text-xs font-bold hover:bg-rose-500/25">
+                        <div class="flex flex-wrap items-center gap-2">
+                            ${isMenungguVerifikasi ? `
+                                <button onclick="aksiReject('${item.id_pinjam}')" class="px-3.5 py-1.5 rounded-xl bg-rose-500/15 text-rose-500 border border-rose-500/30 text-xs font-bold hover:bg-rose-500/25">
                                     <i class="fa-solid fa-xmark mr-1"></i> Tolak
                                 </button>
-                                <button onclick="tinjauAksiAdmin('${item.id_pinjam}', 'DISETUJUI')" class="px-4 py-1.5 rounded-xl btn-kabinet text-xs font-bold shadow-md">
-                                    <i class="fa-solid fa-check mr-1"></i> Terima (ACC)
+                                <button onclick="aksiApprove('${item.id_pinjam}')" class="px-4 py-1.5 rounded-xl btn-kabinet text-xs font-bold shadow-md">
+                                    <i class="fa-solid fa-check mr-1"></i> Approve (Kunci Stok & Buat PDF)
                                 </button>
                             ` : ''}
 
-                            ${isDisetujui ? `
-                                <button onclick="tinjauAksiAdmin('${item.id_pinjam}', 'DIKEMBALIKAN')" class="px-4 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md">
-                                    <i class="fa-solid fa-rotate-left mr-1"></i> Tandai Sudah Kembali
+                            ${isMenungguKonfirmasi ? `
+                                <button onclick="aksiBatalkan('${item.id_pinjam}')" class="px-3.5 py-1.5 rounded-xl bg-gray-200 dark:bg-gray-800 text-xs font-bold ui-muted hover:text-rose-500">
+                                    Batalkan
+                                </button>
+                                <button onclick="aksiKonfirmasiPeminjam('${item.id_pinjam}')" class="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md">
+                                    <i class="fa-solid fa-thumbs-up mr-1"></i> Tandai Peminjam Sudah Konfirmasi
+                                </button>
+                            ` : ''}
+
+                            ${isDikonfirmasi ? `
+                                <button onclick="aksiSerahkanBarang('${item.id_pinjam}')" class="px-4 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md">
+                                    <i class="fa-solid fa-handshake mr-1"></i> Serahkan Barang (Mulai Pinjam)
                                 </button>
                             ` : ''}
                         </div>
@@ -608,127 +913,426 @@
             });
         }
 
-        async function tinjauAksiAdmin(idPinjam, statusBaru) {
-            let catatan = "";
+        // ==========================================
+        // APPROVAL WORKFLOW AKSI (PRD SECTION 8)
+        // ==========================================
+        async function aksiApprove(idPinjam) {
+            const item = localDB.peminjaman.find(p => String(p.id_pinjam) === String(idPinjam));
+            if (!item) return;
 
-            if (statusBaru === "TOLAK") {
-                const { value: text, isConfirmed } = await Swal.fire({
-                    title: 'Tolak Peminjaman?',
-                    input: 'textarea',
-                    inputLabel: 'Alasan Penolakan:',
-                    inputPlaceholder: 'Sebutkan alasan penolakan...',
-                    showCancelButton: true,
-                    confirmButtonColor: '#F43F5E',
-                    confirmButtonText: 'Tolak Pengajuan',
-                    cancelButtonText: 'Batal'
-                });
-                if (!isConfirmed) return;
-                catatan = text || "Pengajuan ditolak oleh pengurus.";
-                statusBaru = "DITOLAK";
-            } else if (statusBaru === "DISETUJUI") {
-                const { isConfirmed } = await Swal.fire({
-                    title: 'Setujui Peminjaman?',
-                    text: 'Stok tersedia barang akan otomatis berkurang 1 unit.',
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonColor: '#FF7300',
-                    confirmButtonText: 'Ya, Setujui',
-                    cancelButtonText: 'Batal'
-                });
-                if (!isConfirmed) return;
-            } else if (statusBaru === "DIKEMBALIKAN") {
-                const { isConfirmed } = await Swal.fire({
-                    title: 'Konfirmasi Pengembalian?',
-                    text: 'Pastikan kondisi barang sudah dicek. Stok akan kembali bertambah.',
-                    icon: 'info',
-                    showCancelButton: true,
-                    confirmButtonColor: '#2563EB',
-                    confirmButtonText: 'Ya, Sudah Kembali',
-                    cancelButtonText: 'Batal'
-                });
-                if (!isConfirmed) return;
+            const { isConfirmed } = await Swal.fire({
+                title: 'Setujui Pengajuan?',
+                text: 'Sistem akan memeriksa ketersediaan dan mengunci stok inventaris untuk jadwal ini, serta menghasilkan Surat Perjanjian Peminjaman Barang secara otomatis.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#FF7300',
+                confirmButtonText: 'Ya, Setujui',
+                cancelButtonText: 'Batal'
+            });
+            if (!isConfirmed) return;
+
+            await updateStatusOnline(idPinjam, "MENUNGGU KONFIRMASI PEMINJAM");
+            
+            // Generate nomor surat otomatis jika belum ada
+            if (!item.no_surat) {
+                const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+                item.no_surat = `SPB/${todayStr}/${Math.floor(100 + Math.random() * 900)}/LDK-IMIP`;
+            }
+            item.status = "MENUNGGU KONFIRMASI PEMINJAM";
+            saveLocalDB();
+
+            // Langsung buka modal surat perjanjian otomatis (PRD 8 Tahap 3)
+            bukaModalSuratPerjanjian(idPinjam);
+            renderDashboard();
+        }
+
+        async function aksiReject(idPinjam) {
+            const { value: alasan, isConfirmed } = await Swal.fire({
+                title: 'Tolak Pengajuan?',
+                input: 'textarea',
+                inputLabel: 'Alasan Penolakan:',
+                inputPlaceholder: 'Sebutkan alasan penolakan (misal: stok bentrok agenda lain)...',
+                showCancelButton: true,
+                confirmButtonColor: '#F43F5E',
+                confirmButtonText: 'Tolak Pengajuan',
+                cancelButtonText: 'Batal'
+            });
+            if (!isConfirmed) return;
+
+            const target = localDB.peminjaman.find(p => String(p.id_pinjam) === String(idPinjam));
+            await updateStatusOnline(idPinjam, "DITOLAK", alasan || "Pengajuan ditolak oleh pengurus logistik.");
+
+            if (target) {
+                target.status = "DITOLAK";
+                target.catatan_admin = alasan || "Pengajuan ditolak oleh pengurus logistik.";
+                saveLocalDB();
             }
 
-            const apiUrl = getApiUrl();
-            const pin = localStorage.getItem(STORAGE_KEY_PIN) || "123456";
+            Swal.fire({ icon: 'success', title: 'Pengajuan Ditolak', timer: 1200, showConfirmButton: false });
+            renderDashboard();
+        }
 
+        async function aksiBatalkan(idPinjam) {
+            const { isConfirmed } = await Swal.fire({
+                title: 'Batalkan Pengajuan?',
+                text: 'Stok yang sebelumnya dikunci akan otomatis dilepaskan kembali.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#F43F5E',
+                confirmButtonText: 'Ya, Batalkan',
+                cancelButtonText: 'Tutup'
+            });
+            if (!isConfirmed) return;
+
+            await updateStatusOnline(idPinjam, "DIBATALKAN", "Dibatalkan oleh admin/peminjam.");
+            const target = localDB.peminjaman.find(p => String(p.id_pinjam) === String(idPinjam));
+            if (target) {
+                target.status = "DIBATALKAN";
+                saveLocalDB();
+            }
+            renderDashboard();
+        }
+
+        async function aksiKonfirmasiPeminjam(idPinjam) {
+            await updateStatusOnline(idPinjam, "DIKONFIRMASI");
+            const target = localDB.peminjaman.find(p => String(p.id_pinjam) === String(idPinjam));
+            if (target) {
+                target.status = "DIKONFIRMASI";
+                saveLocalDB();
+            }
+            Swal.fire({ icon: 'success', title: 'Telah Dikonfirmasi', text: 'Barang siap diserahkan saat peminjam datang.', timer: 1500, showConfirmButton: false });
+            renderDashboard();
+        }
+
+        async function aksiSerahkanBarang(idPinjam) {
+            const item = localDB.peminjaman.find(p => String(p.id_pinjam) === String(idPinjam));
+            if (!item) return;
+
+            const { isConfirmed } = await Swal.fire({
+                title: 'Serahkan Barang?',
+                text: 'Pastikan barang telah diperiksa kondisi fisiknya bersama peminjam saat penyerahan.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#2563EB',
+                confirmButtonText: 'Ya, Serahkan Barang',
+                cancelButtonText: 'Batal'
+            });
+            if (!isConfirmed) return;
+
+            const today = new Date().toISOString().slice(0, 10);
+            await updateStatusOnline(idPinjam, "SEDANG DIPINJAM", "", today);
+            item.status = "SEDANG DIPINJAM";
+            item.tgl_penyerahan = today;
+            saveLocalDB();
+
+            Swal.fire({ icon: 'success', title: 'Barang Telah Diserahkan!', text: 'Status beralih ke Sedang Dipinjam.', timer: 1500, showConfirmButton: false });
+            switchTab('aktif');
+        }
+
+        // ==========================================
+        // TAB 2: PEMINJAMAN AKTIF & KETERLAMBATAN (PRD 11 & 12)
+        // ==========================================
+        function renderAktifList() {
+            const listEl = document.getElementById('list-peminjaman-aktif');
+            if (!listEl) return;
+
+            const aktif = localDB.peminjaman.filter(p => {
+                const s = (p.status || "").toUpperCase();
+                return s === "SEDANG DIPINJAM" || s === "DIKONFIRMASI";
+            });
+
+            listEl.innerHTML = "";
+            if (aktif.length === 0) {
+                listEl.innerHTML = `
+                    <div class="ui-card p-8 rounded-2xl text-center ui-muted text-xs">
+                        <i class="fa-solid fa-hand-holding-hand text-3xl mb-2"></i>
+                        <p>Tidak ada barang yang sedang dipinjam saat ini.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const todayStr = new Date().toISOString().slice(0, 10);
+
+            aktif.forEach(item => {
+                let items = [];
+                try { items = JSON.parse(item.items_json || "[]"); } catch(e) {}
+
+                // Hitung indikator keterlambatan (PRD Section 11)
+                let delayLabel = "NORMAL";
+                let delayClass = "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30";
+
+                if (item.tgl_pengembalian) {
+                    if (todayStr > item.tgl_pengembalian) {
+                        delayLabel = "TERLAMBAT";
+                        delayClass = "bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30 animate-pulse";
+                    } else if (todayStr === item.tgl_pengembalian) {
+                        delayLabel = "SEGERA DIKEMBALIKAN (HARI INI)";
+                        delayClass = "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30";
+                    }
+                }
+
+                let itemsList = items.map(it => `• ${it.nama_barang} (${it.jumlah} unit)`).join(", ");
+
+                const card = document.createElement('div');
+                card.className = "ui-card p-5 rounded-2xl space-y-3 border-orange-200 dark:border-white/10";
+                card.innerHTML = `
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-orange-200 dark:border-gray-800 pb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="font-mono text-xs font-bold ui-pill px-2.5 py-1 rounded text-[#FF7300]">${item.id_pinjam}</span>
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${delayClass}">
+                                ${delayLabel}
+                            </span>
+                        </div>
+                        <span class="text-xs ui-muted">Diserahkan: ${item.tgl_penyerahan || item.tgl_pengambilan}</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                        <div>
+                            <span class="text-[10px] uppercase font-bold text-gray-400 block">Peminjam</span>
+                            <p class="font-bold ui-heading text-sm">${item.nama_peminjam}</p>
+                            <p class="ui-body">${item.asal_organisasi} (${item.kontak_wa})</p>
+                        </div>
+                        <div>
+                            <span class="text-[10px] uppercase font-bold text-gray-400 block">Batas Pengembalian</span>
+                            <p class="font-bold text-base ${delayLabel === 'TERLAMBAT' ? 'text-rose-500' : 'ui-heading'}">
+                                ${item.tgl_pengembalian}
+                            </p>
+                        </div>
+                        <div>
+                            <span class="text-[10px] uppercase font-bold text-gray-400 block">Barang Dipinjam</span>
+                            <p class="ui-body font-medium">${itemsList}</p>
+                        </div>
+                    </div>
+
+                    <div class="pt-3 border-t border-orange-200 dark:border-gray-800 flex justify-between items-center">
+                        <button onclick="bukaModalSuratPerjanjian('${item.id_pinjam}')" class="px-3 py-1.5 rounded-xl ui-pill text-xs font-semibold ui-heading hover:text-[#FF7300]">
+                            <i class="fa-solid fa-file-contract mr-1"></i> Dokumen Perjanjian
+                        </button>
+                        <button onclick="bukaModalVerifikasiKembali('${item.id_pinjam}')" class="px-4 py-2 rounded-xl btn-kabinet font-bold text-xs shadow-md flex items-center gap-1.5">
+                            <i class="fa-solid fa-box-archive"></i> Verifikasi Pengembalian
+                        </button>
+                    </div>
+                `;
+                listEl.appendChild(card);
+            });
+        }
+
+        function bukaModalVerifikasiKembali(idPinjam) {
+            document.getElementById('kembali-id-pinjam').value = idPinjam;
+            document.getElementById('kembali-tgl-aktual').value = new Date().toISOString().slice(0, 10);
+            bukaModal('modal-kembali');
+        }
+
+        async function submitVerifikasiKembali(e) {
+            e.preventDefault();
+            const idPinjam = document.getElementById('kembali-id-pinjam').value;
+            const tglAktual = document.getElementById('kembali-tgl-aktual').value;
+            const kondisi = document.getElementById('kembali-kondisi').value;
+            const catatan = document.getElementById('kembali-catatan').value.trim();
+
+            const target = localDB.peminjaman.find(p => String(p.id_pinjam) === String(idPinjam));
+            if (!target) return;
+
+            let items = [];
+            try { items = JSON.parse(target.items_json || "[]"); } catch(e) {}
+
+            // Update stok lokal jika kondisi baik/rusak ringan (dapat digunakan kembali)
+            if (kondisi === "Baik" || kondisi === "Rusak ringan") {
+                items.forEach(it => {
+                    const b = localDB.barang.find(x => String(x.id_barang) === String(it.id_barang));
+                    if (b) {
+                        b.stok_tersedia = Math.min(parseInt(b.stok_total, 10), parseInt(b.stok_tersedia, 10) + parseInt(it.jumlah, 10));
+                        b.status = b.stok_tersedia > 0 ? "Tersedia" : "Sedang tidak tersedia";
+                    }
+                });
+            }
+
+            target.status = "SELESAI";
+            target.tgl_kembali_aktual = tglAktual;
+            target.kondisi_kembali = kondisi;
+            target.catatan_kembali = catatan;
+            saveLocalDB();
+
+            const apiUrl = getApiUrl();
             if (apiUrl) {
                 try {
                     await fetch(apiUrl, {
                         method: "POST",
                         body: JSON.stringify({
-                            action: "admin_tinjau",
-                            pin: pin,
+                            action: "admin_update_status",
+                            pin: getAdminPin(),
                             id_pinjam: idPinjam,
-                            status: statusBaru,
-                            catatan: catatan
+                            status: "SELESAI",
+                            tgl_kembali_aktual: tglAktual,
+                            kondisi_kembali: kondisi,
+                            catatan_kembali: catatan,
+                            returned_items: items
                         })
                     });
                 } catch(e) {}
             }
 
-            const target = localDB.peminjaman.find(p => String(p.id_pinjam) === String(idPinjam));
-            if (target) {
-                const oldStatus = target.status;
-                target.status = statusBaru;
-                if (catatan) target.catatan_admin = catatan;
+            tutupModal('modal-kembali');
+            Swal.fire({ icon: 'success', title: 'Pengembalian Selesai', text: 'Riwayat peminjaman telah diarsipkan.', timer: 1500, showConfirmButton: false });
+            renderDashboard();
+        }
 
-                const targetBarang = localDB.barang.find(b => String(b.id_barang) === String(target.id_barang));
-                if (targetBarang) {
-                    if (statusBaru === "DISETUJUI" && oldStatus !== "DISETUJUI") {
-                        targetBarang.stok_tersedia = Math.max(0, parseInt(targetBarang.stok_tersedia, 10) - 1);
-                        targetBarang.status = targetBarang.stok_tersedia > 0 ? "Tersedia" : "Dipinjam";
-                    } else if (statusBaru === "DIKEMBALIKAN" && oldStatus === "DISETUJUI") {
-                        targetBarang.stok_tersedia = Math.min(parseInt(targetBarang.stok_total, 10), parseInt(targetBarang.stok_tersedia, 10) + 1);
-                        targetBarang.status = targetBarang.stok_tersedia > 0 ? "Tersedia" : "Dipinjam";
-                    }
-                }
+        // ==========================================
+        // TAB 3: RIWAYAT PEMINJAMAN
+        // ==========================================
+        function renderRiwayat() {
+            const listEl = document.getElementById('list-riwayat');
+            const search = (document.getElementById('riwayat-search')?.value || "").toLowerCase().trim();
+            if (!listEl) return;
+
+            const riwayat = localDB.peminjaman.filter(p => {
+                const s = (p.status || "").toUpperCase();
+                const isHist = s === "SELESAI" || s === "DITOLAK" || s === "DIBATALKAN";
+                const match = (p.nama_peminjam || "").toLowerCase().includes(search) || (p.asal_organisasi || "").toLowerCase().includes(search);
+                return isHist && match;
+            });
+
+            listEl.innerHTML = "";
+            if (riwayat.length === 0) {
+                listEl.innerHTML = `
+                    <div class="ui-card p-8 rounded-2xl text-center ui-muted text-xs">
+                        <i class="fa-solid fa-clipboard-list text-3xl mb-2"></i>
+                        <p>Belum ada riwayat peminjaman.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            riwayat.forEach(item => {
+                let items = [];
+                try { items = JSON.parse(item.items_json || "[]"); } catch(e) {}
+                let itemsList = items.map(it => `${it.nama_barang} (${it.jumlah})`).join(", ");
+
+                const card = document.createElement('div');
+                card.className = "ui-card p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs";
+                card.innerHTML = `
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span class="font-mono text-xs font-bold text-[#FF7300]">${item.id_pinjam}</span>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${getStatusClass(item.status)}">${item.status}</span>
+                        </div>
+                        <h4 class="font-bold ui-heading">${item.nama_peminjam} (${item.asal_organisasi})</h4>
+                        <p class="ui-muted">${itemsList || 'Perlengkapan'}</p>
+                        <p class="text-[11px] ui-muted">Tanggal: ${item.tgl_pengambilan} s.d ${item.tgl_pengembalian}</p>
+                    </div>
+                    <button onclick="bukaModalSuratPerjanjian('${item.id_pinjam}')" class="self-start sm:self-auto px-3.5 py-1.5 rounded-xl ui-pill font-semibold text-xs ui-heading hover:text-[#FF7300]">
+                        <i class="fa-solid fa-file-contract mr-1"></i> Surat Perjanjian
+                    </button>
+                `;
+                listEl.appendChild(card);
+            });
+        }
+
+        // ==========================================
+        // SURAT PERJANJIAN PDF MODAL (PRD SECTION 10)
+        // ==========================================
+        function bukaModalSuratPerjanjian(idPinjam) {
+            const item = localDB.peminjaman.find(p => String(p.id_pinjam) === String(idPinjam));
+            if (!item) return;
+
+            currentSuratItem = item;
+
+            if (!item.no_surat) {
+                const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+                item.no_surat = `SPB/${todayStr}/${Math.floor(100 + Math.random() * 900)}/LDK-IMIP`;
                 saveLocalDB();
             }
 
-            Swal.fire({ icon: 'success', title: 'Status Diperbarui!', timer: 1200, showConfirmButton: false });
-            renderAdminDashboard();
+            document.getElementById('surat-no-dokumen').innerText = `Nomor: ${item.no_surat}`;
+            document.getElementById('surat-peminjam-nama').innerText = item.nama_peminjam;
+            document.getElementById('surat-peminjam-wa').innerText = item.kontak_wa;
+            document.getElementById('surat-peminjam-org').innerText = `${item.asal_organisasi} (${item.kategori_peminjam || 'Kampus'})`;
+            document.getElementById('surat-peminjam-pj').innerText = item.nama_penanggung_jawab || item.nama_peminjam;
+            document.getElementById('surat-peminjam-tujuan').innerText = item.tujuan || '-';
+            document.getElementById('surat-peminjam-periode').innerText = `${item.tgl_pengambilan} s.d. ${item.tgl_pengembalian}`;
+            document.getElementById('surat-ttd-peminjam').innerText = `( ${item.nama_peminjam} )`;
+
+            const today = new Date();
+            const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+            document.getElementById('surat-tgl-cetak').innerText = `Jakarta, ${today.getDate()} ${months[today.getMonth()]} ${today.getFullYear()}`;
+
+            let items = [];
+            try { items = JSON.parse(item.items_json || "[]"); } catch(e) {}
+            const tbody = document.getElementById('surat-items-table');
+            tbody.innerHTML = "";
+
+            items.forEach((it, idx) => {
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-black text-center";
+                tr.innerHTML = `
+                    <td class="border border-black p-1">${idx + 1}</td>
+                    <td class="border border-black p-1 text-left">${it.nama_barang}</td>
+                    <td class="border border-black p-1 font-bold">${it.jumlah} Unit</td>
+                    <td class="border border-black p-1">${it.kondisi || 'Baik'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            bukaModal('modal-surat');
         }
 
+        function cetakSuratPerjanjian() {
+            window.print();
+        }
+
+        function kirimSuratViaWa() {
+            if (!currentSuratItem) return;
+            let cleanWa = (currentSuratItem.kontak_wa || "").replace(/[^0-9]/g, "");
+            if (cleanWa.startsWith("0")) cleanWa = "62" + cleanWa.slice(1);
+
+            let items = [];
+            try { items = JSON.parse(currentSuratItem.items_json || "[]"); } catch(e) {}
+            let itemsSummary = items.map(it => `• ${it.nama_barang} (${it.jumlah} unit)`).join("%0A");
+
+            const pesan = `Assalamu'alaikum Wr. Wb.%0A%0AYth. *${currentSuratItem.nama_peminjam}* (${currentSuratItem.asal_organisasi})%0A%0AKami dari Pengurus Logistik LDK IMIP menginformasikan bahwa pengajuan peminjaman inventaris Anda (*No: ${currentSuratItem.id_pinjam}*) telah *DISETUJUI SECARA ADMINISTRATIF*.%0A%0ARincian Barang:%0A${itemsSummary}%0A%0AJadwal: ${currentSuratItem.tgl_pengambilan} s.d. ${currentSuratItem.tgl_pengembalian}%0A%0ASurat Perjanjian Peminjaman (*${currentSuratItem.no_surat}*) terlampir. Mohon membaca dan membalas konfirmasi persetujuan ketentuan surat ini sebelum pengambilan barang.%0A%0AJazakumullah khairan.`;
+
+            window.open(`https://wa.me/${cleanWa}?text=${pesan}`, '_blank');
+        }
+
+        // ==========================================
+        // TAB 4: KELOLA INVENTARIS BARANG (CRUD)
+        // ==========================================
         let base64FotoBarang = "";
 
-        function renderAdminBarangList() {
-            const listEl = document.getElementById('admin-barang-list');
-            if (!listEl) return;
+        function renderInventarisGrid() {
+            const grid = document.getElementById('list-inventaris-grid');
+            if (!grid) return;
 
-            listEl.innerHTML = "";
+            grid.innerHTML = "";
             localDB.barang.forEach(item => {
+                if (item.status === "Diarsipkan") return;
                 const card = document.createElement('div');
-                card.className = "ui-card rounded-2xl overflow-hidden flex flex-col justify-between";
+                card.className = "ui-card rounded-2xl overflow-hidden flex flex-col justify-between border-orange-200";
                 card.innerHTML = `
                     <div>
-                        <div class="relative h-40 w-full bg-gray-200 dark:bg-gray-800 overflow-hidden">
+                        <div class="relative h-40 bg-gray-200 dark:bg-gray-800">
                             <img src="${item.foto_url || 'IMIP.png'}" class="w-full h-full object-cover" onerror="this.src='IMIP.png'">
-                            <span class="absolute top-2 left-2 px-2.5 py-1 rounded-md text-[11px] font-bold bg-black/70 text-white">
-                                ${item.id_barang}
-                            </span>
-                            <span class="absolute top-2 right-2 px-2.5 py-1 rounded-md text-[11px] font-bold bg-[#FF7300] text-white">
-                                Stok: ${item.stok_tersedia} / ${item.stok_total}
-                            </span>
+                            <span class="absolute top-2 left-2 px-2 py-0.5 rounded text-[10px] font-bold bg-black/70 text-white">${item.id_barang}</span>
+                            <span class="absolute top-2 right-2 px-2 py-0.5 rounded text-[10px] font-bold btn-kabinet">Stok: ${item.stok_tersedia} / ${item.stok_total}</span>
                         </div>
-                        <div class="p-4 space-y-2">
-                            <span class="text-[11px] font-bold text-[#FF7300] uppercase">${item.kategori || 'Umum'}</span>
+                        <div class="p-4 space-y-1.5">
+                            <span class="text-[10px] font-bold text-[#FF7300] uppercase">${item.kategori || 'Umum'}</span>
                             <h4 class="font-outfit font-extrabold text-base ui-heading">${item.nama_barang}</h4>
                             <p class="text-xs ui-muted line-clamp-2">${item.deskripsi || '-'}</p>
-                            <p class="text-xs ui-body pt-1">Kondisi: <span class="font-bold text-[#FF7300]">${item.kondisi || 'Bagus'}</span></p>
+                            <p class="text-xs ui-body pt-1">Kondisi: <strong class="text-[#FF7300]">${item.kondisi || 'Bagus'}</strong></p>
                         </div>
                     </div>
-
                     <div class="p-4 pt-0 flex gap-2">
                         <button onclick="bukaModalEditBarang('${item.id_barang}')" class="flex-1 py-2 rounded-xl ui-pill text-xs font-bold ui-heading hover:text-[#FF7300] flex items-center justify-center gap-1.5">
                             <i class="fa-solid fa-pen-to-square"></i> Edit
                         </button>
-                        <button onclick="hapusBarangAdmin('${item.id_barang}')" class="px-3.5 py-2 rounded-xl bg-rose-500/15 text-rose-500 border border-rose-500/30 text-xs font-bold hover:bg-rose-500/25">
+                        <button onclick="hapusBarang('${item.id_barang}')" class="px-3.5 py-2 rounded-xl bg-rose-500/15 text-rose-500 border border-rose-500/30 text-xs font-bold hover:bg-rose-500/25">
                             <i class="fa-solid fa-trash"></i>
                         </button>
                     </div>
                 `;
-                listEl.appendChild(card);
+                grid.appendChild(card);
             });
         }
 
@@ -786,16 +1390,12 @@
 
         async function submitFormBarang(e) {
             e.preventDefault();
-            const btn = document.getElementById('btn-submit-barang');
-            btn.disabled = true;
-            btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Menyimpan...`;
-
             const editId = document.getElementById('barang-edit-id').value;
             const isEdit = Boolean(editId);
 
             const payload = {
                 action: isEdit ? "admin_edit_barang" : "admin_tambah_barang",
-                pin: localStorage.getItem(STORAGE_KEY_PIN) || "123456",
+                pin: getAdminPin(),
                 id_barang: editId || ("BRG-" + Math.floor(100 + Math.random() * 900)),
                 nama_barang: document.getElementById('barang-nama').value.trim(),
                 kategori: document.getElementById('barang-kategori').value,
@@ -808,10 +1408,7 @@
             const apiUrl = getApiUrl();
             if (apiUrl) {
                 try {
-                    await fetch(apiUrl, {
-                        method: "POST",
-                        body: JSON.stringify(payload)
-                    });
+                    await fetch(apiUrl, { method: "POST", body: JSON.stringify(payload) });
                 } catch(e) {}
             }
 
@@ -840,58 +1437,113 @@
             }
 
             saveLocalDB();
-            btn.disabled = false;
-            btn.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> Simpan Barang`;
             tutupModal('modal-barang');
-
-            Swal.fire({ icon: 'success', title: isEdit ? 'Barang Diperbarui!' : 'Barang Ditambahkan!', timer: 1200, showConfirmButton: false });
-            renderAdminDashboard();
+            Swal.fire({ icon: 'success', title: isEdit ? 'Barang Diperbarui' : 'Barang Ditambahkan', timer: 1200, showConfirmButton: false });
+            renderDashboard();
         }
 
-        async function hapusBarangAdmin(idBarang) {
+        async function hapusBarang(idBarang) {
             const { isConfirmed } = await Swal.fire({
-                title: 'Hapus Barang Ini?',
-                text: 'Barang tidak akan muncul lagi di katalog.',
+                title: 'Arsipkan Barang Ini?',
+                text: 'Barang tidak akan muncul di katalog publik namun tetap tersimpan pada riwayat peminjaman.',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#F43F5E',
-                confirmButtonText: 'Ya, Hapus',
+                confirmButtonText: 'Ya, Arsipkan',
                 cancelButtonText: 'Batal'
             });
             if (!isConfirmed) return;
+
+            const target = localDB.barang.find(b => String(b.id_barang) === String(idBarang));
+            if (target) {
+                target.status = "Diarsipkan";
+                saveLocalDB();
+            }
 
             const apiUrl = getApiUrl();
             if (apiUrl) {
                 try {
                     await fetch(apiUrl, {
                         method: "POST",
+                        body: JSON.stringify({ action: "admin_hapus_barang", pin: getAdminPin(), id_barang: idBarang })
+                    });
+                } catch(e) {}
+            }
+
+            Swal.fire({ icon: 'success', title: 'Barang Diarsipkan', timer: 1200, showConfirmButton: false });
+            renderDashboard();
+        }
+
+        // ==========================================
+        // TAB 5: PENGATURAN ORGANISASI (PRD 15)
+        // ==========================================
+        function loadSettingsToForm() {
+            document.getElementById('set-nama-organisasi').value = appSettings.nama_organisasi || "LDK IMIP — Lembaga Dakwah Kampus";
+            document.getElementById('set-no-wa').value = appSettings.no_wa_admin || "085770976399";
+            document.getElementById('set-alamat').value = appSettings.alamat || "Politeknik Negeri Media Kreatif Jakarta";
+            document.getElementById('set-pin').value = getAdminPin();
+            document.getElementById('set-api-url').value = getApiUrl();
+        }
+
+        async function simpanPengaturan(e) {
+            e.preventDefault();
+            appSettings.nama_organisasi = document.getElementById('set-nama-organisasi').value.trim();
+            appSettings.no_wa_admin = document.getElementById('set-no-wa').value.trim();
+            appSettings.alamat = document.getElementById('set-alamat').value.trim();
+            const newPin = document.getElementById('set-pin').value.trim();
+            const newApiUrl = document.getElementById('set-api-url').value.trim();
+
+            if (newPin) localStorage.setItem(STORAGE_KEY_PIN, newPin);
+            localStorage.setItem(STORAGE_KEY_API, newApiUrl);
+            saveSettingsLocal();
+
+            if (newApiUrl) {
+                try {
+                    await fetch(newApiUrl, {
+                        method: "POST",
                         body: JSON.stringify({
-                            action: "admin_hapus_barang",
-                            pin: localStorage.getItem(STORAGE_KEY_PIN) || "123456",
-                            id_barang: idBarang
+                            action: "admin_update_settings",
+                            pin: newPin || getAdminPin(),
+                            nama_organisasi: appSettings.nama_organisasi,
+                            no_wa_admin: appSettings.no_wa_admin,
+                            alamat: appSettings.alamat,
+                            admin_pin: newPin
                         })
                     });
                 } catch(e) {}
             }
 
-            localDB.barang = localDB.barang.filter(b => String(b.id_barang) !== String(idBarang));
-            saveLocalDB();
-            Swal.fire({ icon: 'success', title: 'Barang Terhapus', timer: 1200, showConfirmButton: false });
-            renderAdminDashboard();
+            Swal.fire({ icon: 'success', title: 'Pengaturan Tersimpan', timer: 1200, showConfirmButton: false });
         }
 
-        function getStatusBadge(status) {
+        // Helper update online
+        async function updateStatusOnline(idPinjam, statusBaru, catatan = "", tglSerah = "") {
+            const apiUrl = getApiUrl();
+            if (!apiUrl) return;
+            try {
+                await fetch(apiUrl, {
+                    method: "POST",
+                    body: JSON.stringify({
+                        action: "admin_update_status",
+                        pin: getAdminPin(),
+                        id_pinjam: idPinjam,
+                        status: statusBaru,
+                        catatan: catatan,
+                        tgl_penyerahan: tglSerah
+                    })
+                });
+            } catch(e) {}
+        }
+
+        function getStatusClass(status) {
             const s = (status || "").toUpperCase();
-            if (s === "MENUNGGU") {
-                return { label: "Menunggu Tinjauan", badgeClass: "bg-orange-500/15 text-[#FF7300] border border-orange-500/30" };
-            } else if (s === "DISETUJUI") {
-                return { label: "Disetujui / Diambil", badgeClass: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30" };
-            } else if (s === "DITOLAK") {
-                return { label: "Ditolak", badgeClass: "bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30" };
-            } else if (s === "DIKEMBALIKAN") {
-                return { label: "Sudah Dikembalikan", badgeClass: "bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30" };
-            }
-            return { label: s || "Unknown", badgeClass: "bg-gray-200 dark:bg-gray-800 text-gray-500" };
+            if (s === "MENUNGGU VERIFIKASI") return "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30";
+            if (s === "MENUNGGU KONFIRMASI PEMINJAM") return "bg-[#FF7300]/15 text-[#FF7300] border border-orange-500/30";
+            if (s === "DIKONFIRMASI") return "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30";
+            if (s === "SEDANG DIPINJAM") return "bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30";
+            if (s === "SELESAI") return "bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300";
+            if (s === "DITOLAK") return "bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30";
+            return "bg-gray-200 dark:bg-gray-800 text-gray-500";
         }
 
         function bukaLightbox(imgUrl, caption) {

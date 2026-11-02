@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cek Status Peminjaman — Pinjamip</title>
+    <link rel="icon" href="icons/icon-192.png" type="image/png">
+    <meta name="theme-color" content="#FAF5EF">
+
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Tailwind CSS & SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        :root {
+            --bg-main: #FAF5EF;              /* Warm Cream */
+            --bg-card: #FFFFFF;              /* Crisp White */
+            --border-card: rgba(254, 215, 170, 0.85); /* Warm Orange-Peach */
+            --border-muted: #FED7AA;
+            
+            --text-heading: #0F172A;         /* Slate 900 */
+            --text-body: #1E293B;            /* Slate 800 */
+            --text-muted: #64748B;           /* Slate 500 */
+
+            --accent: #FF7300;               /* Official Cabinet Orange */
+            --bg-pill: #FFF7ED;
+            --shadow-card: 0 8px 24px -6px rgba(255, 115, 0, 0.10);
+        }
+
+        html.dark-mode {
+            --bg-main: #080C14;
+            --bg-card: #111827;
+            --border-card: rgba(255, 255, 255, 0.1);
+            --border-muted: rgba(255, 255, 255, 0.08);
+            
+            --text-heading: #F8FAFC;
+            --text-body: #E2E8F0;
+            --text-muted: #94A3B8;
+
+            --accent: #FF7300;
+            --bg-pill: rgba(30, 41, 59, 0.7);
+            --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-body);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            min-height: 100vh;
+            transition: background-color 0.25s ease, color 0.25s ease;
+        }
+
+        .font-outfit { font-family: 'Outfit', sans-serif; }
+
+        .ui-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            box-shadow: var(--shadow-card);
+        }
+
+        .ui-heading { color: var(--text-heading) !important; }
+        .ui-body { color: var(--text-body) !important; }
+        .ui-muted { color: var(--text-muted) !important; }
+        .ui-pill { background: var(--bg-pill); border: 1px solid var(--border-muted); }
+
+        .btn-kabinet {
+            background-color: #FF7300;
+            color: #FFFFFF;
+            transition: all 0.2s ease;
+        }
+        .btn-kabinet:hover {
+            background-color: #EA580C;
+            box-shadow: 0 6px 20px -2px rgba(255, 115, 0, 0.35);
+        }
+    </style>
+</head>
+<body class="selection:bg-orange-500 selection:text-white pb-16">
+
+    <!-- TOP NAVBAR -->
+    <header class="sticky top-0 z-40 w-full px-3 sm:px-6 pt-3 pb-2">
+        <div class="max-w-4xl mx-auto ui-card rounded-2xl px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <a href="index.html" class="flex items-center gap-2 text-xs font-semibold ui-muted hover:text-[#FF7300]">
+                    <i class="fa-solid fa-arrow-left"></i> Kembali ke Katalog
+                </a>
+                <span class="text-orange-200 dark:text-gray-700">|</span>
+                <span class="font-outfit font-extrabold text-lg ui-heading tracking-tight">Cek Status</span>
+            </div>
+
+            <button onclick="toggleTheme()" class="w-9 h-9 rounded-xl ui-pill flex items-center justify-center ui-body hover:text-[#FF7300]">
+                <i id="theme-icon" class="fa-solid fa-moon text-sm"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- CONTENT WRAPPER -->
+    <main class="max-w-4xl mx-auto px-4 sm:px-6 pt-4 space-y-6">
+
+        <!-- Search Box -->
+        <div class="ui-card rounded-2xl p-6 sm:p-8 space-y-4 text-center max-w-xl mx-auto border-orange-200 dark:border-white/10">
+            <div class="w-12 h-12 rounded-2xl bg-orange-500/10 text-[#FF7300] border border-orange-500/20 flex items-center justify-center mx-auto text-xl">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+            </div>
+            <div>
+                <h1 class="text-xl sm:text-2xl font-bold font-outfit ui-heading">Cek Status Peminjaman</h1>
+                <p class="text-xs ui-muted mt-1 leading-relaxed">
+                    Masukkan <strong>Nomor WhatsApp</strong> atau <strong>Nama Lengkap Peminjam</strong> yang Anda daftarkan.
+                </p>
+            </div>
+
+            <form onsubmit="cariStatus(event)" class="flex flex-col sm:flex-row gap-2">
+                <input type="text" id="input-query" placeholder="Contoh: 08123456789 atau Nama Lengkap..." required
+                       class="flex-1 px-4 py-2.5 rounded-xl ui-card ui-heading text-sm focus:outline-none focus:border-[#FF7300]">
+                <button type="submit" id="btn-cari" class="px-5 py-2.5 rounded-xl btn-kabinet font-bold text-xs flex items-center justify-center gap-1.5 shadow-md">
+                    <i class="fa-solid fa-magnifying-glass"></i> Cari Status
+                </button>
+            </form>
+
+            <p class="text-[11px] ui-muted pt-1">
+                <i class="fa-solid fa-shield-halved text-[#FF7300] mr-1"></i> Data identitas dan kontak pribadi peminjam dilindungi oleh sistem.
+            </p>
+        </div>
+
+        <!-- Result Container -->
+        <div id="result-container" class="space-y-4 max-w-xl mx-auto">
+            <!-- Dynamically populated -->
+        </div>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="max-w-4xl mx-auto px-4 py-8 text-center text-xs ui-muted">
+        <p>© 2026 Pinjamip — LDK IMIP</p>
+    </footer>
+
+    <script>
+        const STORAGE_KEY_API   = "PINJAM_IMIP_API_URL";
+        const STORAGE_KEY_LOCAL = "PINJAM_IMIP_LOCAL_DB";
+
+        let localDB = { peminjaman: [] };
+        try {
+            const saved = localStorage.getItem(STORAGE_KEY_LOCAL);
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (parsed.peminjaman) localDB.peminjaman = parsed.peminjaman;
+            }
+        } catch(e) {}
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initTheme();
+        });
+
+        function initTheme() {
+            const isDark = localStorage.getItem('theme') === 'dark';
+            if (isDark) {
+                document.documentElement.classList.add('dark-mode');
+                document.getElementById('theme-icon').className = 'fa-solid fa-sun text-sm text-amber-400';
+            } else {
+                document.documentElement.classList.remove('dark-mode');
+                document.getElementById('theme-icon').className = 'fa-solid fa-moon text-sm';
+            }
+        }
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            const icon = document.getElementById('theme-icon');
+            if (html.classList.contains('dark-mode')) {
+                html.classList.remove('dark-mode');
+                localStorage.setItem('theme', 'light');
+                icon.className = 'fa-solid fa-moon text-sm';
+            } else {
+                html.classList.add('dark-mode');
+                localStorage.setItem('theme', 'dark');
+                icon.className = 'fa-solid fa-sun text-sm text-amber-400';
+            }
+        }
+
+        function getApiUrl() {
+            return (localStorage.getItem(STORAGE_KEY_API) || "").trim();
+        }
+
+        async function cariStatus(e) {
+            e.preventDefault();
+            const query = (document.getElementById('input-query').value || "").trim().toLowerCase();
+            const container = document.getElementById('result-container');
+            const btn = document.getElementById('btn-cari');
+
+            if (!query) return;
+
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Mencari...`;
+            container.innerHTML = `
+                <div class="text-center py-8">
+                    <i class="fa-solid fa-circle-notch fa-spin text-2xl text-[#FF7300]"></i>
+                    <p class="text-xs ui-muted mt-2">Memeriksa database...</p>
+                </div>
+            `;
+
+            let hasil = [];
+            const apiUrl = getApiUrl();
+            if (apiUrl) {
+                try {
+                    const res = await fetch(`${apiUrl}?action=check_status&query=${encodeURIComponent(query)}`);
+                    const json = await res.json();
+                    if (json.success && json.hasil) hasil = json.hasil;
+                } catch(err) {}
+            }
+
+            // Fallback search di data lokal
+            if (hasil.length === 0) {
+                const cleanQ = query.replace(/[^0-9]/g, "");
+                hasil = localDB.peminjaman.filter(p => {
+                    const wa = (p.kontak_wa || "").replace(/[^0-9]/g, "");
+                    const nama = (p.nama_peminjam || "").toLowerCase();
+                    const id = (p.id_pinjam || "").toLowerCase();
+
+                    const matchWa = cleanQ.length >= 6 && wa.includes(cleanQ);
+                    const matchNama = nama.includes(query) && query.length >= 3;
+                    const matchId = id === query;
+                    return matchWa || matchNama || matchId;
+                }).map(p => {
+                    let items = [];
+                    try { items = JSON.parse(p.items_json || "[]"); } catch(e) {}
+                    let waStr = String(p.kontak_wa || "");
+                    let maskedWa = waStr.length > 7 ? (waStr.substring(0, 4) + "****" + waStr.substring(waStr.length - 4)) : waStr;
+
+                    return {
+                        id_pinjam: p.id_pinjam,
+                        no_surat: p.no_surat || "-",
+                        nama_peminjam: p.nama_peminjam,
+                        kontak_wa_masked: maskedWa,
+                        asal_organisasi: p.asal_organisasi,
+                        tgl_pengambilan: p.tgl_pengambilan,
+                        tgl_pengembalian: p.tgl_pengembalian,
+                        tujuan: p.tujuan,
+                        items: items,
+                        status: p.status,
+                        catatan_publik: p.catatan_admin || "",
+                        created_at: p.created_at
+                    };
+                });
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = `<i class="fa-solid fa-magnifying-glass"></i> Cari Status`;
+
+            if (hasil.length === 0) {
+                container.innerHTML = `
+                    <div class="ui-card p-6 rounded-2xl text-center space-y-2 border-orange-200">
+                        <i class="fa-solid fa-circle-exclamation text-3xl text-amber-500"></i>
+                        <h3 class="font-bold text-sm ui-heading">Pengajuan Tidak Ditemukan</h3>
+                        <p class="text-xs ui-muted">Pastikan nomor WhatsApp atau nama peminjam sudah sesuai saat pengisian formulir.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = "";
+            hasil.forEach(item => {
+                const statusMeta = getStatusMeta(item.status);
+
+                let itemsListHtml = "";
+                if (Array.isArray(item.items) && item.items.length > 0) {
+                    itemsListHtml = item.items.map(it => `
+                        <div class="flex items-center justify-between text-xs py-0.5 border-b border-orange-100 dark:border-gray-800">
+                            <span class="ui-heading font-medium">• ${it.nama_barang}</span>
+                            <span class="font-bold text-[#FF7300]">${it.jumlah} unit</span>
+                        </div>
+                    `).join("");
+                } else {
+                    itemsListHtml = `<span class="text-xs ui-muted italic">1 Unit Perlengkapan</span>`;
+                }
+
+                const card = document.createElement('div');
+                card.className = "ui-card p-5 rounded-2xl space-y-3 border-orange-200 dark:border-white/10";
+                card.innerHTML = `
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-orange-200 dark:border-gray-800 pb-3">
+                        <div>
+                            <span class="font-mono text-xs font-bold ui-pill px-2.5 py-0.5 rounded text-[#FF7300]">${item.id_pinjam}</span>
+                            <h3 class="font-outfit font-bold text-base ui-heading mt-1">${item.nama_peminjam}</h3>
+                            <p class="text-xs ui-muted">${item.asal_organisasi || 'Umum'} • Kontak: ${item.kontak_wa_masked}</p>
+                        </div>
+                        <span class="self-start sm:self-auto px-3 py-1 rounded-full text-xs font-bold ${statusMeta.badgeClass}">
+                            ${statusMeta.label}
+                        </span>
+                    </div>
+
+                    <!-- Daftar Barang -->
+                    <div class="ui-pill p-3 rounded-xl space-y-1.5">
+                        <span class="text-[10px] font-bold uppercase text-[#FF7300] tracking-wider block">Daftar Barang yang Diajukan:</span>
+                        <div class="space-y-1">
+                            ${itemsListHtml}
+                        </div>
+                    </div>
+
+                    <!-- Jadwal & Tujuan -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs ui-muted pt-1">
+                        <div>
+                            <span class="block text-[10px] uppercase font-bold text-gray-400">Periode Peminjaman:</span>
+                            <span class="font-semibold ui-heading"><i class="fa-solid fa-calendar mr-1 text-[#FF7300]"></i> ${item.tgl_pengambilan} s.d ${item.tgl_pengembalian}</span>
+                        </div>
+                        <div>
+                            <span class="block text-[10px] uppercase font-bold text-gray-400">Keperluan:</span>
+                            <span class="ui-body italic">"${item.tujuan || '-'}"</span>
+                        </div>
+                    </div>
+
+                    <!-- Petunjuk / Catatan Publik dari Admin -->
+                    <div class="p-3 rounded-xl bg-orange-500/10 border border-orange-500/20 text-xs text-orange-950 dark:text-orange-200 leading-relaxed">
+                        <span class="font-bold text-[#FF7300] block mb-0.5"><i class="fa-solid fa-circle-info mr-1"></i> Instruksi / Informasi Status:</span>
+                        ${statusMeta.desc}
+                        ${item.catatan_publik ? `<div class="mt-1 pt-1 border-t border-orange-200 dark:border-orange-800 font-medium">Catatan Admin: ${item.catatan_publik}</div>` : ''}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function getStatusMeta(status) {
+            const s = (status || "").toUpperCase();
+            if (s === "MENUNGGU VERIFIKASI") {
+                return {
+                    label: "Menunggu Verifikasi",
+                    badgeClass: "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30",
+                    desc: "Pengajuan Anda telah diterima dan sedang diperiksa ketersediaannya oleh admin logistik."
+                };
+            } else if (s === "MENUNGGU KONFIRMASI PEMINJAM") {
+                return {
+                    label: "Menunggu Konfirmasi Anda",
+                    badgeClass: "bg-[#FF7300]/15 text-[#FF7300] border border-orange-500/30",
+                    desc: "Pengajuan disetujui secara administratif. Admin telah/akan menghubungi nomor WhatsApp Anda beserta dokumen Surat Perjanjian Peminjaman. Harap konfirmasi persetujuan Anda."
+                };
+            } else if (s === "DIKONFIRMASI") {
+                return {
+                    label: "Dikonfirmasi (Siap Diambil)",
+                    badgeClass: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30",
+                    desc: "Perjanjian telah dikonfirmasi. Barang siap diambil sesuai tanggal pengambilan yang disepakati."
+                };
+            } else if (s === "SEDANG DIPINJAM") {
+                return {
+                    label: "Sedang Dipinjam",
+                    badgeClass: "bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30",
+                    desc: "Barang telah diserahkan dan saat ini sedang dalam masa peminjaman. Harap menjaga keutuhan barang dan mengembalikan tepat waktu."
+                };
+            } else if (s === "SELESAI") {
+                return {
+                    label: "Selesai Dikembalikan",
+                    badgeClass: "bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700",
+                    desc: "Barang telah diverifikasi kembali oleh admin logistik. Terima kasih telah menjaga inventaris LDK IMIP."
+                };
+            } else if (s === "DITOLAK") {
+                return {
+                    label: "Ditolak",
+                    badgeClass: "bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30",
+                    desc: "Mohon maaf, pengajuan tidak dapat disetujui (misal: stok bentrok jadwal atau keperluan lain)."
+                };
+            } else if (s === "DIBATALKAN") {
+                return {
+                    label: "Dibatalkan",
+                    badgeClass: "bg-gray-300 dark:bg-gray-800 text-gray-500 border border-gray-400 dark:border-gray-700",
+                    desc: "Pengajuan peminjaman telah dibatalkan."
+                };
+            }
+
+            return {
+                label: s || "Unknown",
+                badgeClass: "bg-gray-200 dark:bg-gray-800 text-gray-500",
+                desc: "Status pengajuan dalam proses pembaruan."
+            };
+        }
+    </script>
+</body>
+</html>

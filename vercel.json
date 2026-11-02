@@ -3,6 +3,7 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "rewrites": [
+    { "source": "/status", "destination": "/status.html" },
     { "source": "/admin", "destination": "/admin.html" }
   ],
   "headers": [
