@@ -19,17 +19,18 @@
 
     <style>
         :root {
-            --bg-main: #FAF5EF;
-            --bg-card: #FFFFFF;
-            --border-card: rgba(254, 215, 170, 0.7);
+            --bg-main: #FAF5EF;              /* Warm Cream */
+            --bg-card: #FFFFFF;              /* Crisp White */
+            --border-card: rgba(254, 215, 170, 0.85); /* Warm Orange-Peach */
             --border-muted: #FED7AA;
             
-            --text-heading: #0F172A;
-            --text-body: #334155;
-            --text-muted: #64748B;
+            --text-heading: #0F172A;         /* Slate 900 */
+            --text-body: #1E293B;            /* Slate 800 */
+            --text-muted: #64748B;           /* Slate 500 */
 
+            --accent: #FF7300;               /* Official Cabinet Orange */
             --bg-pill: #FFF7ED;
-            --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+            --shadow-card: 0 8px 24px -6px rgba(255, 115, 0, 0.10);
         }
 
         html.dark-mode {
@@ -42,6 +43,7 @@
             --text-body: #E2E8F0;
             --text-muted: #94A3B8;
 
+            --accent: #FF7300;
             --bg-pill: rgba(30, 41, 59, 0.7);
             --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
         }
@@ -65,7 +67,21 @@
         .ui-heading { color: var(--text-heading) !important; }
         .ui-body { color: var(--text-body) !important; }
         .ui-muted { color: var(--text-muted) !important; }
-        .ui-pill { background: var(--bg-pill); border: 1px solid var(--border-muted); }
+
+        .ui-pill {
+            background: var(--bg-pill);
+            border: 1px solid var(--border-muted);
+        }
+
+        .btn-kabinet {
+            background-color: #FF7300;
+            color: #FFFFFF;
+            transition: all 0.2s ease;
+        }
+        .btn-kabinet:hover {
+            background-color: #EA580C;
+            box-shadow: 0 6px 20px -2px rgba(255, 115, 0, 0.35);
+        }
 
         .modal-backdrop {
             background-color: rgba(15, 23, 42, 0.65);
@@ -73,25 +89,25 @@
         }
     </style>
 </head>
-<body class="selection:bg-emerald-500 selection:text-white pb-16">
+<body class="selection:bg-orange-500 selection:text-white pb-16">
 
     <!-- TOP NAVBAR ADMIN -->
     <header class="sticky top-0 z-40 w-full px-3 sm:px-6 pt-3 pb-2">
         <div class="max-w-6xl mx-auto ui-card rounded-2xl px-4 py-3 flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <a href="index.html" class="flex items-center gap-2 text-xs font-semibold ui-muted hover:text-emerald-600">
+                <a href="index.html" class="flex items-center gap-2 text-xs font-semibold ui-muted hover:text-[#FF7300]">
                     <i class="fa-solid fa-arrow-left"></i> Web Publik
                 </a>
-                <span class="text-gray-300 dark:text-gray-700">|</span>
+                <span class="text-orange-200 dark:text-gray-700">|</span>
                 <span class="font-outfit font-extrabold text-lg ui-heading tracking-tight">Pinjamip Admin</span>
             </div>
 
             <div class="flex items-center gap-2">
-                <button onclick="toggleTheme()" class="w-9 h-9 rounded-xl ui-pill flex items-center justify-center ui-body hover:text-emerald-600">
+                <button onclick="toggleTheme()" class="w-9 h-9 rounded-xl ui-pill flex items-center justify-center ui-body hover:text-[#FF7300]">
                     <i id="theme-icon" class="fa-solid fa-moon text-sm"></i>
                 </button>
-                <button onclick="bukaModalPengaturanApi()" class="px-3 py-2 rounded-xl ui-pill text-xs font-semibold ui-body hover:text-emerald-600 flex items-center gap-1.5" title="Koneksi Google Script">
-                    <i class="fa-solid fa-gear"></i> <span class="hidden sm:inline">Google Script</span>
+                <button onclick="bukaModalPengaturanApi()" class="px-3 py-2 rounded-xl ui-pill text-xs font-semibold ui-body hover:text-[#FF7300] flex items-center gap-1.5" title="Koneksi Google Script">
+                    <i class="fa-solid fa-gear text-[#FF7300]"></i> <span class="hidden sm:inline">Google Script</span>
                 </button>
                 <button id="btn-logout" onclick="logoutAdmin()" class="hidden px-3 py-2 rounded-xl bg-rose-500/15 text-rose-500 border border-rose-500/30 text-xs font-semibold hover:bg-rose-500/25 flex items-center gap-1.5">
                     <i class="fa-solid fa-right-from-bracket"></i> Keluar
@@ -103,35 +119,35 @@
     <!-- CONTENT WRAPPER -->
     <main class="max-w-6xl mx-auto px-4 sm:px-6 pt-4">
 
-        <!-- 1. LOGIN FORM CONTAINER (IF NOT LOGGED IN) -->
-        <div id="section-login" class="max-w-md mx-auto my-12 ui-card rounded-2xl p-6 sm:p-8 space-y-5 text-center">
-            <div class="w-14 h-14 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center mx-auto text-2xl">
+        <!-- 1. LOGIN FORM -->
+        <div id="section-login" class="max-w-md mx-auto my-12 ui-card rounded-2xl p-6 sm:p-8 space-y-5 text-center border-orange-200">
+            <div class="w-14 h-14 rounded-2xl bg-orange-500/10 text-[#FF7300] border border-orange-500/20 flex items-center justify-center mx-auto text-2xl">
                 <i class="fa-solid fa-shield-halved"></i>
             </div>
             <div>
                 <h2 class="text-xl font-bold font-outfit ui-heading">Verifikasi Pengurus</h2>
-                <p class="text-xs ui-muted mt-1">Masukkan PIN Admin untuk mengakses data peminjaman & inventaris.</p>
+                <p class="text-xs ui-muted mt-1">Masukkan PIN Admin untuk meninjau data peminjaman.</p>
             </div>
 
             <form onsubmit="submitLoginAdmin(event)" class="space-y-4">
                 <input type="password" id="admin-pin-input" placeholder="PIN Admin (Default: 123456)" maxlength="10" required
-                       class="w-full text-center tracking-widest text-lg font-bold px-4 py-3 rounded-xl ui-card ui-heading focus:outline-none focus:border-emerald-500">
+                       class="w-full text-center tracking-widest text-lg font-bold px-4 py-3 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
 
-                <button type="submit" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-md">
+                <button type="submit" class="w-full py-3 rounded-xl btn-kabinet text-xs font-bold transition-all shadow-md">
                     Buka Dashboard
                 </button>
             </form>
         </div>
 
-        <!-- 2. DASHBOARD CONTAINER (AFTER LOGIN) -->
+        <!-- 2. DASHBOARD CONTAINER -->
         <div id="section-dashboard" class="space-y-6 hidden">
             <!-- Metric Cards -->
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                <div class="ui-card p-4 rounded-2xl border-l-4 border-l-amber-500">
+                <div class="ui-card p-4 rounded-2xl border-l-4 border-l-[#FF7300]">
                     <span class="text-[11px] ui-muted font-bold uppercase">Menunggu Tinjau</span>
                     <div class="flex items-baseline justify-between mt-1">
-                        <span id="stat-menunggu" class="text-2xl font-extrabold font-outfit text-amber-500">0</span>
-                        <i class="fa-solid fa-hourglass-half text-amber-500/40 text-lg"></i>
+                        <span id="stat-menunggu" class="text-2xl font-extrabold font-outfit text-[#FF7300]">0</span>
+                        <i class="fa-solid fa-hourglass-half text-orange-400/40 text-lg"></i>
                     </div>
                 </div>
                 <div class="ui-card p-4 rounded-2xl border-l-4 border-l-emerald-500">
@@ -141,35 +157,35 @@
                         <i class="fa-solid fa-hand-holding-hand text-emerald-500/40 text-lg"></i>
                     </div>
                 </div>
-                <div class="ui-card p-4 rounded-2xl border-l-4 border-l-blue-500">
+                <div class="ui-card p-4 rounded-2xl border-l-4 border-l-amber-500">
                     <span class="text-[11px] ui-muted font-bold uppercase">Total Barang</span>
                     <div class="flex items-baseline justify-between mt-1">
-                        <span id="stat-total-barang" class="text-2xl font-extrabold font-outfit text-blue-500">0</span>
-                        <i class="fa-solid fa-boxes-stacked text-blue-500/40 text-lg"></i>
+                        <span id="stat-total-barang" class="text-2xl font-extrabold font-outfit text-amber-500">0</span>
+                        <i class="fa-solid fa-boxes-stacked text-amber-500/40 text-lg"></i>
                     </div>
                 </div>
-                <div class="ui-card p-4 rounded-2xl border-l-4 border-l-purple-500">
+                <div class="ui-card p-4 rounded-2xl border-l-4 border-l-blue-500">
                     <span class="text-[11px] ui-muted font-bold uppercase">Total Riwayat</span>
                     <div class="flex items-baseline justify-between mt-1">
-                        <span id="stat-total-riwayat" class="text-2xl font-extrabold font-outfit text-purple-500">0</span>
-                        <i class="fa-solid fa-clipboard-list text-purple-500/40 text-lg"></i>
+                        <span id="stat-total-riwayat" class="text-2xl font-extrabold font-outfit text-blue-500">0</span>
+                        <i class="fa-solid fa-clipboard-list text-blue-500/40 text-lg"></i>
                     </div>
                 </div>
             </div>
 
             <!-- Sub Navigation Tabs -->
-            <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 pb-2">
+            <div class="flex items-center justify-between border-b border-orange-200 dark:border-gray-800 pb-2">
                 <div class="flex gap-2">
-                    <button onclick="switchAdminTab('tinjau')" id="tab-btn-tinjau" class="px-4 py-2 rounded-xl text-xs font-bold transition-all bg-emerald-600 text-white shadow-sm flex items-center gap-1.5">
+                    <button onclick="switchAdminTab('tinjau')" id="tab-btn-tinjau" class="px-4 py-2 rounded-xl text-xs font-bold transition-all btn-kabinet shadow-sm flex items-center gap-1.5">
                         <i class="fa-solid fa-inbox"></i> Permintaan Masuk
-                        <span id="badge-menunggu" class="hidden px-1.5 py-0.2 rounded-full bg-amber-500 text-black text-[10px] font-bold">0</span>
+                        <span id="badge-menunggu" class="hidden px-1.5 py-0.2 rounded-full bg-white text-[#FF7300] text-[10px] font-bold">0</span>
                     </button>
-                    <button onclick="switchAdminTab('barang')" id="tab-btn-barang" class="px-4 py-2 rounded-xl text-xs font-bold transition-all ui-pill ui-body hover:text-emerald-600 flex items-center gap-1.5">
+                    <button onclick="switchAdminTab('barang')" id="tab-btn-barang" class="px-4 py-2 rounded-xl text-xs font-bold transition-all ui-pill ui-body hover:text-[#FF7300] flex items-center gap-1.5">
                         <i class="fa-solid fa-boxes-stacked"></i> Kelola Barang
                     </button>
                 </div>
 
-                <button onclick="bukaModalTambahBarang()" id="btn-tambah-barang-quick" class="hidden px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-md">
+                <button onclick="bukaModalTambahBarang()" id="btn-tambah-barang-quick" class="hidden px-4 py-2 rounded-xl btn-kabinet text-xs font-bold transition-all flex items-center gap-1.5 shadow-md">
                     <i class="fa-solid fa-plus"></i> Tambah Barang
                 </button>
             </div>
@@ -177,8 +193,8 @@
             <!-- SUB-TAB 1: TINJAUAN PERMINTAAN -->
             <div id="subtab-tinjau" class="space-y-4">
                 <div class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar text-xs">
-                    <button onclick="filterAdminPeminjaman('SEMUA')" class="filter-pjm-btn px-3.5 py-1.5 rounded-lg bg-emerald-600 text-white font-semibold">Semua</button>
-                    <button onclick="filterAdminPeminjaman('MENUNGGU')" class="filter-pjm-btn px-3.5 py-1.5 rounded-lg ui-pill text-amber-500">Menunggu Tinjau</button>
+                    <button onclick="filterAdminPeminjaman('SEMUA')" class="filter-pjm-btn px-3.5 py-1.5 rounded-lg btn-kabinet font-semibold">Semua</button>
+                    <button onclick="filterAdminPeminjaman('MENUNGGU')" class="filter-pjm-btn px-3.5 py-1.5 rounded-lg ui-pill text-[#FF7300]">Menunggu Tinjau</button>
                     <button onclick="filterAdminPeminjaman('DISETUJUI')" class="filter-pjm-btn px-3.5 py-1.5 rounded-lg ui-pill text-emerald-600 dark:text-emerald-400">Disetujui</button>
                     <button onclick="filterAdminPeminjaman('DIKEMBALIKAN')" class="filter-pjm-btn px-3.5 py-1.5 rounded-lg ui-pill text-blue-500">Sudah Kembali</button>
                     <button onclick="filterAdminPeminjaman('DITOLAK')" class="filter-pjm-btn px-3.5 py-1.5 rounded-lg ui-pill text-rose-500">Ditolak</button>
@@ -201,9 +217,9 @@
 
     <!-- MODAL: TAMBAH / EDIT BARANG -->
     <div id="modal-barang" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden">
-        <div class="ui-card w-full max-w-lg rounded-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto border border-emerald-500/30">
-            <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 pb-3">
-                <h3 id="modal-barang-title" class="font-outfit font-bold text-lg text-emerald-600 dark:text-emerald-400">Tambah Barang Baru</h3>
+        <div class="ui-card w-full max-w-lg rounded-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto border border-orange-300 dark:border-white/10">
+            <div class="flex items-center justify-between border-b border-orange-200 dark:border-gray-800 pb-3">
+                <h3 id="modal-barang-title" class="font-outfit font-bold text-lg text-[#FF7300]">Tambah Barang Baru</h3>
                 <button onclick="tutupModal('modal-barang')" class="ui-muted hover:text-gray-900 dark:hover:text-white p-1">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
@@ -215,13 +231,13 @@
                 <div>
                     <label class="block ui-heading font-semibold mb-1">Nama Barang <span class="text-rose-500">*</span></label>
                     <input type="text" id="barang-nama" required placeholder="Contoh: Proyektor Epson EB-E500"
-                           class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-emerald-500">
+                           class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="block ui-heading font-semibold mb-1">Kategori <span class="text-rose-500">*</span></label>
-                        <select id="barang-kategori" class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-emerald-500">
+                        <select id="barang-kategori" class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
                             <option value="Elektronik">Elektronik</option>
                             <option value="Audio & Sound">Audio & Sound</option>
                             <option value="Kelistrikan">Kelistrikan</option>
@@ -232,13 +248,13 @@
                     <div>
                         <label class="block ui-heading font-semibold mb-1">Total Stok Unit <span class="text-rose-500">*</span></label>
                         <input type="number" id="barang-stok" required min="1" value="1"
-                               class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-emerald-500">
+                               class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
                     </div>
                 </div>
 
                 <div>
                     <label class="block ui-heading font-semibold mb-1">Kondisi Barang</label>
-                    <select id="barang-kondisi" class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-emerald-500">
+                    <select id="barang-kondisi" class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
                         <option value="Bagus / Prima">Bagus / Prima</option>
                         <option value="Cukup Baik">Cukup Baik</option>
                         <option value="Perlu Perbaikan">Perlu Perbaikan</option>
@@ -248,22 +264,22 @@
                 <div>
                     <label class="block ui-heading font-semibold mb-1">Deskripsi & Kelengkapan</label>
                     <textarea id="barang-deskripsi" rows="2" placeholder="Kelengkapan, tas, kabel..."
-                              class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-emerald-500"></textarea>
+                              class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]"></textarea>
                 </div>
 
                 <!-- Foto Barang -->
                 <div>
                     <label class="block ui-heading font-semibold mb-1">Foto Barang</label>
-                    <div class="border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-emerald-500 rounded-xl p-3 text-center transition-all">
+                    <div class="border-2 border-dashed border-orange-200 dark:border-gray-700 hover:border-[#FF7300] rounded-xl p-3 text-center transition-all bg-[#FFF7ED]/50 dark:bg-transparent">
                         <input type="file" id="barang-foto-input" accept="image/*" class="hidden" onchange="previewImageBarang(event)">
                         <div id="preview-container-barang" class="hidden space-y-2">
-                            <img id="preview-img-barang" src="" class="h-28 mx-auto rounded-lg object-contain border border-gray-300 dark:border-gray-700">
+                            <img id="preview-img-barang" src="" class="h-28 mx-auto rounded-lg object-contain border border-orange-200 dark:border-gray-700">
                             <button type="button" onclick="hapusPreviewBarang()" class="text-xs text-rose-500 hover:underline">
                                 <i class="fa-solid fa-trash mr-1"></i>Ganti / Hapus Foto
                             </button>
                         </div>
                         <div id="upload-placeholder-barang" onclick="document.getElementById('barang-foto-input').click()" class="cursor-pointer space-y-1">
-                            <i class="fa-solid fa-image text-2xl text-emerald-600 dark:text-emerald-400"></i>
+                            <i class="fa-solid fa-image text-2xl text-[#FF7300]"></i>
                             <p class="text-xs ui-body font-medium">Klik untuk upload foto barang</p>
                         </div>
                     </div>
@@ -271,7 +287,7 @@
 
                 <div class="pt-2 flex justify-end gap-2">
                     <button type="button" onclick="tutupModal('modal-barang')" class="px-4 py-2.5 rounded-xl ui-pill ui-body font-semibold">Batal</button>
-                    <button type="submit" id="btn-submit-barang" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition-all shadow-md">
+                    <button type="submit" id="btn-submit-barang" class="px-5 py-2.5 rounded-xl btn-kabinet font-bold shadow-md">
                         <i class="fa-solid fa-floppy-disk"></i> Simpan Barang
                     </button>
                 </div>
@@ -292,8 +308,8 @@
 
     <!-- MODAL: PENGATURAN API GOOGLE APPS SCRIPT -->
     <div id="modal-api-setting" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden">
-        <div class="ui-card w-full max-w-md rounded-2xl p-6 space-y-4 border border-emerald-500/30">
-            <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 pb-3">
+        <div class="ui-card w-full max-w-md rounded-2xl p-6 space-y-4 border border-orange-300 dark:border-white/10">
+            <div class="flex items-center justify-between border-b border-orange-200 dark:border-gray-800 pb-3">
                 <h3 class="font-outfit font-bold text-lg ui-heading">Koneksi Google Apps Script</h3>
                 <button onclick="tutupModal('modal-api-setting')" class="ui-muted hover:text-gray-900 dark:hover:text-white p-1">
                     <i class="fa-solid fa-xmark text-lg"></i>
@@ -304,11 +320,11 @@
                 <div>
                     <label class="block ui-heading font-semibold mb-1">Web App Deployment URL:</label>
                     <input type="url" id="input-api-url" placeholder="https://script.google.com/macros/s/.../exec"
-                           class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading text-xs focus:outline-none focus:border-emerald-500">
+                           class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading text-xs focus:outline-none focus:border-[#FF7300]">
                 </div>
 
                 <div class="flex justify-end gap-2 pt-2">
-                    <button onclick="simpanApiUrl()" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md">
+                    <button onclick="simpanApiUrl()" class="px-5 py-2.5 rounded-xl btn-kabinet font-bold text-xs shadow-md">
                         Simpan Koneksi
                     </button>
                 </div>
@@ -431,14 +447,14 @@
             const btnTambahQuick = document.getElementById('btn-tambah-barang-quick');
 
             if (tabName === 'tinjau') {
-                btnTinjau.className = "px-4 py-2 rounded-xl text-xs font-bold transition-all bg-emerald-600 text-white shadow-sm flex items-center gap-1.5";
-                btnBarang.className = "px-4 py-2 rounded-xl text-xs font-bold transition-all ui-pill ui-body hover:text-emerald-600 flex items-center gap-1.5";
+                btnTinjau.className = "px-4 py-2 rounded-xl text-xs font-bold transition-all btn-kabinet shadow-sm flex items-center gap-1.5";
+                btnBarang.className = "px-4 py-2 rounded-xl text-xs font-bold transition-all ui-pill ui-body hover:text-[#FF7300] flex items-center gap-1.5";
                 subTinjau.classList.remove('hidden');
                 subBarang.classList.add('hidden');
                 btnTambahQuick.classList.add('hidden');
             } else {
-                btnBarang.className = "px-4 py-2 rounded-xl text-xs font-bold transition-all bg-emerald-600 text-white shadow-sm flex items-center gap-1.5";
-                btnTinjau.className = "px-4 py-2 rounded-xl text-xs font-bold transition-all ui-pill ui-body hover:text-emerald-600 flex items-center gap-1.5";
+                btnBarang.className = "px-4 py-2 rounded-xl text-xs font-bold transition-all btn-kabinet shadow-sm flex items-center gap-1.5";
+                btnTinjau.className = "px-4 py-2 rounded-xl text-xs font-bold transition-all ui-pill ui-body hover:text-[#FF7300] flex items-center gap-1.5";
                 subBarang.classList.remove('hidden');
                 subTinjau.classList.add('hidden');
                 btnTambahQuick.classList.remove('hidden');
@@ -451,7 +467,7 @@
             document.querySelectorAll('.filter-pjm-btn').forEach(btn => {
                 btn.className = "filter-pjm-btn px-3.5 py-1.5 rounded-lg ui-pill ui-body";
             });
-            event.target.className = "filter-pjm-btn px-3.5 py-1.5 rounded-lg bg-emerald-600 text-white font-semibold";
+            event.target.className = "filter-pjm-btn px-3.5 py-1.5 rounded-lg btn-kabinet font-semibold";
             renderAdminPeminjamanList();
         }
 
@@ -528,9 +544,9 @@
                 const card = document.createElement('div');
                 card.className = "ui-card p-5 rounded-2xl space-y-3 transition-all";
                 card.innerHTML = `
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-200 dark:border-gray-800 pb-3">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-orange-200 dark:border-gray-800 pb-3">
                         <div class="flex items-center gap-2">
-                            <span class="font-mono text-xs font-bold ui-pill px-2.5 py-1 rounded-md">${item.id_pinjam}</span>
+                            <span class="font-mono text-xs font-bold ui-pill px-2.5 py-1 rounded-md text-[#FF7300]">${item.id_pinjam}</span>
                             <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${statusMeta.badgeClass}">
                                 ${statusMeta.label}
                             </span>
@@ -546,22 +562,22 @@
                         </div>
                         <div class="space-y-1">
                             <span class="ui-muted text-[10px] uppercase font-bold tracking-wider">Barang & Tanggal</span>
-                            <p class="font-bold text-emerald-600 dark:text-emerald-400 text-sm">${item.nama_barang}</p>
+                            <p class="font-bold text-[#FF7300] text-sm">${item.nama_barang}</p>
                             <p class="ui-muted"><i class="fa-solid fa-calendar-days mr-1"></i> ${item.tgl_pinjam} s.d ${item.tgl_kembali}</p>
                         </div>
                         <div class="space-y-1">
                             <span class="ui-muted text-[10px] uppercase font-bold tracking-wider">Keperluan</span>
                             <p class="ui-body italic">"${item.keperluan || '-'}"</p>
-                            ${item.catatan_admin ? `<p class="text-amber-500 font-semibold pt-1"><i class="fa-solid fa-comment mr-1"></i> Catatan: ${item.catatan_admin}</p>` : ''}
+                            ${item.catatan_admin ? `<p class="text-[#FF7300] font-semibold pt-1"><i class="fa-solid fa-comment mr-1"></i> Catatan: ${item.catatan_admin}</p>` : ''}
                         </div>
                     </div>
 
                     <!-- Tombol Aksi -->
-                    <div class="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-gray-200 dark:border-gray-800">
+                    <div class="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-orange-200 dark:border-gray-800">
                         <div class="flex items-center gap-2">
                             ${item.foto_identitas ? `
-                                <button onclick="bukaLightbox('${item.foto_identitas}', 'Foto KTM: ${item.nama_peminjam}')" class="px-3 py-1.5 rounded-xl ui-pill text-xs font-semibold ui-body hover:text-emerald-600 flex items-center gap-1.5">
-                                    <i class="fa-solid fa-id-card text-emerald-600"></i> Lihat KTM
+                                <button onclick="bukaLightbox('${item.foto_identitas}', 'Foto KTM: ${item.nama_peminjam}')" class="px-3 py-1.5 rounded-xl ui-pill text-xs font-semibold ui-body hover:text-[#FF7300] flex items-center gap-1.5">
+                                    <i class="fa-solid fa-id-card text-[#FF7300]"></i> Lihat KTM
                                 </button>
                             ` : `<span class="text-xs ui-muted italic">Tanpa foto KTM</span>`}
 
@@ -575,7 +591,7 @@
                                 <button onclick="tinjauAksiAdmin('${item.id_pinjam}', 'TOLAK')" class="px-3.5 py-1.5 rounded-xl bg-rose-500/15 text-rose-500 border border-rose-500/30 text-xs font-bold hover:bg-rose-500/25">
                                     <i class="fa-solid fa-xmark mr-1"></i> Tolak
                                 </button>
-                                <button onclick="tinjauAksiAdmin('${item.id_pinjam}', 'DISETUJUI')" class="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md">
+                                <button onclick="tinjauAksiAdmin('${item.id_pinjam}', 'DISETUJUI')" class="px-4 py-1.5 rounded-xl btn-kabinet text-xs font-bold shadow-md">
                                     <i class="fa-solid fa-check mr-1"></i> Terima (ACC)
                                 </button>
                             ` : ''}
@@ -615,7 +631,7 @@
                     text: 'Stok tersedia barang akan otomatis berkurang 1 unit.',
                     icon: 'question',
                     showCancelButton: true,
-                    confirmButtonColor: '#059669',
+                    confirmButtonColor: '#FF7300',
                     confirmButtonText: 'Ya, Setujui',
                     cancelButtonText: 'Batal'
                 });
@@ -674,7 +690,6 @@
             renderAdminDashboard();
         }
 
-        // KELOLA BARANG
         let base64FotoBarang = "";
 
         function renderAdminBarangList() {
@@ -692,20 +707,20 @@
                             <span class="absolute top-2 left-2 px-2.5 py-1 rounded-md text-[11px] font-bold bg-black/70 text-white">
                                 ${item.id_barang}
                             </span>
-                            <span class="absolute top-2 right-2 px-2.5 py-1 rounded-md text-[11px] font-bold bg-emerald-600 text-white">
+                            <span class="absolute top-2 right-2 px-2.5 py-1 rounded-md text-[11px] font-bold bg-[#FF7300] text-white">
                                 Stok: ${item.stok_tersedia} / ${item.stok_total}
                             </span>
                         </div>
                         <div class="p-4 space-y-2">
-                            <span class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase">${item.kategori || 'Umum'}</span>
+                            <span class="text-[11px] font-bold text-[#FF7300] uppercase">${item.kategori || 'Umum'}</span>
                             <h4 class="font-outfit font-extrabold text-base ui-heading">${item.nama_barang}</h4>
                             <p class="text-xs ui-muted line-clamp-2">${item.deskripsi || '-'}</p>
-                            <p class="text-xs ui-body pt-1">Kondisi: <span class="font-bold text-emerald-600 dark:text-emerald-400">${item.kondisi || 'Bagus'}</span></p>
+                            <p class="text-xs ui-body pt-1">Kondisi: <span class="font-bold text-[#FF7300]">${item.kondisi || 'Bagus'}</span></p>
                         </div>
                     </div>
 
                     <div class="p-4 pt-0 flex gap-2">
-                        <button onclick="bukaModalEditBarang('${item.id_barang}')" class="flex-1 py-2 rounded-xl ui-pill text-xs font-bold ui-heading hover:text-emerald-600 flex items-center justify-center gap-1.5">
+                        <button onclick="bukaModalEditBarang('${item.id_barang}')" class="flex-1 py-2 rounded-xl ui-pill text-xs font-bold ui-heading hover:text-[#FF7300] flex items-center justify-center gap-1.5">
                             <i class="fa-solid fa-pen-to-square"></i> Edit
                         </button>
                         <button onclick="hapusBarangAdmin('${item.id_barang}')" class="px-3.5 py-2 rounded-xl bg-rose-500/15 text-rose-500 border border-rose-500/30 text-xs font-bold hover:bg-rose-500/25">
@@ -868,7 +883,7 @@
         function getStatusBadge(status) {
             const s = (status || "").toUpperCase();
             if (s === "MENUNGGU") {
-                return { label: "Menunggu Tinjauan", badgeClass: "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30" };
+                return { label: "Menunggu Tinjauan", badgeClass: "bg-orange-500/15 text-[#FF7300] border border-orange-500/30" };
             } else if (s === "DISETUJUI") {
                 return { label: "Disetujui / Diambil", badgeClass: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30" };
             } else if (s === "DITOLAK") {

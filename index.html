@@ -21,26 +21,32 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
-        /* LIGHT MODE (DEFAULT SESUAI TAMPILAN) */
+        /* =========================================================
+           LIGHT MODE (DEFAULT) - Nuansa Web Keuangan IMIP
+           Official Cabinet Colors (#FF7300, #FFA500) on Cream (#FAF5EF)
+           ========================================================= */
         :root {
-            --bg-main: #FAF5EF;
-            --bg-card: #FFFFFF;
-            --border-card: rgba(254, 215, 170, 0.7);
+            --bg-main: #FAF5EF;              /* Warm Cream */
+            --bg-card: #FFFFFF;              /* Crisp White */
+            --border-card: rgba(254, 215, 170, 0.85); /* Warm Orange-Peach */
             --border-muted: #FED7AA;
             
-            --text-heading: #0F172A;
-            --text-body: #334155;
-            --text-muted: #64748B;
+            --text-heading: #0F172A;         /* Slate 900 */
+            --text-body: #1E293B;            /* Slate 800 */
+            --text-muted: #64748B;           /* Slate 500 */
 
-            --accent: #10B981;
-            --accent-hover: #059669;
-            --accent-bg: rgba(16, 185, 129, 0.12);
+            --accent: #FF7300;               /* Official Cabinet Orange */
+            --accent-hover: #EA580C;         /* Darker Orange */
+            --accent-bg: rgba(255, 115, 0, 0.10);
+            --accent-border: rgba(255, 115, 0, 0.35);
 
-            --bg-pill: #FFF7ED;
-            --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+            --bg-pill: #FFF7ED;              /* Warm Cream Pill */
+            --shadow-card: 0 8px 24px -6px rgba(255, 115, 0, 0.10);
         }
 
-        /* DARK MODE */
+        /* =========================================================
+           DARK MODE - Nuansa Deep Obsidian IMIP
+           ========================================================= */
         html.dark-mode {
             --bg-main: #080C14;
             --bg-card: #111827;
@@ -51,9 +57,10 @@
             --text-body: #E2E8F0;
             --text-muted: #94A3B8;
 
-            --accent: #10B981;
-            --accent-hover: #34D399;
-            --accent-bg: rgba(16, 185, 129, 0.15);
+            --accent: #FF7300;
+            --accent-hover: #FFA500;
+            --accent-bg: rgba(255, 115, 0, 0.15);
+            --accent-border: rgba(255, 115, 0, 0.4);
 
             --bg-pill: rgba(30, 41, 59, 0.7);
             --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
@@ -76,21 +83,27 @@
             box-shadow: var(--shadow-card);
         }
 
-        .ui-heading {
-            color: var(--text-heading) !important;
-        }
-
-        .ui-body {
-            color: var(--text-body) !important;
-        }
-
-        .ui-muted {
-            color: var(--text-muted) !important;
-        }
+        .ui-heading { color: var(--text-heading) !important; }
+        .ui-body { color: var(--text-body) !important; }
+        .ui-muted { color: var(--text-muted) !important; }
 
         .ui-pill {
             background: var(--bg-pill);
             border: 1px solid var(--border-muted);
+        }
+
+        .btn-kabinet {
+            background-color: #FF7300;
+            color: #FFFFFF;
+            transition: all 0.2s ease;
+        }
+        .btn-kabinet:hover {
+            background-color: #EA580C;
+            box-shadow: 0 6px 20px -2px rgba(255, 115, 0, 0.4);
+        }
+
+        .text-kabinet {
+            color: #FF7300;
         }
 
         .modal-backdrop {
@@ -99,7 +112,7 @@
         }
     </style>
 </head>
-<body class="selection:bg-emerald-500 selection:text-white">
+<body class="selection:bg-orange-500 selection:text-white">
 
     <!-- TOP NAVBAR -->
     <header class="sticky top-0 z-40 w-full px-3 sm:px-6 pt-3 pb-2">
@@ -107,12 +120,12 @@
             <!-- Brand Pinjamip -->
             <a href="index.html" class="flex items-center gap-3">
                 <img src="IMIP.png" alt="IMIP Logo" class="h-9 w-auto object-contain drop-shadow" onerror="this.src='icons/icon-192.png'">
-                <span class="font-outfit font-extrabold text-xl sm:text-2xl tracking-tight bg-gradient-to-r from-emerald-600 to-teal-500 dark:from-emerald-400 dark:to-teal-300 bg-clip-text text-transparent">Pinjamip</span>
+                <span class="font-outfit font-extrabold text-2xl tracking-tight bg-gradient-to-r from-[#FF7300] to-[#FFA500] bg-clip-text text-transparent">Pinjamip</span>
             </a>
 
             <!-- Right Actions: Theme Toggle -->
             <div class="flex items-center gap-2">
-                <button onclick="toggleTheme()" class="w-9 h-9 rounded-xl ui-pill flex items-center justify-center ui-body hover:text-emerald-600 transition-all" title="Ubah Mode Tampilan">
+                <button onclick="toggleTheme()" class="w-9 h-9 rounded-xl ui-pill flex items-center justify-center ui-body hover:text-[#FF7300] transition-all" title="Ubah Mode Tampilan">
                     <i id="theme-icon" class="fa-solid fa-moon text-sm"></i>
                 </button>
             </div>
@@ -122,8 +135,8 @@
     <!-- MAIN CONTENT -->
     <main class="max-w-6xl mx-auto px-4 sm:px-6 pt-2 pb-16 space-y-6">
 
-        <!-- Clean Hero Section (Tanpa Subjudul / Badge Berlebihan) -->
-        <div class="ui-card rounded-2xl p-6 sm:p-8 border border-emerald-500/25 bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent">
+        <!-- Clean Hero Section -->
+        <div class="ui-card rounded-2xl p-6 sm:p-8 border border-orange-200 dark:border-white/10 bg-gradient-to-br from-orange-500/10 via-amber-500/5 to-transparent">
             <h1 class="text-2xl sm:text-3xl font-extrabold font-outfit ui-heading tracking-tight">
                 Peminjaman Barang & Fasilitas
             </h1>
@@ -132,24 +145,24 @@
         <!-- Search & Category Filters -->
         <div class="space-y-3">
             <div class="relative">
-                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 ui-muted text-sm"></i>
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-orange-500/70 text-sm"></i>
                 <input type="text" id="katalog-search" oninput="renderKatalog()" placeholder="Cari barang (Proyektor, Mic, Kabel)..." 
-                       class="w-full pl-10 pr-4 py-2.5 rounded-xl ui-card text-sm ui-heading placeholder:text-gray-400 focus:outline-none focus:border-emerald-500 transition-all">
+                       class="w-full pl-10 pr-4 py-2.5 rounded-xl ui-card text-sm ui-heading placeholder:text-gray-400 focus:outline-none focus:border-[#FF7300] focus:ring-1 focus:ring-[#FF7300] transition-all">
             </div>
 
             <!-- Category Pills -->
             <div class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar text-xs font-semibold" id="category-pills">
-                <button onclick="setCategoryFilter('Semua')" class="cat-pill px-4 py-2 rounded-xl whitespace-nowrap transition-all bg-emerald-600 text-white shadow-sm" data-cat="Semua">Semua</button>
-                <button onclick="setCategoryFilter('Elektronik')" class="cat-pill px-4 py-2 rounded-xl whitespace-nowrap transition-all ui-pill ui-body hover:text-emerald-600" data-cat="Elektronik">Elektronik</button>
-                <button onclick="setCategoryFilter('Audio & Sound')" class="cat-pill px-4 py-2 rounded-xl whitespace-nowrap transition-all ui-pill ui-body hover:text-emerald-600" data-cat="Audio & Sound">Audio & Sound</button>
-                <button onclick="setCategoryFilter('Kelistrikan')" class="cat-pill px-4 py-2 rounded-xl whitespace-nowrap transition-all ui-pill ui-body hover:text-emerald-600" data-cat="Kelistrikan">Kelistrikan</button>
-                <button onclick="setCategoryFilter('Dekorasi & Logistik')" class="cat-pill px-4 py-2 rounded-xl whitespace-nowrap transition-all ui-pill ui-body hover:text-emerald-600" data-cat="Dekorasi & Logistik">Dekorasi & Logistik</button>
+                <button onclick="setCategoryFilter('Semua')" class="cat-pill px-4 py-2 rounded-xl whitespace-nowrap transition-all btn-kabinet shadow-sm" data-cat="Semua">Semua</button>
+                <button onclick="setCategoryFilter('Elektronik')" class="cat-pill px-4 py-2 rounded-xl whitespace-nowrap transition-all ui-pill ui-body hover:text-[#FF7300]" data-cat="Elektronik">Elektronik</button>
+                <button onclick="setCategoryFilter('Audio & Sound')" class="cat-pill px-4 py-2 rounded-xl whitespace-nowrap transition-all ui-pill ui-body hover:text-[#FF7300]" data-cat="Audio & Sound">Audio & Sound</button>
+                <button onclick="setCategoryFilter('Kelistrikan')" class="cat-pill px-4 py-2 rounded-xl whitespace-nowrap transition-all ui-pill ui-body hover:text-[#FF7300]" data-cat="Kelistrikan">Kelistrikan</button>
+                <button onclick="setCategoryFilter('Dekorasi & Logistik')" class="cat-pill px-4 py-2 rounded-xl whitespace-nowrap transition-all ui-pill ui-body hover:text-[#FF7300]" data-cat="Dekorasi & Logistik">Dekorasi & Logistik</button>
             </div>
         </div>
 
         <!-- Loading Indicator -->
         <div id="katalog-loading" class="text-center py-10 hidden">
-            <i class="fa-solid fa-circle-notch fa-spin text-3xl text-emerald-500"></i>
+            <i class="fa-solid fa-circle-notch fa-spin text-3xl text-orange-500"></i>
             <p class="text-xs ui-muted mt-2">Memuat daftar barang...</p>
         </div>
 
@@ -168,19 +181,19 @@
     </main>
 
     <!-- FOOTER -->
-    <footer class="max-w-6xl mx-auto px-4 py-6 border-t border-gray-200 dark:border-gray-800 text-center text-xs ui-muted flex flex-col sm:flex-row items-center justify-between gap-3">
+    <footer class="max-w-6xl mx-auto px-4 py-6 border-t border-orange-200/60 dark:border-gray-800 text-center text-xs ui-muted flex flex-col sm:flex-row items-center justify-between gap-3">
         <p>© 2026 Pinjamip — LDK IMIP</p>
-        <a href="admin.html" class="hover:text-emerald-600 dark:hover:text-emerald-400 font-medium transition-all">
+        <a href="admin.html" class="hover:text-[#FF7300] font-medium transition-all">
             <i class="fa-solid fa-shield-halved mr-1"></i> Area Pengurus
         </a>
     </footer>
 
     <!-- MODAL: FORM PENGAJUAN PINJAM -->
     <div id="modal-pinjam" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden">
-        <div class="ui-card w-full max-w-lg rounded-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto border border-emerald-500/30">
-            <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 pb-3">
+        <div class="ui-card w-full max-w-lg rounded-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto border border-orange-300 dark:border-white/10">
+            <div class="flex items-center justify-between border-b border-orange-200 dark:border-gray-800 pb-3">
                 <div class="flex items-center gap-2">
-                    <i class="fa-solid fa-clipboard-check text-emerald-600 dark:text-emerald-400"></i>
+                    <i class="fa-solid fa-clipboard-check text-[#FF7300]"></i>
                     <h3 class="font-outfit font-bold text-lg ui-heading">Formulir Peminjaman</h3>
                 </div>
                 <button onclick="tutupModal('modal-pinjam')" class="ui-muted hover:text-gray-900 dark:hover:text-white p-1">
@@ -190,10 +203,10 @@
 
             <!-- Preview Barang Dipilih -->
             <div class="ui-pill p-3 rounded-xl flex items-center gap-3">
-                <img id="form-pinjam-foto" src="" class="w-14 h-14 rounded-lg object-cover bg-gray-200 dark:bg-gray-800 border border-gray-300 dark:border-gray-700">
+                <img id="form-pinjam-foto" src="" class="w-14 h-14 rounded-lg object-cover bg-gray-200 dark:bg-gray-800 border border-orange-200 dark:border-gray-700">
                 <div>
                     <h4 id="form-pinjam-nama" class="font-bold text-sm ui-heading">Nama Barang</h4>
-                    <span id="form-pinjam-kategori" class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">Kategori</span>
+                    <span id="form-pinjam-kategori" class="text-xs text-[#FF7300] font-semibold">Kategori</span>
                     <p id="form-pinjam-stok" class="text-xs ui-muted">Sisa Stok: 1 unit</p>
                 </div>
             </div>
@@ -204,19 +217,19 @@
                 <div>
                     <label class="block ui-heading font-semibold mb-1">Nama Lengkap Peminjam <span class="text-rose-500">*</span></label>
                     <input type="text" id="pinjam-nama" required placeholder="Masukkan nama Anda"
-                           class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading placeholder:text-gray-400 focus:outline-none focus:border-emerald-500">
+                           class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading placeholder:text-gray-400 focus:outline-none focus:border-[#FF7300]">
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="block ui-heading font-semibold mb-1">Nomor WhatsApp <span class="text-rose-500">*</span></label>
                         <input type="tel" id="pinjam-wa" required placeholder="08xxxxxxxxxx"
-                               class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading placeholder:text-gray-400 focus:outline-none focus:border-emerald-500">
+                               class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading placeholder:text-gray-400 focus:outline-none focus:border-[#FF7300]">
                     </div>
                     <div>
                         <label class="block ui-heading font-semibold mb-1">Divisi / Asal Lembaga <span class="text-rose-500">*</span></label>
                         <input type="text" id="pinjam-divisi" required placeholder="Contoh: Panitia / BPI"
-                               class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading placeholder:text-gray-400 focus:outline-none focus:border-emerald-500">
+                               class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading placeholder:text-gray-400 focus:outline-none focus:border-[#FF7300]">
                     </div>
                 </div>
 
@@ -224,19 +237,19 @@
                     <div>
                         <label class="block ui-heading font-semibold mb-1">Tanggal Mulai Pinjam <span class="text-rose-500">*</span></label>
                         <input type="date" id="pinjam-tgl-mulai" required
-                               class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-emerald-500">
+                               class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
                     </div>
                     <div>
                         <label class="block ui-heading font-semibold mb-1">Tanggal Selesai/Kembali <span class="text-rose-500">*</span></label>
                         <input type="date" id="pinjam-tgl-selesai" required
-                               class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-emerald-500">
+                               class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
                     </div>
                 </div>
 
                 <div>
                     <label class="block ui-heading font-semibold mb-1">Keperluan Peminjaman <span class="text-rose-500">*</span></label>
                     <textarea id="pinjam-keperluan" rows="2" required placeholder="Sebutkan kegiatan atau keperluan barang..."
-                              class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading placeholder:text-gray-400 focus:outline-none focus:border-emerald-500"></textarea>
+                              class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading placeholder:text-gray-400 focus:outline-none focus:border-[#FF7300]"></textarea>
                 </div>
 
                 <!-- Upload Foto Identitas/KTM -->
@@ -244,16 +257,16 @@
                     <label class="block ui-heading font-semibold mb-1">
                         Foto Identitas / KTM <span class="ui-muted text-xs font-normal">(Opsional)</span>
                     </label>
-                    <div class="border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-emerald-500 rounded-xl p-3 text-center transition-all">
+                    <div class="border-2 border-dashed border-orange-200 dark:border-gray-700 hover:border-[#FF7300] rounded-xl p-3 text-center transition-all bg-[#FFF7ED]/50 dark:bg-transparent">
                         <input type="file" id="pinjam-foto-identitas" accept="image/*" class="hidden" onchange="previewImagePinjam(event)">
                         <div id="preview-container-pinjam" class="hidden space-y-2">
-                            <img id="preview-img-pinjam" src="" class="h-28 mx-auto rounded-lg object-contain border border-gray-300 dark:border-gray-700">
+                            <img id="preview-img-pinjam" src="" class="h-28 mx-auto rounded-lg object-contain border border-orange-200 dark:border-gray-700">
                             <button type="button" onclick="hapusPreviewPinjam()" class="text-xs text-rose-500 hover:underline">
                                 <i class="fa-solid fa-trash mr-1"></i>Hapus Foto
                             </button>
                         </div>
                         <div id="upload-placeholder-pinjam" onclick="document.getElementById('pinjam-foto-identitas').click()" class="cursor-pointer space-y-1">
-                            <i class="fa-solid fa-id-card text-2xl text-emerald-600 dark:text-emerald-400"></i>
+                            <i class="fa-solid fa-id-card text-2xl text-[#FF7300]"></i>
                             <p class="text-xs ui-body font-medium">Klik untuk upload foto KTM / KTP</p>
                             <p class="text-[10px] ui-muted">Otomatis di-compress agar upload kilat</p>
                         </div>
@@ -262,7 +275,7 @@
 
                 <div class="pt-2 flex justify-end gap-2">
                     <button type="button" onclick="tutupModal('modal-pinjam')" class="px-4 py-2.5 rounded-xl ui-pill ui-body font-semibold">Batal</button>
-                    <button type="submit" id="btn-submit-pinjam" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition-all flex items-center gap-2 shadow-md">
+                    <button type="submit" id="btn-submit-pinjam" class="px-5 py-2.5 rounded-xl btn-kabinet font-bold flex items-center gap-2 shadow-md">
                         <i class="fa-solid fa-paper-plane"></i> Kirim Pengajuan
                     </button>
                 </div>
@@ -277,7 +290,6 @@
 
         let currentCategory = "Semua";
 
-        // Default Data Barang
         let localDB = {
             barang: [
                 {
@@ -328,7 +340,6 @@
             peminjaman: []
         };
 
-        // Load data dari storage
         try {
             const saved = localStorage.getItem(STORAGE_KEY_LOCAL);
             if (saved) {
@@ -403,9 +414,9 @@
             currentCategory = cat;
             document.querySelectorAll('.cat-pill').forEach(btn => {
                 if (btn.getAttribute('data-cat') === cat) {
-                    btn.className = "cat-pill px-4 py-2 rounded-xl whitespace-nowrap transition-all bg-emerald-600 text-white shadow-sm";
+                    btn.className = "cat-pill px-4 py-2 rounded-xl whitespace-nowrap transition-all btn-kabinet shadow-sm";
                 } else {
-                    btn.className = "cat-pill px-4 py-2 rounded-xl whitespace-nowrap transition-all ui-pill ui-body hover:text-emerald-600";
+                    btn.className = "cat-pill px-4 py-2 rounded-xl whitespace-nowrap transition-all ui-pill ui-body hover:text-[#FF7300]";
                 }
             });
             renderKatalog();
@@ -436,7 +447,7 @@
                 const isAvailable = tersedia > 0;
 
                 const card = document.createElement('div');
-                card.className = "ui-card rounded-2xl overflow-hidden flex flex-col justify-between hover:border-emerald-500/50 transition-all duration-300";
+                card.className = "ui-card rounded-2xl overflow-hidden flex flex-col justify-between hover:border-orange-400 transition-all duration-300";
                 card.innerHTML = `
                     <div>
                         <!-- Foto Barang -->
@@ -444,7 +455,7 @@
                             <img src="${item.foto_url || 'IMIP.png'}" alt="${item.nama_barang}" 
                                  class="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                                  onerror="this.src='IMIP.png'">
-                            <span class="absolute top-3 left-3 px-2.5 py-1 rounded-lg text-xs font-bold uppercase backdrop-blur-md ${isAvailable ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'}">
+                            <span class="absolute top-3 left-3 px-2.5 py-1 rounded-lg text-xs font-bold uppercase backdrop-blur-md ${isAvailable ? 'bg-[#FF7300] text-white shadow-md' : 'bg-rose-600 text-white'}">
                                 ${isAvailable ? `Tersedia (${tersedia})` : 'Sedang Habis'}
                             </span>
                             <span class="absolute top-3 right-3 px-2.5 py-1 rounded-lg text-xs font-semibold bg-black/60 text-white">
@@ -452,7 +463,7 @@
                             </span>
                         </div>
 
-                        <!-- Info Barang (Teks Jelas & Kontras Tinggi) -->
+                        <!-- Info Barang (Teks Tajam & Jelas) -->
                         <div class="p-5 space-y-2">
                             <h3 class="font-outfit font-extrabold text-lg ui-heading leading-snug">
                                 ${item.nama_barang}
@@ -460,7 +471,7 @@
                             <p class="text-xs ui-muted leading-relaxed line-clamp-2">
                                 ${item.deskripsi || 'Tidak ada deskripsi tambahan.'}
                             </p>
-                            <div class="pt-2 text-xs flex items-center gap-1.5 font-medium text-emerald-600 dark:text-emerald-400">
+                            <div class="pt-2 text-xs flex items-center gap-1.5 font-semibold text-[#FF7300]">
                                 <i class="fa-solid fa-circle-check text-[11px]"></i>
                                 <span>Kondisi: ${item.kondisi || 'Bagus / Prima'}</span>
                             </div>
@@ -470,7 +481,7 @@
                     <!-- Tombol Aksi -->
                     <div class="p-5 pt-0">
                         <button onclick="bukaModalPinjam('${item.id_barang}')" ${!isAvailable ? 'disabled' : ''} 
-                                class="w-full py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 ${isAvailable ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20' : 'bg-gray-300 dark:bg-gray-800 text-gray-500 cursor-not-allowed'}">
+                                class="w-full py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 ${isAvailable ? 'btn-kabinet shadow-md' : 'bg-gray-300 dark:bg-gray-800 text-gray-500 cursor-not-allowed'}">
                             <i class="fa-solid fa-hand-holding-hand"></i> ${isAvailable ? 'Ajukan Peminjaman' : 'Stok Sedang Habis'}
                         </button>
                     </div>
@@ -587,25 +598,20 @@
                 title: 'Pengajuan Berhasil Dikirim!',
                 html: `
                     <p class="text-xs text-gray-500 mb-2">Simpan ID Peminjaman Anda:</p>
-                    <div class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-emerald-600 dark:text-emerald-400 font-mono font-bold text-sm select-all">
+                    <div class="p-2.5 rounded-xl bg-orange-100 dark:bg-gray-800 text-[#FF7300] font-mono font-bold text-sm select-all">
                         ${idPinjam}
                     </div>
                     <p class="text-xs text-gray-500 mt-2">Pengurus akan segera meninjau dan menghubungi Anda melalui WhatsApp.</p>
                 `,
                 confirmButtonText: 'Tutup',
-                confirmButtonColor: '#10B981'
+                confirmButtonColor: '#FF7300'
             });
 
             renderKatalog();
         }
 
-        function bukaModal(id) {
-            document.getElementById(id)?.classList.remove('hidden');
-        }
-
-        function tutupModal(id) {
-            document.getElementById(id)?.classList.add('hidden');
-        }
+        function bukaModal(id) { document.getElementById(id)?.classList.remove('hidden'); }
+        function tutupModal(id) { document.getElementById(id)?.classList.add('hidden'); }
 
         function compressImage(file, maxDimension, quality, callback) {
             const reader = new FileReader();
