@@ -212,6 +212,11 @@
             return (localStorage.getItem(STORAGE_KEY_API) || DEFAULT_API_URL).trim();
         }
 
+        function formatTglRapi(dateStr) {
+            if (!dateStr) return "-";
+            return String(dateStr).replace(/(\s+|T)\d{2}:\d{2}:\d{2}.*$/i, "").trim() || String(dateStr);
+        }
+
         function togglePetunjukInfo() {
             const box = document.getElementById('info-petunjuk-box');
             const txt = document.getElementById('text-toggle-petunjuk');
@@ -334,8 +339,8 @@
                 }
 
                 // Format tanggal rapi tanpa :00:00:00
-                const tglAmbilClean = String(item.tgl_pengambilan || "").replace(/ 00:00:00/g, "").replace(/T.*$/, "");
-                const tglKembaliClean = String(item.tgl_pengembalian || "").replace(/ 00:00:00/g, "").replace(/T.*$/, "");
+                const tglAmbilClean = formatTglRapi(item.tgl_pengambilan);
+                const tglKembaliClean = formatTglRapi(item.tgl_pengembalian);
 
                 const waPesan = `Assalamu'alaikum Admin Inventaris LDK IMIP, saya ingin menanyakan perkembangan pengajuan peminjaman *${item.id_pinjam}* atas nama *${item.nama_peminjam}* (${item.asal_organisasi}). Jazakumullah khairan.`;
                 const waLinkAdmin = `https://wa.me/6285770976399?text=${encodeURIComponent(waPesan)}`;
@@ -375,17 +380,17 @@
                     </div>
 
                     <!-- Informasi Status & Catatan Admin (Kontras Tinggi & Solid - Anti Nyaru) -->
-                    <div class="p-3.5 rounded-xl bg-orange-50/90 dark:bg-orange-950/40 border-l-4 border-l-[#FF7300] border border-orange-200 dark:border-orange-900/60 text-xs shadow-sm space-y-1.5">
-                        <span class="font-extrabold text-[#C2410C] dark:text-orange-400 flex items-center gap-1.5 text-xs">
+                    <div class="p-3.5 rounded-xl bg-amber-50/95 dark:bg-amber-950/50 border-l-4 border-l-[#FF7300] border border-amber-300 dark:border-amber-700/60 text-xs shadow-sm space-y-1.5">
+                        <span class="font-extrabold text-amber-900 dark:text-amber-300 flex items-center gap-1.5 text-xs">
                             <i class="fa-solid fa-circle-info text-sm"></i> Informasi Status:
                         </span>
-                        <p class="font-semibold text-slate-800 dark:text-slate-100 text-xs leading-relaxed">${statusMeta.desc}</p>
+                        <p class="font-bold text-slate-950 dark:text-amber-100 text-xs leading-relaxed">${statusMeta.desc}</p>
                         ${item.catatan_publik ? `
-                            <div class="mt-2 pt-2 border-t border-orange-200/80 dark:border-orange-900/80">
-                                <span class="font-extrabold text-[#C2410C] dark:text-orange-400 flex items-center gap-1 text-xs">
+                            <div class="mt-2 pt-2 border-t border-amber-300/80 dark:border-amber-700/80">
+                                <span class="font-extrabold text-amber-900 dark:text-amber-300 flex items-center gap-1 text-xs">
                                     <i class="fa-solid fa-note-sticky"></i> Catatan Khusus Admin:
                                 </span>
-                                <p class="font-bold text-slate-900 dark:text-white text-xs mt-0.5">${item.catatan_publik}</p>
+                                <p class="font-black text-slate-950 dark:text-amber-50 text-xs mt-0.5">${item.catatan_publik}</p>
                             </div>
                         ` : ''}
                     </div>

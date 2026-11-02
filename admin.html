@@ -672,19 +672,62 @@
             return `https://wa.me/${clean}${enc}`;
         }
 
+        function formatTglRapi(dateStr) {
+            if (!dateStr) return "-";
+            return String(dateStr).replace(/(\s+|T)\d{2}:\d{2}:\d{2}.*$/i, "").trim() || String(dateStr);
+        }
+
+        function buatPesanKonfirmasiWa(item) {
+            if (!item) return "";
+            let items = [];
+            try { items = JSON.parse(item.items_json || "[]"); } catch(e) {}
+            let itemsSummary = items.map(it => `• ${it.nama_barang} (${it.jumlah} unit)`).join("\n");
+            if (!itemsSummary) itemsSummary = "• 1 Unit Perlengkapan";
+
+            const tglAmbilClean = formatTglRapi(item.tgl_pengambilan);
+            const tglKembaliClean = formatTglRapi(item.tgl_pengembalian);
+
+            return `Assalamu'alaikum Wr. Wb.
+
+Halo, Saudara *${item.nama_peminjam}*.
+
+Kami dari *LDK IMIP* ingin menginformasikan bahwa pengajuan peminjaman barang Anda (*No: ${item.id_pinjam}*) telah *disetujui secara administratif*.
+
+*Detail peminjaman:*
+Nama          : ${item.nama_peminjam}
+Organisasi    : ${item.asal_organisasi || 'Umum'}
+Barang        :
+${itemsSummary}
+Pengambilan   : ${tglAmbilClean}
+Pengembalian  : ${tglKembaliClean}
+
+Bersama pesan ini kami lampirkan
+*Surat Perjanjian Peminjaman Barang* (No: ${item.no_surat || '-'}).
+
+Mohon membaca seluruh ketentuan yang tercantum dalam dokumen tersebut.
+
+Apabila menyetujui, silakan konfirmasi melalui balasan pesan ini.
+
+Terima kasih.
+
+*LDK IMIP*`;
+        }
+
         function getAdminPin() {
             return (localStorage.getItem(STORAGE_KEY_PIN) || "123456").trim();
         }
 
         function checkAuth() {
-            const saved = localStorage.getItem("PINJAM_ADMIN_AUTH");
-            if (saved === "true") {
+            // Gunakan sessionStorage agar saat browser/tab ditutup, admin wajib memasukkan PIN kembali
+            const isAuth = sessionStorage.getItem("PINJAM_ADMIN_AUTH") === "true";
+            if (isAuth) {
                 document.getElementById('section-login').classList.add('hidden');
                 document.getElementById('section-dashboard').classList.remove('hidden');
                 document.getElementById('btn-logout').classList.remove('hidden');
                 loadSettingsToForm();
                 renderDashboard();
             } else {
+                localStorage.removeItem("PINJAM_ADMIN_AUTH");
                 document.getElementById('section-login').classList.remove('hidden');
                 document.getElementById('section-dashboard').classList.add('hidden');
                 document.getElementById('btn-logout').classList.add('hidden');
@@ -695,7 +738,8 @@
             e.preventDefault();
             const inputPin = document.getElementById('admin-pin-input').value.trim();
             if (inputPin === getAdminPin()) {
-                localStorage.setItem("PINJAM_ADMIN_AUTH", "true");
+                sessionStorage.setItem("PINJAM_ADMIN_AUTH", "true");
+                localStorage.removeItem("PINJAM_ADMIN_AUTH");
                 document.getElementById('admin-pin-input').value = "";
                 checkAuth();
                 Swal.fire({ icon: 'success', title: 'Berhasil Masuk', timer: 1000, showConfirmButton: false });
@@ -705,6 +749,7 @@
         }
 
         function logoutAdmin() {
+            sessionStorage.removeItem("PINJAM_ADMIN_AUTH");
             localStorage.removeItem("PINJAM_ADMIN_AUTH");
             checkAuth();
         }
@@ -833,8 +878,8 @@
                     </div>
                 `).join("");
 
-                const tglAmbilClean = String(item.tgl_pengambilan || '').replace(/ 00:00:00/g, '');
-                const tglKembaliClean = String(item.tgl_pengembalian || '').replace(/ 00:00:00/g, '');
+                const tglAmbilClean = formatTglRapi(item.tgl_pengambilan);
+                const tglKembaliClean = formatTglRapi(item.tgl_pengembalian);
 
                 const card = document.createElement('div');
                 card.className = "ui-card p-4 sm:p-5 rounded-2xl space-y-3 sm:space-y-4 border-orange-200 dark:border-white/10";
@@ -873,7 +918,7 @@
 
                     <div class="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-orange-200 dark:border-gray-800">
                         <div class="flex flex-wrap items-center gap-2">
-                            <a href="${formatWaLink(item.kontak_wa, 'Assalamu\'alaikum wr. wb. ' + item.nama_peminjam + ' (' + item.asal_organisasi + '), kami dari Pengurus Inventaris LDK IMIP ingin mengonfirmasi pengajuan ' + item.id_pinjam + '.')}" target="_blank" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm">
+                            <a href="${formatWaLink(item.kontak_wa, buatPesanKonfirmasiWa(item))}" target="_blank" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm">
                                 <i class="fa-brands fa-whatsapp text-sm"></i> Chat WA
                             </a>
 
@@ -1224,9 +1269,9 @@
                 try { items = JSON.parse(item.items_json || "[]"); } catch(e) {}
                 let itemsList = items.map(it => `• ${it.nama_barang} (${it.jumlah} unit)`).join(", ");
 
-                const tglAmbilClean = String(item.tgl_pengambilan || "").replace(/ 00:00:00/g, "").replace(/T.*$/, "");
-                const tglKembaliClean = String(item.tgl_pengembalian || "").replace(/ 00:00:00/g, "").replace(/T.*$/, "");
-                const tglKembaliAktualClean = String(item.tgl_kembali_aktual || "").replace(/ 00:00:00/g, "").replace(/T.*$/, "");
+                const tglAmbilClean = formatTglRapi(item.tgl_pengambilan);
+                const tglKembaliClean = formatTglRapi(item.tgl_pengembalian);
+                const tglKembaliAktualClean = formatTglRapi(item.tgl_kembali_aktual);
                 const catatanTampil = item.catatan_kembali || item.catatan_admin || (item.kondisi_kembali ? `Kondisi saat kembali: ${item.kondisi_kembali}` : "");
 
                 const card = document.createElement('div');
@@ -1236,7 +1281,7 @@
                         <div class="flex flex-wrap items-center gap-2">
                             <span class="font-mono text-xs font-bold text-[#FF7300] bg-orange-500/10 px-2.5 py-0.5 rounded">${item.id_pinjam}</span>
                             <span class="px-2.5 py-0.5 rounded text-[10px] font-bold ${getStatusClass(item.status)}">${item.status}</span>
-                            ${tglKembaliAktualClean ? `<span class="text-[11px] font-semibold text-slate-700 dark:text-slate-300"><i class="fa-solid fa-circle-check text-emerald-500 mr-1"></i> Kembali Aktual: ${tglKembaliAktualClean}</span>` : ''}
+                            ${tglKembaliAktualClean && tglKembaliAktualClean !== '-' ? `<span class="text-[11px] font-semibold text-slate-700 dark:text-slate-300"><i class="fa-solid fa-circle-check text-emerald-500 mr-1"></i> Kembali Aktual: ${tglKembaliAktualClean}</span>` : ''}
                         </div>
 
                         <h4 class="font-bold font-outfit text-sm sm:text-base text-slate-900 dark:text-white">${item.nama_peminjam} <span class="text-xs text-slate-500 dark:text-slate-400 font-normal">(${item.asal_organisasi} • PJ: ${item.nama_penanggung_jawab || item.nama_peminjam})</span></h4>
@@ -1249,11 +1294,11 @@
                         <p class="text-xs font-semibold text-slate-800 dark:text-slate-200"><i class="fa-solid fa-calendar mr-1.5 text-[#FF7300]"></i> Periode: <strong class="text-slate-900 dark:text-white">${tglAmbilClean} s.d ${tglKembaliClean}</strong></p>
 
                         ${catatanTampil ? `
-                            <div class="p-3 rounded-xl bg-orange-50/90 dark:bg-orange-950/40 border-l-4 border-l-[#FF7300] border border-orange-200 dark:border-orange-900/60 text-xs shadow-sm space-y-1">
-                                <span class="font-extrabold text-[#C2410C] dark:text-orange-400 flex items-center gap-1.5 text-xs">
+                            <div class="p-3 rounded-xl bg-amber-50/95 dark:bg-amber-950/50 border-l-4 border-l-[#FF7300] border border-amber-300 dark:border-amber-700/60 text-xs shadow-sm space-y-1">
+                                <span class="font-extrabold text-amber-900 dark:text-amber-300 flex items-center gap-1.5 text-xs">
                                     <i class="fa-solid fa-note-sticky text-sm"></i> Catatan Admin Inventaris:
                                 </span>
-                                <p class="font-bold text-slate-900 dark:text-white text-xs pl-0.5 leading-relaxed">${catatanTampil}</p>
+                                <p class="font-bold text-slate-950 dark:text-amber-100 text-xs pl-0.5 leading-relaxed">${catatanTampil}</p>
                             </div>
                         ` : ''}
                     </div>
@@ -1658,8 +1703,8 @@
             document.getElementById('surat-peminjam-pj').innerText = item.nama_penanggung_jawab || item.nama_peminjam;
             document.getElementById('surat-peminjam-tujuan').innerText = item.tujuan || '-';
 
-            const tglAmbilClean = String(item.tgl_pengambilan || "").replace(/ 00:00:00/g, "").replace(/T.*$/, "");
-            const tglKembaliClean = String(item.tgl_pengembalian || "").replace(/ 00:00:00/g, "").replace(/T.*$/, "");
+            const tglAmbilClean = formatTglRapi(item.tgl_pengambilan);
+            const tglKembaliClean = formatTglRapi(item.tgl_pengembalian);
             document.getElementById('surat-peminjam-periode').innerText = `${tglAmbilClean} s.d. ${tglKembaliClean}`;
             document.getElementById('surat-ttd-peminjam').innerText = `( ${item.nama_peminjam} )`;
 
@@ -1691,30 +1736,7 @@
 
         function kirimSuratViaWa() {
             if (!currentSuratItem) return;
-
-            let items = [];
-            try { items = JSON.parse(currentSuratItem.items_json || "[]"); } catch(e) {}
-            let itemsSummary = items.map(it => `• ${it.nama_barang} (${it.jumlah} unit)`).join("\n");
-
-            const tglAmbilClean = String(currentSuratItem.tgl_pengambilan || "").replace(/ 00:00:00/g, "");
-            const tglKembaliClean = String(currentSuratItem.tgl_pengembalian || "").replace(/ 00:00:00/g, "");
-
-            const pesan = `Assalamu'alaikum Wr. Wb.
-
-Yth. *${currentSuratItem.nama_peminjam}* (${currentSuratItem.asal_organisasi})
-
-Kami dari *Pengurus Inventaris LDK IMIP* menginformasikan bahwa pengajuan peminjaman inventaris Anda (*No: ${currentSuratItem.id_pinjam}*) telah *DISETUJUI SECARA ADMINISTRATIF*.
-
-Rincian Barang:
-${itemsSummary}
-
-Jadwal: ${tglAmbilClean} s.d. ${tglKembaliClean}
-Nomor Dokumen: *${currentSuratItem.no_surat || '-'}*
-
-Surat Perjanjian Peminjaman resmi terlampir. Mohon membaca dan membalas konfirmasi persetujuan ketentuan surat ini sebelum jadwal pengambilan barang.
-
-Jazakumullah khairan.`;
-
+            const pesan = buatPesanKonfirmasiWa(currentSuratItem);
             const waUrl = formatWaLink(currentSuratItem.kontak_wa, pesan);
             window.open(waUrl, '_blank');
         }
