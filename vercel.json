@@ -3,9 +3,7 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "rewrites": [
-    { "source": "/admin", "destination": "/index.html" },
-    { "source": "/status", "destination": "/index.html" },
-    { "source": "/katalog", "destination": "/index.html" }
+    { "source": "/admin", "destination": "/admin.html" }
   ],
   "headers": [
     {

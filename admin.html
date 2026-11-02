@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pinjamip — Panel Admin & Logistik</title>
+    <link rel="icon" href="icons/icon-192.png" type="image/png">
+    <meta name="theme-color" content="#FAF5EF">
+
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Tailwind CSS & SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        :root {
+            --bg-main: #FAF5EF;
+            --bg-card: #FFFFFF;
+            --border-card: rgba(254, 215, 170, 0.7);
+            --border-muted: #FED7AA;
+            
+            --text-heading: #0F172A;
+            --text-body: #334155;
+            --text-muted: #64748B;
+
+            --bg-pill: #FFF7ED;
+            --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        html.dark-mode {
+            --bg-main: #080C14;
+            --bg-card: #111827;
+            --border-card: rgba(255, 255, 255, 0.1);
+            --border-muted: rgba(255, 255, 255, 0.08);
+            
+            --text-heading: #F8FAFC;
+            --text-body: #E2E8F0;
+            --text-muted: #94A3B8;
+
+            --bg-pill: rgba(30, 41, 59, 0.7);
+            --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-body);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            min-height: 100vh;
+            transition: background-color 0.25s ease, color 0.25s ease;
+        }
+
+        .font-outfit { font-family: 'Outfit', sans-serif; }
+
+        .ui-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            box-shadow: var(--shadow-card);
+        }
+
+        .ui-heading { color: var(--text-heading) !important; }
+        .ui-body { color: var(--text-body) !important; }
+        .ui-muted { color: var(--text-muted) !important; }
+        .ui-pill { background: var(--bg-pill); border: 1px solid var(--border-muted); }
+
+        .modal-backdrop {
+            background-color: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(4px);
+        }
+    </style>
+</head>
+<body class="selection:bg-emerald-500 selection:text-white pb-16">
+
+    <!-- TOP NAVBAR ADMIN -->
+    <header class="sticky top-0 z-40 w-full px-3 sm:px-6 pt-3 pb-2">
+        <div class="max-w-6xl mx-auto ui-card rounded-2xl px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <a href="index.html" class="flex items-center gap-2 text-xs font-semibold ui-muted hover:text-emerald-600">
+                    <i class="fa-solid fa-arrow-left"></i> Web Publik
+                </a>
+                <span class="text-gray-300 dark:text-gray-700">|</span>
+                <span class="font-outfit font-extrabold text-lg ui-heading tracking-tight">Pinjamip Admin</span>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button onclick="toggleTheme()" class="w-9 h-9 rounded-xl ui-pill flex items-center justify-center ui-body hover:text-emerald-600">
+                    <i id="theme-icon" class="fa-solid fa-moon text-sm"></i>
+                </button>
+                <button onclick="bukaModalPengaturanApi()" class="px-3 py-2 rounded-xl ui-pill text-xs font-semibold ui-body hover:text-emerald-600 flex items-center gap-1.5" title="Koneksi Google Script">
+                    <i class="fa-solid fa-gear"></i> <span class="hidden sm:inline">Google Script</span>
+                </button>
+                <button id="btn-logout" onclick="logoutAdmin()" class="hidden px-3 py-2 rounded-xl bg-rose-500/15 text-rose-500 border border-rose-500/30 text-xs font-semibold hover:bg-rose-500/25 flex items-center gap-1.5">
+                    <i class="fa-solid fa-right-from-bracket"></i> Keluar
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTENT WRAPPER -->
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 pt-4">
+
+        <!-- 1. LOGIN FORM CONTAINER (IF NOT LOGGED IN) -->
+        <div id="section-login" class="max-w-md mx-auto my-12 ui-card rounded-2xl p-6 sm:p-8 space-y-5 text-center">
+            <div class="w-14 h-14 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center mx-auto text-2xl">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div>
+                <h2 class="text-xl font-bold font-outfit ui-heading">Verifikasi Pengurus</h2>
+                <p class="text-xs ui-muted mt-1">Masukkan PIN Admin untuk mengakses data peminjaman & inventaris.</p>
+            </div>
+
+            <form onsubmit="submitLoginAdmin(event)" class="space-y-4">
+                <input type="password" id="admin-pin-input" placeholder="PIN Admin (Default: 123456)" maxlength="10" required
+                       class="w-full text-center tracking-widest text-lg font-bold px-4 py-3 rounded-xl ui-card ui-heading focus:outline-none focus:border-emerald-500">
+
+                <button type="submit" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-md">
+                    Buka Dashboard
+                </button>
+            </form>
+        </div>
+
+        <!-- 2. DASHBOARD CONTAINER (AFTER LOGIN) -->
+        <div id="section-dashboard" class="space-y-6 hidden">
+            <!-- Metric Cards -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                <div class="ui-card p-4 rounded-2xl border-l-4 border-l-amber-500">
+                    <span class="text-[11px] ui-muted font-bold uppercase">Menunggu Tinjau</span>
+                    <div class="flex items-baseline justify-between mt-1">
+                        <span id="stat-menunggu" class="text-2xl font-extrabold font-outfit text-amber-500">0</span>
+                        <i class="fa-solid fa-hourglass-half text-amber-500/40 text-lg"></i>
+                    </div>
+                </div>
+                <div class="ui-card p-4 rounded-2xl border-l-4 border-l-emerald-500">
+                    <span class="text-[11px] ui-muted font-bold uppercase">Sedang Dipinjam</span>
+                    <div class="flex items-baseline justify-between mt-1">
+                        <span id="stat-dipinjam" class="text-2xl font-extrabold font-outfit text-emerald-600 dark:text-emerald-400">0</span>
+                        <i class="fa-solid fa-hand-holding-hand text-emerald-500/40 text-lg"></i>
+                    </div>
+                </div>
+                <div class="ui-card p-4 rounded-2xl border-l-4 border-l-blue-500">
+                    <span class="text-[11px] ui-muted font-bold uppercase">Total Barang</span>
+                    <div class="flex items-baseline justify-between mt-1">
+                        <span id="stat-total-barang" class="text-2xl font-extrabold font-outfit text-blue-500">0</span>
+                        <i class="fa-solid fa-boxes-stacked text-blue-500/40 text-lg"></i>
+                    </div>
+                </div>
+                <div class="ui-card p-4 rounded-2xl border-l-4 border-l-purple-500">
+                    <span class="text-[11px] ui-muted font-bold uppercase">Total Riwayat</span>
+                    <div class="flex items-baseline justify-between mt-1">
+                        <span id="stat-total-riwayat" class="text-2xl font-extrabold font-outfit text-purple-500">0</span>
+                        <i class="fa-solid fa-clipboard-list text-purple-500/40 text-lg"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sub Navigation Tabs -->
+            <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 pb-2">
+                <div class="flex gap-2">
+                    <button onclick="switchAdminTab('tinjau')" id="tab-btn-tinjau" class="px-4 py-2 rounded-xl text-xs font-bold transition-all bg-emerald-600 text-white shadow-sm flex items-center gap-1.5">
+                        <i class="fa-solid fa-inbox"></i> Permintaan Masuk
+                        <span id="badge-menunggu" class="hidden px-1.5 py-0.2 rounded-full bg-amber-500 text-black text-[10px] font-bold">0</span>
+                    </button>
+                    <button onclick="switchAdminTab('barang')" id="tab-btn-barang" class="px-4 py-2 rounded-xl text-xs font-bold transition-all ui-pill ui-body hover:text-emerald-600 flex items-center gap-1.5">
+                        <i class="fa-solid fa-boxes-stacked"></i> Kelola Barang
+                    </button>
+                </div>
+
+                <button onclick="bukaModalTambahBarang()" id="btn-tambah-barang-quick" class="hidden px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-md">
+                    <i class="fa-solid fa-plus"></i> Tambah Barang
+                </button>
+            </div>
+
+            <!-- SUB-TAB 1: TINJAUAN PERMINTAAN -->
+            <div id="subtab-tinjau" class="space-y-4">
+                <div class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar text-xs">
+                    <button onclick="filterAdminPeminjaman('SEMUA')" class="filter-pjm-btn px-3.5 py-1.5 rounded-lg bg-emerald-600 text-white font-semibold">Semua</button>
+                    <button onclick="filterAdminPeminjaman('MENUNGGU')" class="filter-pjm-btn px-3.5 py-1.5 rounded-lg ui-pill text-amber-500">Menunggu Tinjau</button>
+                    <button onclick="filterAdminPeminjaman('DISETUJUI')" class="filter-pjm-btn px-3.5 py-1.5 rounded-lg ui-pill text-emerald-600 dark:text-emerald-400">Disetujui</button>
+                    <button onclick="filterAdminPeminjaman('DIKEMBALIKAN')" class="filter-pjm-btn px-3.5 py-1.5 rounded-lg ui-pill text-blue-500">Sudah Kembali</button>
+                    <button onclick="filterAdminPeminjaman('DITOLAK')" class="filter-pjm-btn px-3.5 py-1.5 rounded-lg ui-pill text-rose-500">Ditolak</button>
+                </div>
+
+                <div id="admin-peminjaman-list" class="space-y-3">
+                    <!-- Rendered dynamically -->
+                </div>
+            </div>
+
+            <!-- SUB-TAB 2: KELOLA BARANG -->
+            <div id="subtab-barang" class="space-y-4 hidden">
+                <div id="admin-barang-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <!-- Rendered dynamically -->
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- MODAL: TAMBAH / EDIT BARANG -->
+    <div id="modal-barang" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden">
+        <div class="ui-card w-full max-w-lg rounded-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto border border-emerald-500/30">
+            <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 pb-3">
+                <h3 id="modal-barang-title" class="font-outfit font-bold text-lg text-emerald-600 dark:text-emerald-400">Tambah Barang Baru</h3>
+                <button onclick="tutupModal('modal-barang')" class="ui-muted hover:text-gray-900 dark:hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form id="form-barang" onsubmit="submitFormBarang(event)" class="space-y-3.5 text-xs sm:text-sm">
+                <input type="hidden" id="barang-edit-id">
+
+                <div>
+                    <label class="block ui-heading font-semibold mb-1">Nama Barang <span class="text-rose-500">*</span></label>
+                    <input type="text" id="barang-nama" required placeholder="Contoh: Proyektor Epson EB-E500"
+                           class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-emerald-500">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block ui-heading font-semibold mb-1">Kategori <span class="text-rose-500">*</span></label>
+                        <select id="barang-kategori" class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-emerald-500">
+                            <option value="Elektronik">Elektronik</option>
+                            <option value="Audio & Sound">Audio & Sound</option>
+                            <option value="Kelistrikan">Kelistrikan</option>
+                            <option value="Dekorasi & Logistik">Dekorasi & Logistik</option>
+                            <option value="Lainnya">Lainnya</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block ui-heading font-semibold mb-1">Total Stok Unit <span class="text-rose-500">*</span></label>
+                        <input type="number" id="barang-stok" required min="1" value="1"
+                               class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-emerald-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block ui-heading font-semibold mb-1">Kondisi Barang</label>
+                    <select id="barang-kondisi" class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-emerald-500">
+                        <option value="Bagus / Prima">Bagus / Prima</option>
+                        <option value="Cukup Baik">Cukup Baik</option>
+                        <option value="Perlu Perbaikan">Perlu Perbaikan</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block ui-heading font-semibold mb-1">Deskripsi & Kelengkapan</label>
+                    <textarea id="barang-deskripsi" rows="2" placeholder="Kelengkapan, tas, kabel..."
+                              class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-emerald-500"></textarea>
+                </div>
+
+                <!-- Foto Barang -->
+                <div>
+                    <label class="block ui-heading font-semibold mb-1">Foto Barang</label>
+                    <div class="border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-emerald-500 rounded-xl p-3 text-center transition-all">
+                        <input type="file" id="barang-foto-input" accept="image/*" class="hidden" onchange="previewImageBarang(event)">
+                        <div id="preview-container-barang" class="hidden space-y-2">
+                            <img id="preview-img-barang" src="" class="h-28 mx-auto rounded-lg object-contain border border-gray-300 dark:border-gray-700">
+                            <button type="button" onclick="hapusPreviewBarang()" class="text-xs text-rose-500 hover:underline">
+                                <i class="fa-solid fa-trash mr-1"></i>Ganti / Hapus Foto
+                            </button>
+                        </div>
+                        <div id="upload-placeholder-barang" onclick="document.getElementById('barang-foto-input').click()" class="cursor-pointer space-y-1">
+                            <i class="fa-solid fa-image text-2xl text-emerald-600 dark:text-emerald-400"></i>
+                            <p class="text-xs ui-body font-medium">Klik untuk upload foto barang</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-2 flex justify-end gap-2">
+                    <button type="button" onclick="tutupModal('modal-barang')" class="px-4 py-2.5 rounded-xl ui-pill ui-body font-semibold">Batal</button>
+                    <button type="submit" id="btn-submit-barang" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition-all shadow-md">
+                        <i class="fa-solid fa-floppy-disk"></i> Simpan Barang
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: LIGHTBOX FOTO KTM -->
+    <div id="modal-lightbox" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden" onclick="tutupModal('modal-lightbox')">
+        <div class="relative max-w-2xl max-h-[90vh] p-2 ui-card rounded-2xl" onclick="event.stopPropagation()">
+            <button onclick="tutupModal('modal-lightbox')" class="absolute top-3 right-3 bg-black/70 hover:bg-black text-white w-8 h-8 rounded-full flex items-center justify-center">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <img id="lightbox-img" src="" class="max-h-[80vh] w-auto rounded-xl object-contain">
+            <p id="lightbox-caption" class="text-center text-xs ui-heading mt-2 font-bold"></p>
+        </div>
+    </div>
+
+    <!-- MODAL: PENGATURAN API GOOGLE APPS SCRIPT -->
+    <div id="modal-api-setting" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden">
+        <div class="ui-card w-full max-w-md rounded-2xl p-6 space-y-4 border border-emerald-500/30">
+            <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 pb-3">
+                <h3 class="font-outfit font-bold text-lg ui-heading">Koneksi Google Apps Script</h3>
+                <button onclick="tutupModal('modal-api-setting')" class="ui-muted hover:text-gray-900 dark:hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="space-y-3 text-xs sm:text-sm">
+                <div>
+                    <label class="block ui-heading font-semibold mb-1">Web App Deployment URL:</label>
+                    <input type="url" id="input-api-url" placeholder="https://script.google.com/macros/s/.../exec"
+                           class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading text-xs focus:outline-none focus:border-emerald-500">
+                </div>
+
+                <div class="flex justify-end gap-2 pt-2">
+                    <button onclick="simpanApiUrl()" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md">
+                        Simpan Koneksi
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT LOGIKA ADMIN -->
+    <script>
+        const STORAGE_KEY_API   = "PINJAM_IMIP_API_URL";
+        const STORAGE_KEY_PIN   = "PINJAM_IMIP_ADMIN_PIN";
+        const STORAGE_KEY_LOCAL = "PINJAM_IMIP_LOCAL_DB";
+
+        let activeAdminTab = "tinjau";
+        let currentAdminFilter = "SEMUA";
+
+        let localDB = {
+            barang: [],
+            peminjaman: []
+        };
+
+        try {
+            const saved = localStorage.getItem(STORAGE_KEY_LOCAL);
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (parsed.barang) localDB.barang = parsed.barang;
+                if (parsed.peminjaman) localDB.peminjaman = parsed.peminjaman;
+            }
+        } catch(e) {}
+
+        function saveLocalDB() {
+            localStorage.setItem(STORAGE_KEY_LOCAL, JSON.stringify(localDB));
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initTheme();
+            checkAuth();
+        });
+
+        function initTheme() {
+            const isDark = localStorage.getItem('theme') === 'dark';
+            if (isDark) {
+                document.documentElement.classList.add('dark-mode');
+                document.getElementById('theme-icon').className = 'fa-solid fa-sun text-sm text-amber-400';
+            } else {
+                document.documentElement.classList.remove('dark-mode');
+                document.getElementById('theme-icon').className = 'fa-solid fa-moon text-sm';
+            }
+        }
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            const icon = document.getElementById('theme-icon');
+            if (html.classList.contains('dark-mode')) {
+                html.classList.remove('dark-mode');
+                localStorage.setItem('theme', 'light');
+                icon.className = 'fa-solid fa-moon text-sm';
+            } else {
+                html.classList.add('dark-mode');
+                localStorage.setItem('theme', 'dark');
+                icon.className = 'fa-solid fa-sun text-sm text-amber-400';
+            }
+        }
+
+        function checkAuth() {
+            const savedPin = localStorage.getItem(STORAGE_KEY_PIN);
+            if (savedPin === "123456") {
+                document.getElementById('section-login').classList.add('hidden');
+                document.getElementById('section-dashboard').classList.remove('hidden');
+                document.getElementById('btn-logout').classList.remove('hidden');
+                renderAdminDashboard();
+            } else {
+                document.getElementById('section-login').classList.remove('hidden');
+                document.getElementById('section-dashboard').classList.add('hidden');
+                document.getElementById('btn-logout').classList.add('hidden');
+            }
+        }
+
+        function submitLoginAdmin(e) {
+            e.preventDefault();
+            const pin = document.getElementById('admin-pin-input').value.trim();
+            if (pin === "123456") {
+                localStorage.setItem(STORAGE_KEY_PIN, pin);
+                document.getElementById('admin-pin-input').value = "";
+                checkAuth();
+                Swal.fire({ icon: 'success', title: 'Berhasil Masuk', timer: 1200, showConfirmButton: false });
+            } else {
+                Swal.fire({ icon: 'error', title: 'PIN Salah!', text: 'Gunakan PIN default: 123456', timer: 2000, showConfirmButton: false });
+            }
+        }
+
+        function logoutAdmin() {
+            localStorage.removeItem(STORAGE_KEY_PIN);
+            checkAuth();
+        }
+
+        function getApiUrl() {
+            return (localStorage.getItem(STORAGE_KEY_API) || "").trim();
+        }
+
+        function bukaModalPengaturanApi() {
+            document.getElementById('input-api-url').value = getApiUrl();
+            bukaModal('modal-api-setting');
+        }
+
+        function simpanApiUrl() {
+            const val = (document.getElementById('input-api-url').value || "").trim();
+            localStorage.setItem(STORAGE_KEY_API, val);
+            tutupModal('modal-api-setting');
+            Swal.fire({ icon: 'success', title: 'Tersimpan!', timer: 1200, showConfirmButton: false });
+            renderAdminDashboard();
+        }
+
+        function switchAdminTab(tabName) {
+            activeAdminTab = tabName;
+            const btnTinjau = document.getElementById('tab-btn-tinjau');
+            const btnBarang = document.getElementById('tab-btn-barang');
+            const subTinjau = document.getElementById('subtab-tinjau');
+            const subBarang = document.getElementById('subtab-barang');
+            const btnTambahQuick = document.getElementById('btn-tambah-barang-quick');
+
+            if (tabName === 'tinjau') {
+                btnTinjau.className = "px-4 py-2 rounded-xl text-xs font-bold transition-all bg-emerald-600 text-white shadow-sm flex items-center gap-1.5";
+                btnBarang.className = "px-4 py-2 rounded-xl text-xs font-bold transition-all ui-pill ui-body hover:text-emerald-600 flex items-center gap-1.5";
+                subTinjau.classList.remove('hidden');
+                subBarang.classList.add('hidden');
+                btnTambahQuick.classList.add('hidden');
+            } else {
+                btnBarang.className = "px-4 py-2 rounded-xl text-xs font-bold transition-all bg-emerald-600 text-white shadow-sm flex items-center gap-1.5";
+                btnTinjau.className = "px-4 py-2 rounded-xl text-xs font-bold transition-all ui-pill ui-body hover:text-emerald-600 flex items-center gap-1.5";
+                subBarang.classList.remove('hidden');
+                subTinjau.classList.add('hidden');
+                btnTambahQuick.classList.remove('hidden');
+            }
+            renderAdminDashboard();
+        }
+
+        function filterAdminPeminjaman(status) {
+            currentAdminFilter = status;
+            document.querySelectorAll('.filter-pjm-btn').forEach(btn => {
+                btn.className = "filter-pjm-btn px-3.5 py-1.5 rounded-lg ui-pill ui-body";
+            });
+            event.target.className = "filter-pjm-btn px-3.5 py-1.5 rounded-lg bg-emerald-600 text-white font-semibold";
+            renderAdminPeminjamanList();
+        }
+
+        async function fetchAdminDataOnline() {
+            const apiUrl = getApiUrl();
+            const pin = localStorage.getItem(STORAGE_KEY_PIN) || "123456";
+            if (!apiUrl) return;
+
+            try {
+                const res = await fetch(`${apiUrl}?action=get_admin_data&pin=${encodeURIComponent(pin)}`);
+                const json = await res.json();
+                if (json.success) {
+                    if (json.barang) localDB.barang = json.barang;
+                    if (json.peminjaman) localDB.peminjaman = json.peminjaman;
+                    saveLocalDB();
+                }
+            } catch(e) {}
+        }
+
+        async function renderAdminDashboard() {
+            await fetchAdminDataOnline();
+
+            const totalBarang = localDB.barang.length;
+            const menunggu = localDB.peminjaman.filter(p => (p.status || "").toUpperCase() === "MENUNGGU").length;
+            const dipinjam = localDB.peminjaman.filter(p => (p.status || "").toUpperCase() === "DISETUJUI").length;
+            const totalRiwayat = localDB.peminjaman.length;
+
+            document.getElementById('stat-total-barang').innerText = totalBarang;
+            document.getElementById('stat-menunggu').innerText = menunggu;
+            document.getElementById('stat-dipinjam').innerText = dipinjam;
+            document.getElementById('stat-total-riwayat').innerText = totalRiwayat;
+
+            const badgeMenunggu = document.getElementById('badge-menunggu');
+            if (menunggu > 0) {
+                badgeMenunggu.innerText = menunggu;
+                badgeMenunggu.classList.remove('hidden');
+            } else {
+                badgeMenunggu.classList.add('hidden');
+            }
+
+            renderAdminPeminjamanList();
+            renderAdminBarangList();
+        }
+
+        function renderAdminPeminjamanList() {
+            const listEl = document.getElementById('admin-peminjaman-list');
+            if (!listEl) return;
+
+            const filtered = localDB.peminjaman.filter(p => {
+                if (currentAdminFilter === "SEMUA") return true;
+                return (p.status || "").toUpperCase() === currentAdminFilter;
+            });
+
+            listEl.innerHTML = "";
+            if (filtered.length === 0) {
+                listEl.innerHTML = `
+                    <div class="ui-card p-8 rounded-2xl text-center ui-muted text-xs">
+                        <i class="fa-solid fa-inbox text-3xl mb-2"></i>
+                        <p>Tidak ada data peminjaman untuk status ini.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            filtered.forEach(item => {
+                const statusMeta = getStatusBadge(item.status);
+                const isMenunggu = (item.status || "").toUpperCase() === "MENUNGGU";
+                const isDisetujui = (item.status || "").toUpperCase() === "DISETUJUI";
+                
+                let cleanWa = (item.kontak_wa || "").replace(/[^0-9]/g, "");
+                if (cleanWa.startsWith("0")) cleanWa = "62" + cleanWa.slice(1);
+                const pesanWa = encodeURIComponent(`Halo ${item.nama_peminjam}, kami dari Pengurus Logistik IMIP terkait peminjaman barang: *${item.nama_barang}* (${item.id_pinjam})...`);
+
+                const card = document.createElement('div');
+                card.className = "ui-card p-5 rounded-2xl space-y-3 transition-all";
+                card.innerHTML = `
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-200 dark:border-gray-800 pb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="font-mono text-xs font-bold ui-pill px-2.5 py-1 rounded-md">${item.id_pinjam}</span>
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${statusMeta.badgeClass}">
+                                ${statusMeta.label}
+                            </span>
+                        </div>
+                        <span class="text-xs ui-muted"><i class="fa-solid fa-clock mr-1"></i> ${item.created_at || '-'}</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                        <div class="space-y-1">
+                            <span class="ui-muted text-[10px] uppercase font-bold tracking-wider">Peminjam</span>
+                            <p class="font-bold ui-heading text-sm">${item.nama_peminjam}</p>
+                            <p class="ui-muted">${item.divisi_instansi} • ${item.kontak_wa}</p>
+                        </div>
+                        <div class="space-y-1">
+                            <span class="ui-muted text-[10px] uppercase font-bold tracking-wider">Barang & Tanggal</span>
+                            <p class="font-bold text-emerald-600 dark:text-emerald-400 text-sm">${item.nama_barang}</p>
+                            <p class="ui-muted"><i class="fa-solid fa-calendar-days mr-1"></i> ${item.tgl_pinjam} s.d ${item.tgl_kembali}</p>
+                        </div>
+                        <div class="space-y-1">
+                            <span class="ui-muted text-[10px] uppercase font-bold tracking-wider">Keperluan</span>
+                            <p class="ui-body italic">"${item.keperluan || '-'}"</p>
+                            ${item.catatan_admin ? `<p class="text-amber-500 font-semibold pt-1"><i class="fa-solid fa-comment mr-1"></i> Catatan: ${item.catatan_admin}</p>` : ''}
+                        </div>
+                    </div>
+
+                    <!-- Tombol Aksi -->
+                    <div class="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-gray-200 dark:border-gray-800">
+                        <div class="flex items-center gap-2">
+                            ${item.foto_identitas ? `
+                                <button onclick="bukaLightbox('${item.foto_identitas}', 'Foto KTM: ${item.nama_peminjam}')" class="px-3 py-1.5 rounded-xl ui-pill text-xs font-semibold ui-body hover:text-emerald-600 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-id-card text-emerald-600"></i> Lihat KTM
+                                </button>
+                            ` : `<span class="text-xs ui-muted italic">Tanpa foto KTM</span>`}
+
+                            <a href="https://wa.me/${cleanWa}?text=${pesanWa}" target="_blank" class="px-3 py-1.5 rounded-xl bg-emerald-600/10 text-emerald-600 dark:text-emerald-400 border border-emerald-600/30 text-xs font-semibold hover:bg-emerald-600/20 flex items-center gap-1.5">
+                                <i class="fa-brands fa-whatsapp"></i> Chat WA
+                            </a>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            ${isMenunggu ? `
+                                <button onclick="tinjauAksiAdmin('${item.id_pinjam}', 'TOLAK')" class="px-3.5 py-1.5 rounded-xl bg-rose-500/15 text-rose-500 border border-rose-500/30 text-xs font-bold hover:bg-rose-500/25">
+                                    <i class="fa-solid fa-xmark mr-1"></i> Tolak
+                                </button>
+                                <button onclick="tinjauAksiAdmin('${item.id_pinjam}', 'DISETUJUI')" class="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md">
+                                    <i class="fa-solid fa-check mr-1"></i> Terima (ACC)
+                                </button>
+                            ` : ''}
+
+                            ${isDisetujui ? `
+                                <button onclick="tinjauAksiAdmin('${item.id_pinjam}', 'DIKEMBALIKAN')" class="px-4 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md">
+                                    <i class="fa-solid fa-rotate-left mr-1"></i> Tandai Sudah Kembali
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+                listEl.appendChild(card);
+            });
+        }
+
+        async function tinjauAksiAdmin(idPinjam, statusBaru) {
+            let catatan = "";
+
+            if (statusBaru === "TOLAK") {
+                const { value: text, isConfirmed } = await Swal.fire({
+                    title: 'Tolak Peminjaman?',
+                    input: 'textarea',
+                    inputLabel: 'Alasan Penolakan:',
+                    inputPlaceholder: 'Sebutkan alasan penolakan...',
+                    showCancelButton: true,
+                    confirmButtonColor: '#F43F5E',
+                    confirmButtonText: 'Tolak Pengajuan',
+                    cancelButtonText: 'Batal'
+                });
+                if (!isConfirmed) return;
+                catatan = text || "Pengajuan ditolak oleh pengurus.";
+                statusBaru = "DITOLAK";
+            } else if (statusBaru === "DISETUJUI") {
+                const { isConfirmed } = await Swal.fire({
+                    title: 'Setujui Peminjaman?',
+                    text: 'Stok tersedia barang akan otomatis berkurang 1 unit.',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#059669',
+                    confirmButtonText: 'Ya, Setujui',
+                    cancelButtonText: 'Batal'
+                });
+                if (!isConfirmed) return;
+            } else if (statusBaru === "DIKEMBALIKAN") {
+                const { isConfirmed } = await Swal.fire({
+                    title: 'Konfirmasi Pengembalian?',
+                    text: 'Pastikan kondisi barang sudah dicek. Stok akan kembali bertambah.',
+                    icon: 'info',
+                    showCancelButton: true,
+                    confirmButtonColor: '#2563EB',
+                    confirmButtonText: 'Ya, Sudah Kembali',
+                    cancelButtonText: 'Batal'
+                });
+                if (!isConfirmed) return;
+            }
+
+            const apiUrl = getApiUrl();
+            const pin = localStorage.getItem(STORAGE_KEY_PIN) || "123456";
+
+            if (apiUrl) {
+                try {
+                    await fetch(apiUrl, {
+                        method: "POST",
+                        body: JSON.stringify({
+                            action: "admin_tinjau",
+                            pin: pin,
+                            id_pinjam: idPinjam,
+                            status: statusBaru,
+                            catatan: catatan
+                        })
+                    });
+                } catch(e) {}
+            }
+
+            const target = localDB.peminjaman.find(p => String(p.id_pinjam) === String(idPinjam));
+            if (target) {
+                const oldStatus = target.status;
+                target.status = statusBaru;
+                if (catatan) target.catatan_admin = catatan;
+
+                const targetBarang = localDB.barang.find(b => String(b.id_barang) === String(target.id_barang));
+                if (targetBarang) {
+                    if (statusBaru === "DISETUJUI" && oldStatus !== "DISETUJUI") {
+                        targetBarang.stok_tersedia = Math.max(0, parseInt(targetBarang.stok_tersedia, 10) - 1);
+                        targetBarang.status = targetBarang.stok_tersedia > 0 ? "Tersedia" : "Dipinjam";
+                    } else if (statusBaru === "DIKEMBALIKAN" && oldStatus === "DISETUJUI") {
+                        targetBarang.stok_tersedia = Math.min(parseInt(targetBarang.stok_total, 10), parseInt(targetBarang.stok_tersedia, 10) + 1);
+                        targetBarang.status = targetBarang.stok_tersedia > 0 ? "Tersedia" : "Dipinjam";
+                    }
+                }
+                saveLocalDB();
+            }
+
+            Swal.fire({ icon: 'success', title: 'Status Diperbarui!', timer: 1200, showConfirmButton: false });
+            renderAdminDashboard();
+        }
+
+        // KELOLA BARANG
+        let base64FotoBarang = "";
+
+        function renderAdminBarangList() {
+            const listEl = document.getElementById('admin-barang-list');
+            if (!listEl) return;
+
+            listEl.innerHTML = "";
+            localDB.barang.forEach(item => {
+                const card = document.createElement('div');
+                card.className = "ui-card rounded-2xl overflow-hidden flex flex-col justify-between";
+                card.innerHTML = `
+                    <div>
+                        <div class="relative h-40 w-full bg-gray-200 dark:bg-gray-800 overflow-hidden">
+                            <img src="${item.foto_url || 'IMIP.png'}" class="w-full h-full object-cover" onerror="this.src='IMIP.png'">
+                            <span class="absolute top-2 left-2 px-2.5 py-1 rounded-md text-[11px] font-bold bg-black/70 text-white">
+                                ${item.id_barang}
+                            </span>
+                            <span class="absolute top-2 right-2 px-2.5 py-1 rounded-md text-[11px] font-bold bg-emerald-600 text-white">
+                                Stok: ${item.stok_tersedia} / ${item.stok_total}
+                            </span>
+                        </div>
+                        <div class="p-4 space-y-2">
+                            <span class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase">${item.kategori || 'Umum'}</span>
+                            <h4 class="font-outfit font-extrabold text-base ui-heading">${item.nama_barang}</h4>
+                            <p class="text-xs ui-muted line-clamp-2">${item.deskripsi || '-'}</p>
+                            <p class="text-xs ui-body pt-1">Kondisi: <span class="font-bold text-emerald-600 dark:text-emerald-400">${item.kondisi || 'Bagus'}</span></p>
+                        </div>
+                    </div>
+
+                    <div class="p-4 pt-0 flex gap-2">
+                        <button onclick="bukaModalEditBarang('${item.id_barang}')" class="flex-1 py-2 rounded-xl ui-pill text-xs font-bold ui-heading hover:text-emerald-600 flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-pen-to-square"></i> Edit
+                        </button>
+                        <button onclick="hapusBarangAdmin('${item.id_barang}')" class="px-3.5 py-2 rounded-xl bg-rose-500/15 text-rose-500 border border-rose-500/30 text-xs font-bold hover:bg-rose-500/25">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                listEl.appendChild(card);
+            });
+        }
+
+        function bukaModalTambahBarang() {
+            document.getElementById('modal-barang-title').innerText = "Tambah Barang Baru";
+            document.getElementById('barang-edit-id').value = "";
+            document.getElementById('form-barang').reset();
+            hapusPreviewBarang();
+            bukaModal('modal-barang');
+        }
+
+        function bukaModalEditBarang(idBarang) {
+            const item = localDB.barang.find(b => String(b.id_barang) === String(idBarang));
+            if (!item) return;
+
+            document.getElementById('modal-barang-title').innerText = "Edit Data Barang";
+            document.getElementById('barang-edit-id').value = item.id_barang;
+            document.getElementById('barang-nama').value = item.nama_barang || "";
+            document.getElementById('barang-kategori').value = item.kategori || "Elektronik";
+            document.getElementById('barang-stok').value = item.stok_total || 1;
+            document.getElementById('barang-kondisi').value = item.kondisi || "Bagus / Prima";
+            document.getElementById('barang-deskripsi').value = item.deskripsi || "";
+
+            base64FotoBarang = item.foto_url || "";
+            if (item.foto_url) {
+                document.getElementById('preview-img-barang').src = item.foto_url;
+                document.getElementById('preview-container-barang').classList.remove('hidden');
+                document.getElementById('upload-placeholder-barang').classList.add('hidden');
+            } else {
+                hapusPreviewBarang();
+            }
+
+            bukaModal('modal-barang');
+        }
+
+        function previewImageBarang(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            compressImage(file, 900, 0.7, (base64) => {
+                base64FotoBarang = base64;
+                document.getElementById('preview-img-barang').src = base64;
+                document.getElementById('preview-container-barang').classList.remove('hidden');
+                document.getElementById('upload-placeholder-barang').classList.add('hidden');
+            });
+        }
+
+        function hapusPreviewBarang() {
+            base64FotoBarang = "";
+            const fileInput = document.getElementById('barang-foto-input');
+            if (fileInput) fileInput.value = "";
+            document.getElementById('preview-container-barang')?.classList.add('hidden');
+            document.getElementById('upload-placeholder-barang')?.classList.remove('hidden');
+        }
+
+        async function submitFormBarang(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-submit-barang');
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Menyimpan...`;
+
+            const editId = document.getElementById('barang-edit-id').value;
+            const isEdit = Boolean(editId);
+
+            const payload = {
+                action: isEdit ? "admin_edit_barang" : "admin_tambah_barang",
+                pin: localStorage.getItem(STORAGE_KEY_PIN) || "123456",
+                id_barang: editId || ("BRG-" + Math.floor(100 + Math.random() * 900)),
+                nama_barang: document.getElementById('barang-nama').value.trim(),
+                kategori: document.getElementById('barang-kategori').value,
+                stok_total: parseInt(document.getElementById('barang-stok').value, 10) || 1,
+                kondisi: document.getElementById('barang-kondisi').value,
+                deskripsi: document.getElementById('barang-deskripsi').value.trim(),
+                foto_url: base64FotoBarang
+            };
+
+            const apiUrl = getApiUrl();
+            if (apiUrl) {
+                try {
+                    await fetch(apiUrl, {
+                        method: "POST",
+                        body: JSON.stringify(payload)
+                    });
+                } catch(e) {}
+            }
+
+            if (isEdit) {
+                const target = localDB.barang.find(b => String(b.id_barang) === String(editId));
+                if (target) {
+                    target.nama_barang = payload.nama_barang;
+                    target.kategori = payload.kategori;
+                    target.stok_total = payload.stok_total;
+                    target.kondisi = payload.kondisi;
+                    target.deskripsi = payload.deskripsi;
+                    if (base64FotoBarang) target.foto_url = base64FotoBarang;
+                }
+            } else {
+                localDB.barang.push({
+                    id_barang: payload.id_barang,
+                    nama_barang: payload.nama_barang,
+                    kategori: payload.kategori,
+                    deskripsi: payload.deskripsi,
+                    foto_url: base64FotoBarang || "IMIP.png",
+                    stok_total: payload.stok_total,
+                    stok_tersedia: payload.stok_total,
+                    kondisi: payload.kondisi,
+                    status: "Tersedia"
+                });
+            }
+
+            saveLocalDB();
+            btn.disabled = false;
+            btn.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> Simpan Barang`;
+            tutupModal('modal-barang');
+
+            Swal.fire({ icon: 'success', title: isEdit ? 'Barang Diperbarui!' : 'Barang Ditambahkan!', timer: 1200, showConfirmButton: false });
+            renderAdminDashboard();
+        }
+
+        async function hapusBarangAdmin(idBarang) {
+            const { isConfirmed } = await Swal.fire({
+                title: 'Hapus Barang Ini?',
+                text: 'Barang tidak akan muncul lagi di katalog.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#F43F5E',
+                confirmButtonText: 'Ya, Hapus',
+                cancelButtonText: 'Batal'
+            });
+            if (!isConfirmed) return;
+
+            const apiUrl = getApiUrl();
+            if (apiUrl) {
+                try {
+                    await fetch(apiUrl, {
+                        method: "POST",
+                        body: JSON.stringify({
+                            action: "admin_hapus_barang",
+                            pin: localStorage.getItem(STORAGE_KEY_PIN) || "123456",
+                            id_barang: idBarang
+                        })
+                    });
+                } catch(e) {}
+            }
+
+            localDB.barang = localDB.barang.filter(b => String(b.id_barang) !== String(idBarang));
+            saveLocalDB();
+            Swal.fire({ icon: 'success', title: 'Barang Terhapus', timer: 1200, showConfirmButton: false });
+            renderAdminDashboard();
+        }
+
+        function getStatusBadge(status) {
+            const s = (status || "").toUpperCase();
+            if (s === "MENUNGGU") {
+                return { label: "Menunggu Tinjauan", badgeClass: "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30" };
+            } else if (s === "DISETUJUI") {
+                return { label: "Disetujui / Diambil", badgeClass: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30" };
+            } else if (s === "DITOLAK") {
+                return { label: "Ditolak", badgeClass: "bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30" };
+            } else if (s === "DIKEMBALIKAN") {
+                return { label: "Sudah Dikembalikan", badgeClass: "bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30" };
+            }
+            return { label: s || "Unknown", badgeClass: "bg-gray-200 dark:bg-gray-800 text-gray-500" };
+        }
+
+        function bukaLightbox(imgUrl, caption) {
+            if (!imgUrl) return;
+            document.getElementById('lightbox-img').src = imgUrl;
+            document.getElementById('lightbox-caption').innerText = caption || "";
+            bukaModal('modal-lightbox');
+        }
+
+        function bukaModal(id) { document.getElementById(id)?.classList.remove('hidden'); }
+        function tutupModal(id) { document.getElementById(id)?.classList.add('hidden'); }
+
+        function compressImage(file, maxDimension, quality, callback) {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    let width = img.width;
+                    let height = img.height;
+                    if (width > height) {
+                        if (width > maxDimension) {
+                            height = Math.round((height * maxDimension) / width);
+                            width = maxDimension;
+                        }
+                    } else {
+                        if (height > maxDimension) {
+                            width = Math.round((width * maxDimension) / height);
+                            height = maxDimension;
+                        }
+                    }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    callback(canvas.toDataURL('image/jpeg', quality));
+                };
+            };
+        }
+    </script>
+</body>
+</html>
