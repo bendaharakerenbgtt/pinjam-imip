@@ -94,78 +94,80 @@
 <body class="selection:bg-orange-500 selection:text-white pb-24">
 
     <!-- TOP NAVBAR -->
-    <header class="sticky top-0 z-40 w-full px-3 sm:px-6 pt-3 pb-2">
-        <div class="max-w-6xl mx-auto ui-card rounded-2xl px-4 py-3 flex items-center justify-between transition-all">
+    <header class="sticky top-2 z-40 w-full px-2.5 sm:px-6 mb-2">
+        <div class="max-w-6xl mx-auto ui-card rounded-2xl px-3 py-2 sm:px-4 sm:py-2.5 flex items-center justify-between transition-all">
             <!-- Brand Pinjamip -->
-            <a href="index.html" class="flex items-center gap-3">
-                <img src="IMIP.png" alt="IMIP Logo" class="h-9 w-auto object-contain drop-shadow" onerror="this.src='icons/icon-192.png'">
-                <span class="font-outfit font-extrabold text-2xl tracking-tight bg-gradient-to-r from-[#FF7300] to-[#FFA500] bg-clip-text text-transparent">Pinjamip</span>
+            <a href="index.html" class="flex items-center gap-2 sm:gap-3">
+                <img src="IMIP.png" alt="IMIP Logo" class="h-7 sm:h-8 w-auto object-contain drop-shadow" onerror="this.src='icons/icon-192.png'">
+                <span class="font-outfit font-extrabold text-lg sm:text-xl tracking-tight bg-gradient-to-r from-[#FF7300] to-[#FFA500] bg-clip-text text-transparent">Pinjamip</span>
             </a>
 
             <!-- Right Actions: Cek Status, Theme Toggle, & Cart Button -->
-            <div class="flex items-center gap-2 sm:gap-3">
-                <a href="status.html" class="px-3 py-2 rounded-xl ui-pill text-xs font-bold ui-heading hover:text-[#FF7300] transition-all flex items-center gap-1.5" title="Lacak Pengajuan">
+            <div class="flex items-center gap-1.5 sm:gap-2.5">
+                <a href="status.html" class="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl ui-pill text-xs font-bold ui-heading hover:text-[#FF7300] transition-all flex items-center gap-1.5" title="Lacak Pengajuan">
                     <i class="fa-solid fa-magnifying-glass text-[#FF7300]"></i> <span class="hidden sm:inline">Cek Status</span>
                 </a>
 
-                <button onclick="toggleTheme()" class="w-9 h-9 rounded-xl ui-pill flex items-center justify-center ui-body hover:text-[#FF7300] transition-all" title="Ubah Mode Tampilan">
-                    <i id="theme-icon" class="fa-solid fa-moon text-sm"></i>
+                <button onclick="toggleTheme()" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl ui-pill flex items-center justify-center ui-body hover:text-[#FF7300] transition-all" title="Ubah Mode Tampilan">
+                    <i id="theme-icon" class="fa-solid fa-moon text-xs sm:text-sm"></i>
                 </button>
 
-                <!-- Keranjang Floating/Header Button -->
-                <button onclick="bukaModalKeranjang()" class="relative px-3.5 py-2 rounded-xl btn-kabinet text-xs font-bold flex items-center gap-2 shadow-md">
-                    <i class="fa-solid fa-cart-shopping"></i>
+                <!-- Keranjang Button -->
+                <button onclick="bukaModalKeranjang()" class="relative px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl btn-kabinet text-xs font-bold flex items-center gap-1.5 sm:gap-2 shadow-md">
+                    <i class="fa-solid fa-cart-shopping text-xs"></i>
                     <span class="hidden sm:inline">Keranjang</span>
-                    <span id="cart-badge-count" class="w-5 h-5 rounded-full bg-white text-[#FF7300] text-[11px] font-black flex items-center justify-center">0</span>
+                    <span id="cart-badge-count" class="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-white text-[#FF7300] text-[10px] sm:text-[11px] font-black flex items-center justify-center">0</span>
                 </button>
             </div>
         </div>
     </header>
 
     <!-- MAIN CONTENT -->
-    <main class="max-w-6xl mx-auto px-4 sm:px-6 pt-2 space-y-6">
+    <main class="max-w-6xl mx-auto px-3 sm:px-6 pt-1 space-y-3.5 sm:space-y-5">
 
-        <!-- Clean Hero Section -->
-        <div class="ui-card rounded-2xl p-6 sm:p-8 border border-orange-200 dark:border-white/10 bg-gradient-to-br from-orange-500/10 via-amber-500/5 to-transparent">
-            <h1 class="text-2xl sm:text-3xl font-extrabold font-outfit ui-heading tracking-tight">
-                Peminjaman Barang & Fasilitas
-            </h1>
+        <!-- Slim Compact Header (Harmonized with Bendahara2026) -->
+        <div class="flex items-center justify-between gap-2 pt-1 pb-0.5">
+            <div>
+                <h1 class="text-base sm:text-2xl font-extrabold font-outfit ui-heading tracking-tight">
+                    Katalog Inventaris IMIP
+                </h1>
+                <p class="text-[11px] sm:text-xs ui-muted">Peminjaman perlengkapan dakwah & kegiatan kampus</p>
+            </div>
+            <a href="status.html" class="px-2.5 py-1.5 rounded-xl ui-pill text-[11px] font-bold ui-heading hover:text-[#FF7300] flex items-center gap-1.5 shadow-sm sm:hidden" title="Lacak Pengajuan">
+                <i class="fa-solid fa-clock-rotate-left text-[#FF7300]"></i> <span>Lacak</span>
+            </a>
         </div>
 
-        <!-- Search & Category Filters -->
-        <div class="space-y-3">
+        <!-- Search & Dynamic Category Filters -->
+        <div class="space-y-2.5">
             <div class="relative">
                 <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-orange-500/70 text-sm"></i>
-                <input type="text" id="katalog-search" oninput="renderKatalog()" placeholder="Cari nama barang (Proyektor, Mic, Kabel)..." 
-                       class="w-full pl-10 pr-4 py-2.5 rounded-xl ui-card text-sm ui-heading placeholder:text-gray-400 focus:outline-none focus:border-[#FF7300] focus:ring-1 focus:ring-[#FF7300] transition-all">
+                <input type="text" id="katalog-search" oninput="renderKatalog()" placeholder="Cari nama barang (Proyektor, Mic, Speaker)..." 
+                       class="w-full pl-9 pr-4 py-2 sm:py-2.5 rounded-xl ui-card text-xs sm:text-sm ui-heading placeholder:text-gray-400 focus:outline-none focus:border-[#FF7300] focus:ring-1 focus:ring-[#FF7300] transition-all">
             </div>
 
-            <!-- Category Pills -->
-            <div class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar text-xs font-semibold" id="category-pills">
-                <button onclick="setCategoryFilter('Semua')" class="cat-pill px-4 py-2 rounded-xl whitespace-nowrap transition-all btn-kabinet shadow-sm" data-cat="Semua">Semua</button>
-                <button onclick="setCategoryFilter('Elektronik')" class="cat-pill px-4 py-2 rounded-xl whitespace-nowrap transition-all ui-pill ui-body hover:text-[#FF7300]" data-cat="Elektronik">Elektronik</button>
-                <button onclick="setCategoryFilter('Audio & Sound')" class="cat-pill px-4 py-2 rounded-xl whitespace-nowrap transition-all ui-pill ui-body hover:text-[#FF7300]" data-cat="Audio & Sound">Audio & Sound</button>
-                <button onclick="setCategoryFilter('Kelistrikan')" class="cat-pill px-4 py-2 rounded-xl whitespace-nowrap transition-all ui-pill ui-body hover:text-[#FF7300]" data-cat="Kelistrikan">Kelistrikan</button>
-                <button onclick="setCategoryFilter('Dekorasi & Logistik')" class="cat-pill px-4 py-2 rounded-xl whitespace-nowrap transition-all ui-pill ui-body hover:text-[#FF7300]" data-cat="Dekorasi & Logistik">Dekorasi & Logistik</button>
+            <!-- Dynamic Category Pills (Only Shows Existing Categories) -->
+            <div class="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 no-scrollbar text-xs font-semibold" id="category-pills">
+                <!-- Dynamically populated based on active inventory -->
             </div>
         </div>
 
         <!-- Loading Indicator -->
-        <div id="katalog-loading" class="text-center py-10 hidden">
-            <i class="fa-solid fa-circle-notch fa-spin text-3xl text-orange-500"></i>
+        <div id="katalog-loading" class="text-center py-8 hidden">
+            <i class="fa-solid fa-circle-notch fa-spin text-2xl text-orange-500"></i>
             <p class="text-xs ui-muted mt-2">Memuat daftar barang...</p>
         </div>
 
         <!-- Grid Barang -->
-        <div id="katalog-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div id="katalog-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-5">
             <!-- Rendered dynamically -->
         </div>
 
         <!-- Empty State -->
-        <div id="katalog-empty" class="hidden text-center py-16 ui-card rounded-2xl">
-            <i class="fa-solid fa-box-open text-4xl ui-muted mb-3"></i>
-            <h3 class="text-base font-bold ui-heading">Barang tidak ditemukan</h3>
-            <p class="text-xs ui-muted mt-1">Coba kata kunci pencarian yang lain.</p>
+        <div id="katalog-empty" class="hidden text-center py-12 ui-card rounded-2xl">
+            <i class="fa-solid fa-box-open text-3xl ui-muted mb-2"></i>
+            <h3 class="text-sm font-bold ui-heading">Barang tidak ditemukan</h3>
+            <p class="text-xs ui-muted mt-1">Coba kata kunci pencarian atau kategori lain.</p>
         </div>
 
     </main>
@@ -384,7 +386,7 @@
 
                 <!-- Info Ketentuan Singkat -->
                 <div class="p-3 rounded-xl bg-orange-500/10 border border-orange-500/20 text-[11px] ui-body leading-relaxed">
-                    <p><i class="fa-solid fa-circle-info text-[#FF7300] mr-1"></i> <strong>Catatan:</strong> Pengajuan ini tidak langsung mengurangi stok. Admin logistik akan memverifikasi ketersediaan barang dan menghubungi Anda melalui WhatsApp beserta Surat Perjanjian Peminjaman.</p>
+                    <p><i class="fa-solid fa-circle-info text-[#FF7300] mr-1"></i> <strong>Catatan:</strong> Pengajuan ini tidak langsung mengurangi stok. Admin Inventaris akan memverifikasi ketersediaan barang dan menghubungi Anda melalui WhatsApp beserta Surat Perjanjian Peminjaman.</p>
                 </div>
 
                 <div class="pt-2 flex justify-end gap-2">
@@ -535,19 +537,56 @@
             renderKatalog();
         }
 
+        function renderCategoryPills() {
+            const pillsContainer = document.getElementById('category-pills');
+            if (!pillsContainer) return;
+
+            const activeItems = localDB.barang.filter(b => b.status !== "Diarsipkan");
+            const catCount = {};
+            activeItems.forEach(b => {
+                const c = (b.kategori || "Lainnya").trim();
+                catCount[c] = (catCount[c] || 0) + 1;
+            });
+
+            const uniqueCats = Object.keys(catCount);
+
+            if (currentCategory !== "Semua" && !uniqueCats.includes(currentCategory)) {
+                currentCategory = "Semua";
+            }
+
+            if (uniqueCats.length === 0) {
+                pillsContainer.classList.add('hidden');
+                return;
+            }
+            pillsContainer.classList.remove('hidden');
+
+            let html = `
+                <button onclick="setCategoryFilter('Semua')" class="cat-pill px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl whitespace-nowrap text-xs font-bold transition-all ${currentCategory === 'Semua' ? 'btn-kabinet shadow-sm' : 'ui-pill ui-body hover:text-[#FF7300]'}" data-cat="Semua">
+                    Semua (${activeItems.length})
+                </button>
+            `;
+
+            uniqueCats.forEach(cat => {
+                const isSelected = currentCategory === cat;
+                const safeCat = cat.replace(/'/g, "\\'");
+                html += `
+                    <button onclick="setCategoryFilter('${safeCat}')" class="cat-pill px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl whitespace-nowrap text-xs font-bold transition-all ${isSelected ? 'btn-kabinet shadow-sm' : 'ui-pill ui-body hover:text-[#FF7300]'}" data-cat="${cat}">
+                        ${cat} (${catCount[cat]})
+                    </button>
+                `;
+            });
+
+            pillsContainer.innerHTML = html;
+        }
+
         function setCategoryFilter(cat) {
             currentCategory = cat;
-            document.querySelectorAll('.cat-pill').forEach(btn => {
-                if (btn.getAttribute('data-cat') === cat) {
-                    btn.className = "cat-pill px-4 py-2 rounded-xl whitespace-nowrap transition-all btn-kabinet shadow-sm";
-                } else {
-                    btn.className = "cat-pill px-4 py-2 rounded-xl whitespace-nowrap transition-all ui-pill ui-body hover:text-[#FF7300]";
-                }
-            });
+            renderCategoryPills();
             renderKatalog();
         }
 
         function renderKatalog() {
+            renderCategoryPills();
             const query = (document.getElementById('katalog-search')?.value || "").toLowerCase().trim();
             const grid = document.getElementById('katalog-grid');
             const empty = document.getElementById('katalog-empty');
@@ -588,40 +627,41 @@
                 card.className = "ui-card rounded-2xl overflow-hidden flex flex-col justify-between hover:border-orange-400 transition-all duration-300";
                 card.innerHTML = `
                     <div class="cursor-pointer" onclick="bukaModalDetail('${item.id_barang}')">
-                        <div class="relative h-48 w-full bg-gray-200 dark:bg-gray-800 overflow-hidden">
+                        <div class="relative h-36 sm:h-44 w-full bg-gray-200 dark:bg-gray-800 overflow-hidden">
                             <img src="${item.foto_url || 'IMIP.png'}" alt="${item.nama_barang}" 
                                  class="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                                  onerror="this.src='IMIP.png'">
-                            <span class="absolute top-3 left-3 px-2.5 py-1 rounded-lg text-xs font-bold uppercase backdrop-blur-md ${statusBadgeClass} shadow-md">
+                            <span class="absolute top-2 left-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase backdrop-blur-md ${statusBadgeClass} shadow-md">
                                 ${statusLabel}
                             </span>
-                            <span class="absolute top-3 right-3 px-2.5 py-1 rounded-lg text-xs font-semibold bg-black/60 text-white">
+                            <span class="absolute top-2 right-2 px-2 py-0.5 rounded text-[10px] font-semibold bg-black/60 text-white">
                                 ${item.kategori || 'Umum'}
                             </span>
                         </div>
 
-                        <div class="p-5 space-y-2">
-                            <h3 class="font-outfit font-extrabold text-lg ui-heading leading-snug">
+                        <div class="p-3.5 sm:p-4 space-y-1.5">
+                            <span class="text-[10px] font-bold text-[#FF7300] uppercase">${item.kategori || 'Inventaris'}</span>
+                            <h3 class="font-outfit font-extrabold text-sm sm:text-base ui-heading leading-tight line-clamp-1">
                                 ${item.nama_barang}
                             </h3>
                             <p class="text-xs ui-muted leading-relaxed line-clamp-2">
                                 ${item.deskripsi || 'Tidak ada deskripsi tambahan.'}
                             </p>
-                            <div class="pt-2 text-xs flex items-center justify-between">
+                            <div class="pt-1 text-xs flex items-center justify-between">
                                 <span class="font-semibold text-[#FF7300]">
                                     <i class="fa-solid fa-circle-check text-[11px] mr-1"></i>${item.kondisi || 'Bagus'}
                                 </span>
-                                <span class="text-xs ui-muted font-medium">
+                                <span class="text-[11px] ui-muted font-medium">
                                     Total: ${item.stok_total || 1} unit
                                 </span>
                             </div>
                         </div>
                     </div>
 
-                    <div class="p-5 pt-0">
+                    <div class="p-3.5 sm:p-4 pt-0">
                         <button onclick="tambahKeKeranjang('${item.id_barang}')" ${tersedia <= 0 ? 'disabled' : ''} 
-                                class="w-full py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 ${tersedia > 0 ? 'btn-kabinet shadow-md' : 'bg-gray-300 dark:bg-gray-800 text-gray-500 cursor-not-allowed'}">
-                            <i class="fa-solid fa-cart-plus"></i> ${tersedia > 0 ? 'Tambah ke Keranjang' : 'Stok Habis'}
+                                class="w-full py-2 sm:py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 ${tersedia > 0 ? 'btn-kabinet shadow-md' : 'bg-gray-300 dark:bg-gray-800 text-gray-500 cursor-not-allowed'}">
+                            <i class="fa-solid fa-cart-plus text-xs"></i> ${tersedia > 0 ? 'Tambah ke Keranjang' : 'Stok Habis'}
                         </button>
                     </div>
                 `;

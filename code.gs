@@ -62,7 +62,7 @@ function setupSheetsDanDrive() {
       4, 4, "Bagus / Prima", "Tersedia", new Date(), new Date()
     ]);
     sheetB.appendRow([
-      "BRG-004", "Standing Banner Aluminium Portable", "Dekorasi & Logistik", 
+      "BRG-004", "Standing Banner Aluminium Portable", "Dekorasi & Acara", 
       "Roll-up standing banner kokoh untuk penunjuk arah dan backdrop mini",
       "https://images.unsplash.com/photo-1542744095-fcf48d80b0fd?w=600",
       2, 2, "Bagus / Prima", "Tersedia", new Date(), new Date()
@@ -132,16 +132,19 @@ function doGet(e) {
       }
       const allPeminjaman = getTableData(SHEET_PEMINJAMAN);
       const cleanNum = query.replace(/[^0-9]/g, "");
+      const normQ = cleanNum.replace(/^62/, "0");
 
       // Filter aman: Jangan bocorkan data sensitif (dokumen identitas & catatan internal admin)
       const matches = allPeminjaman.filter(row => {
         const rowWa = (row.kontak_wa || "").toString().replace(/[^0-9]/g, "");
+        const normWa = rowWa.replace(/^62/, "0");
         const rowNama = (row.nama_peminjam || "").toString().toLowerCase();
         const rowId = (row.id_pinjam || "").toString().toLowerCase();
 
-        const matchWa = cleanNum.length >= 6 && rowWa.includes(cleanNum);
+        const matchWa = (cleanNum.length >= 4 && rowWa.includes(cleanNum)) || 
+                        (normQ.length >= 4 && normWa.includes(normQ));
         const matchNama = rowNama.includes(query) && query.length >= 3;
-        const matchId = rowId === query;
+        const matchId = rowId === query || (query.length >= 4 && rowId.includes(query));
         return matchWa || matchNama || matchId;
       }).map(row => {
         // Sensor dokumen identitas dan catatan admin internal

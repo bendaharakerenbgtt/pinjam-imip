@@ -103,30 +103,42 @@
     </header>
 
     <!-- CONTENT WRAPPER -->
-    <main class="max-w-4xl mx-auto px-4 sm:px-6 pt-4 space-y-6">
+    <main class="max-w-4xl mx-auto px-3 sm:px-6 pt-2 sm:pt-4 space-y-4 sm:space-y-6">
 
         <!-- Search Box -->
-        <div class="ui-card rounded-2xl p-6 sm:p-8 space-y-4 text-center max-w-xl mx-auto border-orange-200 dark:border-white/10">
-            <div class="w-12 h-12 rounded-2xl bg-orange-500/10 text-[#FF7300] border border-orange-500/20 flex items-center justify-center mx-auto text-xl">
+        <div class="ui-card rounded-2xl p-4 sm:p-7 space-y-3.5 text-center max-w-xl mx-auto border-orange-200 dark:border-white/10">
+            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-orange-500/10 text-[#FF7300] border border-orange-500/20 flex items-center justify-center mx-auto text-lg sm:text-xl">
                 <i class="fa-solid fa-clock-rotate-left"></i>
             </div>
             <div>
-                <h1 class="text-xl sm:text-2xl font-bold font-outfit ui-heading">Cek Status Peminjaman</h1>
+                <h1 class="text-lg sm:text-2xl font-bold font-outfit ui-heading">Cek Status Peminjaman</h1>
                 <p class="text-xs ui-muted mt-1 leading-relaxed">
-                    Masukkan <strong>Nomor WhatsApp</strong> atau <strong>Nama Lengkap Peminjam</strong> yang Anda daftarkan.
+                    Ketik <strong>Nomor WhatsApp</strong> Anda atau <strong>Kode Peminjaman</strong>.
+                </p>
+            </div>
+
+            <!-- Petunjuk Lupa Kode (User Friendly Hint) -->
+            <div class="p-3 rounded-xl bg-orange-500/10 border border-orange-500/25 text-left space-y-1 text-xs">
+                <div class="flex items-center gap-1.5 font-bold text-[#FF7300]">
+                    <i class="fa-solid fa-lightbulb"></i>
+                    <span>Petunjuk Mudah:</span>
+                </div>
+                <p class="text-[11.5px] ui-body leading-relaxed">
+                    • <strong>Paling Mudah:</strong> Cukup masukkan nomor WhatsApp aktif Anda (contoh: <span class="font-mono font-semibold">0857...</span>), sistem langsung melacak seluruh pengajuan Anda.<br>
+                    • <strong>Atau Kode Peminjaman:</strong> Kode berformat <span class="font-mono font-bold text-[#FF7300]">PJM-TANGGAL-XXXX</span> (contoh: <span class="font-mono">PJM-20261102-6614</span>) yang tertera saat selesai mengisi form.
                 </p>
             </div>
 
             <form onsubmit="cariStatus(event)" class="flex flex-col sm:flex-row gap-2">
-                <input type="text" id="input-query" placeholder="Contoh: 08123456789 atau Nama Lengkap..." required
-                       class="flex-1 px-4 py-2.5 rounded-xl ui-card ui-heading text-sm focus:outline-none focus:border-[#FF7300]">
+                <input type="text" id="input-query" placeholder="Ketik No. WA (0857...) atau Kode Peminjaman..." required
+                       class="flex-1 px-3.5 py-2.5 rounded-xl ui-card ui-heading text-xs sm:text-sm focus:outline-none focus:border-[#FF7300]">
                 <button type="submit" id="btn-cari" class="px-5 py-2.5 rounded-xl btn-kabinet font-bold text-xs flex items-center justify-center gap-1.5 shadow-md">
                     <i class="fa-solid fa-magnifying-glass"></i> Cari Status
                 </button>
             </form>
 
-            <p class="text-[11px] ui-muted pt-1">
-                <i class="fa-solid fa-shield-halved text-[#FF7300] mr-1"></i> Data identitas dan kontak pribadi peminjam dilindungi oleh sistem.
+            <p class="text-[11px] ui-muted pt-0.5">
+                <i class="fa-solid fa-shield-halved text-[#FF7300] mr-1"></i> Data identitas pribadi Anda aman dan dilindungi sistem.
             </p>
         </div>
 
@@ -219,14 +231,16 @@
             // Fallback search di data lokal
             if (hasil.length === 0) {
                 const cleanQ = query.replace(/[^0-9]/g, "");
+                const normQ = cleanQ.replace(/^62/, "0");
                 hasil = localDB.peminjaman.filter(p => {
                     const wa = (p.kontak_wa || "").replace(/[^0-9]/g, "");
+                    const normWa = wa.replace(/^62/, "0");
                     const nama = (p.nama_peminjam || "").toLowerCase();
                     const id = (p.id_pinjam || "").toLowerCase();
 
-                    const matchWa = cleanQ.length >= 6 && wa.includes(cleanQ);
+                    const matchWa = (cleanQ.length >= 4 && wa.includes(cleanQ)) || (normQ.length >= 4 && normWa.includes(normQ));
                     const matchNama = nama.includes(query) && query.length >= 3;
-                    const matchId = id === query;
+                    const matchId = id === query || (query.length >= 4 && id.includes(query));
                     return matchWa || matchNama || matchId;
                 }).map(p => {
                     let items = [];
@@ -281,8 +295,15 @@
                     itemsListHtml = `<span class="text-xs ui-muted italic">1 Unit Perlengkapan</span>`;
                 }
 
+                // Format tanggal rapi tanpa :00:00:00
+                const tglAmbilClean = String(item.tgl_pengambilan || "").replace(/ 00:00:00/g, "").replace(/T.*$/, "");
+                const tglKembaliClean = String(item.tgl_pengembalian || "").replace(/ 00:00:00/g, "").replace(/T.*$/, "");
+
+                const waPesan = `Assalamu'alaikum Admin Inventaris LDK IMIP, saya ingin menanyakan perkembangan pengajuan peminjaman *${item.id_pinjam}* atas nama *${item.nama_peminjam}* (${item.asal_organisasi}). Jazakumullah khairan.`;
+                const waLinkAdmin = `https://wa.me/6285770976399?text=${encodeURIComponent(waPesan)}`;
+
                 const card = document.createElement('div');
-                card.className = "ui-card p-5 rounded-2xl space-y-3 border-orange-200 dark:border-white/10";
+                card.className = "ui-card p-4 sm:p-5 rounded-2xl space-y-3 border-orange-200 dark:border-white/10";
                 card.innerHTML = `
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-orange-200 dark:border-gray-800 pb-3">
                         <div>
@@ -307,7 +328,7 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs ui-muted pt-1">
                         <div>
                             <span class="block text-[10px] uppercase font-bold text-gray-400">Periode Peminjaman:</span>
-                            <span class="font-semibold ui-heading"><i class="fa-solid fa-calendar mr-1 text-[#FF7300]"></i> ${item.tgl_pengambilan} s.d ${item.tgl_pengembalian}</span>
+                            <span class="font-semibold ui-heading"><i class="fa-solid fa-calendar mr-1 text-[#FF7300]"></i> ${tglAmbilClean} s.d ${tglKembaliClean}</span>
                         </div>
                         <div>
                             <span class="block text-[10px] uppercase font-bold text-gray-400">Keperluan:</span>
@@ -316,11 +337,16 @@
                     </div>
 
                     <!-- Petunjuk / Catatan Publik dari Admin -->
-                    <div class="p-3 rounded-xl bg-orange-500/10 border border-orange-500/20 text-xs text-orange-950 dark:text-orange-200 leading-relaxed">
-                        <span class="font-bold text-[#FF7300] block mb-0.5"><i class="fa-solid fa-circle-info mr-1"></i> Instruksi / Informasi Status:</span>
-                        ${statusMeta.desc}
-                        ${item.catatan_publik ? `<div class="mt-1 pt-1 border-t border-orange-200 dark:border-orange-800 font-medium">Catatan Admin: ${item.catatan_publik}</div>` : ''}
+                    <div class="p-3 rounded-xl bg-orange-500/10 border border-orange-500/20 text-xs text-orange-950 dark:text-orange-200 leading-relaxed space-y-1">
+                        <span class="font-bold text-[#FF7300] block mb-0.5"><i class="fa-solid fa-circle-info mr-1"></i> Informasi Status:</span>
+                        <p>${statusMeta.desc}</p>
+                        ${item.catatan_publik ? `<div class="mt-1 pt-1 border-t border-orange-200 dark:border-orange-800 font-semibold text-[#FF7300]">Catatan Admin Inventaris: ${item.catatan_publik}</div>` : ''}
                     </div>
+
+                    <!-- Tombol Chat WA ke Admin -->
+                    <a href="${waLinkAdmin}" target="_blank" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all">
+                        <i class="fa-brands fa-whatsapp text-sm"></i> Hubungi Admin Inventaris via WhatsApp
+                    </a>
                 `;
                 container.appendChild(card);
             });
@@ -332,37 +358,37 @@
                 return {
                     label: "Menunggu Verifikasi",
                     badgeClass: "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30",
-                    desc: "Pengajuan Anda telah diterima dan sedang diperiksa ketersediaannya oleh admin logistik."
+                    desc: "Pengajuan Anda telah diterima dan sedang diperiksa ketersediaannya oleh Admin Inventaris LDK IMIP."
                 };
             } else if (s === "MENUNGGU KONFIRMASI PEMINJAM") {
                 return {
                     label: "Menunggu Konfirmasi Anda",
                     badgeClass: "bg-[#FF7300]/15 text-[#FF7300] border border-orange-500/30",
-                    desc: "Pengajuan disetujui secara administratif. Admin telah/akan menghubungi nomor WhatsApp Anda beserta dokumen Surat Perjanjian Peminjaman. Harap konfirmasi persetujuan Anda."
+                    desc: "Pengajuan telah disetujui secara administratif. Admin Inventaris telah/akan mengirimkan Surat Perjanjian Peminjaman via WhatsApp. Harap konfirmasi persetujuan Anda."
                 };
             } else if (s === "DIKONFIRMASI") {
                 return {
                     label: "Dikonfirmasi (Siap Diambil)",
                     badgeClass: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30",
-                    desc: "Perjanjian telah dikonfirmasi. Barang siap diambil sesuai tanggal pengambilan yang disepakati."
+                    desc: "Perjanjian peminjaman telah dikonfirmasi kedua pihak. Barang siap diambil sesuai tanggal yang telah disepakati."
                 };
             } else if (s === "SEDANG DIPINJAM") {
                 return {
                     label: "Sedang Dipinjam",
                     badgeClass: "bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30",
-                    desc: "Barang telah diserahkan dan saat ini sedang dalam masa peminjaman. Harap menjaga keutuhan barang dan mengembalikan tepat waktu."
+                    desc: "Barang telah diserahterimakan dan saat ini dalam masa peminjaman Anda. Harap merawat barang dan mengembalikan tepat waktu."
                 };
             } else if (s === "SELESAI") {
                 return {
                     label: "Selesai Dikembalikan",
                     badgeClass: "bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700",
-                    desc: "Barang telah diverifikasi kembali oleh admin logistik. Terima kasih telah menjaga inventaris LDK IMIP."
+                    desc: "Barang telah diverifikasi kembali oleh Admin Inventaris LDK IMIP. Terima kasih telah menjaga inventaris organisasi."
                 };
             } else if (s === "DITOLAK") {
                 return {
                     label: "Ditolak",
                     badgeClass: "bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30",
-                    desc: "Mohon maaf, pengajuan tidak dapat disetujui (misal: stok bentrok jadwal atau keperluan lain)."
+                    desc: "Mohon maaf, pengajuan belum dapat disetujui untuk jadwal ini (misal: inventaris bentrok pemakaian prioritas)."
                 };
             } else if (s === "DIBATALKAN") {
                 return {

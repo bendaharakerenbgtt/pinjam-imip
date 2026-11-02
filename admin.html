@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pinjamip — Dashboard Pengurus Logistik</title>
+    <title>Pinjamip — Dashboard Pengurus Inventaris</title>
     <link rel="icon" href="icons/icon-192.png" type="image/png">
     <meta name="theme-color" content="#FAF5EF">
     <meta name="mobile-web-app-capable" content="yes">
@@ -435,7 +435,7 @@
                     </div>
                     <div class="text-center w-44 sm:w-52 space-y-10 sm:space-y-12">
                         <p id="surat-tgl-cetak">Jakarta, ...</p>
-                        <p class="font-bold underline">Pengurus Logistik LDK IMIP</p>
+                        <p class="font-bold underline">Pengurus Inventaris LDK IMIP</p>
                     </div>
                 </div>
             </div>
@@ -467,11 +467,11 @@
                 <div>
                     <label class="block ui-heading font-semibold mb-1">Kondisi Barang Saat Kembali <span class="text-rose-500">*</span></label>
                     <select id="kembali-kondisi" class="w-full px-3.5 py-2 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
-                        <option value="Baik">Baik & Lengkap (Stok Utuh Kembali)</option>
-                        <option value="Rusak ringan">Rusak Ringan</option>
-                        <option value="Rusak berat">Rusak Berat</option>
-                        <option value="Hilang">Ada Barang Hilang</option>
-                        <option value="Tidak lengkap">Tidak Lengkap</option>
+                        <option value="Baik & Lengkap">Kondisi Baik & Lengkap</option>
+                        <option value="Baik (Catatan Minor)">Kondisi Baik (Catatan Minor)</option>
+                        <option value="Rusak Ringan">Rusak Ringan</option>
+                        <option value="Rusak Berat">Rusak Berat</option>
+                        <option value="Barang Hilang / Kurang">Barang Hilang / Kurang</option>
                     </select>
                 </div>
 
@@ -515,14 +515,17 @@
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                        <label class="block ui-heading font-semibold mb-1">Kategori <span class="text-rose-500">*</span></label>
-                        <select id="barang-kategori" class="w-full px-3.5 py-2 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
-                            <option value="Elektronik">Elektronik</option>
-                            <option value="Audio & Sound">Audio & Sound</option>
-                            <option value="Kelistrikan">Kelistrikan</option>
-                            <option value="Dekorasi & Logistik">Dekorasi & Logistik</option>
-                            <option value="Lainnya">Lainnya</option>
-                        </select>
+                        <label class="block ui-heading font-semibold mb-1">Kategori Barang <span class="text-rose-500">*</span></label>
+                        <input type="text" list="kategori-list-suggestions" id="barang-kategori" required placeholder="Pilih atau ketik kategori..."
+                               class="w-full px-3.5 py-2 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
+                        <datalist id="kategori-list-suggestions">
+                            <option value="Audio & Sound"></option>
+                            <option value="Elektronik"></option>
+                            <option value="Kelistrikan"></option>
+                            <option value="Dekorasi & Panggung"></option>
+                            <option value="Perlengkapan Kajian"></option>
+                            <option value="Dokumentasi"></option>
+                        </datalist>
                     </div>
                     <div>
                         <label class="block ui-heading font-semibold mb-1">Total Unit Inventaris <span class="text-rose-500">*</span></label>
@@ -658,6 +661,15 @@
                 localStorage.setItem('theme', 'dark');
                 icon.className = 'fa-solid fa-sun text-sm text-amber-400';
             }
+        }
+
+        function formatWaLink(phone, message = "") {
+            if (!phone) return "#";
+            let clean = phone.toString().replace(/[^0-9]/g, "");
+            if (clean.startsWith("0")) clean = "62" + clean.slice(1);
+            else if (clean.startsWith("8")) clean = "62" + clean;
+            const enc = message ? `?text=${encodeURIComponent(message)}` : "";
+            return `https://wa.me/${clean}${enc}`;
         }
 
         function getAdminPin() {
@@ -821,6 +833,9 @@
                     </div>
                 `).join("");
 
+                const tglAmbilClean = String(item.tgl_pengambilan || '').replace(/ 00:00:00/g, '');
+                const tglKembaliClean = String(item.tgl_pengembalian || '').replace(/ 00:00:00/g, '');
+
                 const card = document.createElement('div');
                 card.className = "ui-card p-4 sm:p-5 rounded-2xl space-y-3 sm:space-y-4 border-orange-200 dark:border-white/10";
                 card.innerHTML = `
@@ -840,12 +855,12 @@
                             <p class="font-bold ui-heading text-sm">${item.nama_peminjam}</p>
                             <p class="ui-body">PJ: ${item.nama_penanggung_jawab || '-'}</p>
                             <p class="ui-muted">${item.asal_organisasi} (${item.kategori_peminjam || 'Kampus'})</p>
-                            <p class="font-mono text-xs text-[#FF7300]">${item.kontak_wa}</p>
+                            <p class="font-mono text-xs text-[#FF7300] font-semibold">${item.kontak_wa}</p>
                         </div>
                         <div class="space-y-1">
                             <span class="text-[10px] uppercase font-bold text-gray-400">Jadwal Pengambilan & Kembali</span>
-                            <p class="font-semibold ui-heading"><i class="fa-solid fa-calendar mr-1 text-[#FF7300]"></i> Ambil: ${item.tgl_pengambilan}</p>
-                            <p class="font-semibold ui-heading"><i class="fa-solid fa-calendar-check mr-1 text-emerald-500"></i> Kembali: ${item.tgl_pengembalian}</p>
+                            <p class="font-semibold ui-heading"><i class="fa-solid fa-calendar mr-1 text-[#FF7300]"></i> Ambil: ${tglAmbilClean}</p>
+                            <p class="font-semibold ui-heading"><i class="fa-solid fa-calendar-check mr-1 text-emerald-500"></i> Kembali: ${tglKembaliClean}</p>
                             <p class="ui-muted italic pt-1">"${item.tujuan || '-'}"</p>
                         </div>
                         <div class="space-y-1.5">
@@ -857,10 +872,14 @@
                     </div>
 
                     <div class="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-orange-200 dark:border-gray-800">
-                        <div class="flex items-center gap-2">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <a href="${formatWaLink(item.kontak_wa, 'Assalamu\'alaikum wr. wb. ' + item.nama_peminjam + ' (' + item.asal_organisasi + '), kami dari Pengurus Inventaris LDK IMIP ingin mengonfirmasi pengajuan ' + item.id_pinjam + '.')}" target="_blank" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm">
+                                <i class="fa-brands fa-whatsapp text-sm"></i> Chat WA
+                            </a>
+
                             ${item.dokumen_identitas ? `
                                 <button onclick="bukaLightbox('${item.dokumen_identitas}', 'Identitas: ${item.nama_peminjam}')" class="px-3 py-1.5 rounded-xl ui-pill text-xs font-semibold ui-body hover:text-[#FF7300] flex items-center gap-1.5">
-                                    <i class="fa-solid fa-id-card text-[#FF7300]"></i> Lihat Dokumen Identitas
+                                    <i class="fa-solid fa-id-card text-[#FF7300]"></i> Lihat Identitas
                                 </button>
                             ` : `<span class="text-xs ui-muted italic">Tanpa dokumen</span>`}
 
@@ -1079,8 +1098,8 @@
                         </div>
                         <div>
                             <span class="text-[10px] uppercase font-bold text-gray-400 block">Batas Pengembalian</span>
-                            <p class="font-bold text-base ${delayLabel === 'TERLAMBAT' ? 'text-rose-500' : 'ui-heading'}">
-                                ${item.tgl_pengembalian}
+                            <p class="font-bold text-sm sm:text-base ${delayLabel === 'TERLAMBAT' ? 'text-rose-500' : 'ui-heading'}">
+                                ${String(item.tgl_pengembalian || '').replace(/ 00:00:00/g, '')}
                             </p>
                         </div>
                         <div>
@@ -1089,10 +1108,15 @@
                         </div>
                     </div>
 
-                    <div class="pt-3 border-t border-orange-200 dark:border-gray-800 flex justify-between items-center">
-                        <button onclick="bukaModalSuratPerjanjian('${item.id_pinjam}')" class="px-3 py-1.5 rounded-xl ui-pill text-xs font-semibold ui-heading hover:text-[#FF7300]">
-                            <i class="fa-solid fa-file-contract mr-1"></i> Dokumen Perjanjian
-                        </button>
+                    <div class="pt-3 border-t border-orange-200 dark:border-gray-800 flex flex-wrap justify-between items-center gap-2">
+                        <div class="flex items-center gap-2">
+                            <a href="${formatWaLink(item.kontak_wa, 'Assalamu\'alaikum ' + item.nama_peminjam + ', kami dari Pengurus Inventaris LDK IMIP ingin mengingatkan perihal peminjaman *' + item.id_pinjam + '* dengan batas waktu pengembalian *' + String(item.tgl_pengembalian || '').replace(/ 00:00:00/g, '') + '*. Jazakumullah khairan.')}" target="_blank" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm">
+                                <i class="fa-brands fa-whatsapp text-sm"></i> Chat WA
+                            </a>
+                            <button onclick="bukaModalSuratPerjanjian('${item.id_pinjam}')" class="px-3 py-1.5 rounded-xl ui-pill text-xs font-semibold ui-heading hover:text-[#FF7300]">
+                                <i class="fa-solid fa-file-contract mr-1"></i> Surat
+                            </button>
+                        </div>
                         <button onclick="bukaModalVerifikasiKembali('${item.id_pinjam}')" class="px-4 py-2 rounded-xl btn-kabinet font-bold text-xs shadow-md flex items-center gap-1.5">
                             <i class="fa-solid fa-box-archive"></i> Verifikasi Pengembalian
                         </button>
@@ -1125,7 +1149,7 @@
             let items = [];
             try { items = JSON.parse(target.items_json || "[]"); } catch(e) {}
 
-            if (kondisi === "Baik" || kondisi === "Rusak ringan") {
+            if (kondisi.toLowerCase().includes("baik") || kondisi.toLowerCase().includes("ringan")) {
                 items.forEach(it => {
                     const b = localDB.barang.find(x => String(x.id_barang) === String(it.id_barang));
                     if (b) {
@@ -1139,6 +1163,7 @@
             target.tgl_kembali_aktual = tglAktual;
             target.kondisi_kembali = kondisi;
             target.catatan_kembali = catatan;
+            target.catatan_admin = catatan ? `${catatan} (Kondisi: ${kondisi})` : `Barang kembali dalam ${kondisi}.`;
             saveLocalDB();
 
             const apiUrl = getApiUrl();
@@ -1154,6 +1179,7 @@
                             tgl_kembali_aktual: tglAktual,
                             kondisi_kembali: kondisi,
                             catatan_kembali: catatan,
+                            catatan: target.catatan_admin,
                             returned_items: items
                         })
                     });
@@ -1163,7 +1189,7 @@
             btn.disabled = false;
             btn.innerHTML = `Selesaikan Pengembalian`;
             tutupModal('modal-kembali');
-            Swal.fire({ icon: 'success', title: 'Pengembalian Selesai', text: 'Riwayat peminjaman telah diarsipkan.', timer: 1500, showConfirmButton: false });
+            Swal.fire({ icon: 'success', title: 'Pengembalian Selesai', text: 'Riwayat peminjaman telah diarsipkan dengan catatan.', timer: 1500, showConfirmButton: false });
             renderDashboard();
         }
 
@@ -1196,23 +1222,47 @@
             riwayat.forEach(item => {
                 let items = [];
                 try { items = JSON.parse(item.items_json || "[]"); } catch(e) {}
-                let itemsList = items.map(it => `${it.nama_barang} (${it.jumlah})`).join(", ");
+                let itemsList = items.map(it => `• ${it.nama_barang} (${it.jumlah} unit)`).join(", ");
+
+                const tglAmbilClean = String(item.tgl_pengambilan || "").replace(/ 00:00:00/g, "").replace(/T.*$/, "");
+                const tglKembaliClean = String(item.tgl_pengembalian || "").replace(/ 00:00:00/g, "").replace(/T.*$/, "");
+                const catatanTampil = item.catatan_kembali || item.catatan_admin || (item.kondisi_kembali ? `Kondisi saat kembali: ${item.kondisi_kembali}` : "");
 
                 const card = document.createElement('div');
-                card.className = "ui-card p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs";
+                card.className = "ui-card p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row sm:items-start justify-between gap-3 text-xs border-orange-200 dark:border-white/10";
                 card.innerHTML = `
-                    <div class="space-y-1">
-                        <div class="flex items-center gap-2">
+                    <div class="space-y-1.5 flex-1">
+                        <div class="flex flex-wrap items-center gap-2">
                             <span class="font-mono text-xs font-bold text-[#FF7300]">${item.id_pinjam}</span>
-                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${getStatusClass(item.status)}">${item.status}</span>
+                            <span class="px-2.5 py-0.5 rounded text-[10px] font-bold ${getStatusClass(item.status)}">${item.status}</span>
+                            ${item.tgl_kembali_aktual ? `<span class="text-[10px] ui-muted"><i class="fa-solid fa-clock-rotate-left mr-1"></i> Kembali Aktual: ${item.tgl_kembali_aktual}</span>` : ''}
                         </div>
-                        <h4 class="font-bold ui-heading">${item.nama_peminjam} (${item.asal_organisasi})</h4>
-                        <p class="ui-muted">${itemsList || 'Perlengkapan'}</p>
-                        <p class="text-[11px] ui-muted">Tanggal: ${item.tgl_pengambilan} s.d ${item.tgl_pengembalian}</p>
+
+                        <h4 class="font-bold font-outfit text-sm sm:text-base ui-heading">${item.nama_peminjam} <span class="text-xs ui-muted font-normal">(${item.asal_organisasi} • PJ: ${item.nama_penanggung_jawab || item.nama_peminjam})</span></h4>
+                        
+                        <div class="ui-pill p-2 rounded-xl text-xs space-y-0.5">
+                            <span class="text-[10px] font-bold uppercase text-gray-400 block">Barang Dipinjam:</span>
+                            <p class="ui-body font-medium">${itemsList || 'Perlengkapan'}</p>
+                        </div>
+
+                        <p class="text-[11px] ui-muted"><i class="fa-solid fa-calendar mr-1 text-[#FF7300]"></i> Periode: <strong>${tglAmbilClean}</strong> s.d <strong>${tglKembaliClean}</strong></p>
+
+                        ${catatanTampil ? `
+                            <div class="p-2.5 rounded-xl bg-orange-500/10 border border-orange-500/25 text-xs text-orange-950 dark:text-orange-200 leading-relaxed">
+                                <span class="font-bold text-[#FF7300] block mb-0.5"><i class="fa-solid fa-note-sticky mr-1"></i> Catatan Admin Inventaris:</span>
+                                <p>${catatanTampil}</p>
+                            </div>
+                        ` : ''}
                     </div>
-                    <button onclick="bukaModalSuratPerjanjian('${item.id_pinjam}')" class="self-start sm:self-auto px-3.5 py-1.5 rounded-xl ui-pill font-semibold text-xs ui-heading hover:text-[#FF7300]">
-                        <i class="fa-solid fa-file-contract mr-1"></i> Surat Perjanjian
-                    </button>
+
+                    <div class="flex sm:flex-col items-center gap-2 self-stretch sm:self-auto sm:min-w-[130px] pt-1">
+                        <a href="${formatWaLink(item.kontak_wa, 'Assalamu\'alaikum wr. wb. ' + item.nama_peminjam + ' (' + item.asal_organisasi + '), ini dari Pengurus Inventaris LDK IMIP mengenai riwayat peminjaman ' + item.id_pinjam + '.')}" target="_blank" class="flex-1 sm:w-full px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm">
+                            <i class="fa-brands fa-whatsapp text-sm"></i> Chat WA
+                        </a>
+                        <button onclick="bukaModalSuratPerjanjian('${item.id_pinjam}')" class="flex-1 sm:w-full px-3 py-1.5 rounded-xl ui-pill font-bold text-xs ui-heading hover:text-[#FF7300] flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-file-contract text-[#FF7300]"></i> Surat
+                        </button>
+                    </div>
                 `;
                 listEl.appendChild(card);
             });
@@ -1633,16 +1683,32 @@
 
         function kirimSuratViaWa() {
             if (!currentSuratItem) return;
-            let cleanWa = (currentSuratItem.kontak_wa || "").replace(/[^0-9]/g, "");
-            if (cleanWa.startsWith("0")) cleanWa = "62" + cleanWa.slice(1);
 
             let items = [];
             try { items = JSON.parse(currentSuratItem.items_json || "[]"); } catch(e) {}
-            let itemsSummary = items.map(it => `• ${it.nama_barang} (${it.jumlah} unit)`).join("%0A");
+            let itemsSummary = items.map(it => `• ${it.nama_barang} (${it.jumlah} unit)`).join("\n");
 
-            const pesan = `Assalamu'alaikum Wr. Wb.%0A%0AYth. *${currentSuratItem.nama_peminjam}* (${currentSuratItem.asal_organisasi})%0A%0AKami dari Pengurus Logistik LDK IMIP menginformasikan bahwa pengajuan peminjaman inventaris Anda (*No: ${currentSuratItem.id_pinjam}*) telah *DISETUJUI SECARA ADMINISTRATIF*.%0A%0ARincian Barang:%0A${itemsSummary}%0A%0AJadwal: ${currentSuratItem.tgl_pengambilan} s.d. ${currentSuratItem.tgl_pengembalian}%0A%0ASurat Perjanjian Peminjaman (*${currentSuratItem.no_surat}*) terlampir. Mohon membaca dan membalas konfirmasi persetujuan ketentuan surat ini sebelum pengambilan barang.%0A%0AJazakumullah khairan.`;
+            const tglAmbilClean = String(currentSuratItem.tgl_pengambilan || "").replace(/ 00:00:00/g, "");
+            const tglKembaliClean = String(currentSuratItem.tgl_pengembalian || "").replace(/ 00:00:00/g, "");
 
-            window.open(`https://wa.me/${cleanWa}?text=${pesan}`, '_blank');
+            const pesan = `Assalamu'alaikum Wr. Wb.
+
+Yth. *${currentSuratItem.nama_peminjam}* (${currentSuratItem.asal_organisasi})
+
+Kami dari *Pengurus Inventaris LDK IMIP* menginformasikan bahwa pengajuan peminjaman inventaris Anda (*No: ${currentSuratItem.id_pinjam}*) telah *DISETUJUI SECARA ADMINISTRATIF*.
+
+Rincian Barang:
+${itemsSummary}
+
+Jadwal: ${tglAmbilClean} s.d. ${tglKembaliClean}
+Nomor Dokumen: *${currentSuratItem.no_surat || '-'}*
+
+Surat Perjanjian Peminjaman resmi terlampir. Mohon membaca dan membalas konfirmasi persetujuan ketentuan surat ini sebelum jadwal pengambilan barang.
+
+Jazakumullah khairan.`;
+
+            const waUrl = formatWaLink(currentSuratItem.kontak_wa, pesan);
+            window.open(waUrl, '_blank');
         }
 
         async function updateStatusOnline(idPinjam, statusBaru, catatan = "", tglSerah = "") {
