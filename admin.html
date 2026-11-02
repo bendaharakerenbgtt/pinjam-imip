@@ -390,11 +390,11 @@
             </div>
 
             <!-- KERTAS SURAT RESMI DENGAN CONTAINER SCROLL ANTI GEPENG -->
-            <div class="overflow-x-auto overflow-y-auto flex-1 p-2 sm:p-6 bg-slate-900/70 flex justify-center">
-                <div id="printable-surat" class="w-full min-w-[580px] max-w-2xl bg-white text-black font-serif text-[11pt] sm:text-[12pt] leading-normal p-6 sm:p-10 shadow-2xl space-y-4 rounded-xl border border-gray-200">
+            <div id="surat-scroll-container" class="overflow-x-auto overflow-y-auto flex-1 p-2 sm:p-6 bg-slate-900/70 block">
+                <div id="printable-surat" class="w-full min-w-[580px] max-w-2xl bg-white text-black font-serif text-[11pt] sm:text-[12pt] leading-normal p-6 sm:p-10 shadow-2xl space-y-4 rounded-xl border border-gray-200 mx-auto my-0">
                     <!-- KOP RESMI DARI BENDAHARA2026 -->
                     <div class="w-full mb-2 text-center">
-                        <img src="surat/assets/kop_spz_official.png" alt="Kop Surat Resmi LDK IMIP" class="w-full h-auto object-contain block" onerror="this.style.display='none'">
+                        <img src="surat/assets/kop_spz_official.png" alt="Kop Surat Resmi LDK IMIP" class="w-full h-auto max-h-36 object-contain block mx-auto" onerror="this.style.display='none'">
                     </div>
 
                     <div class="text-center space-y-0.5 border-b-2 border-black pb-2">
@@ -1080,9 +1080,55 @@ Terima kasih.
         // ==========================================
         // WORKFLOW ACTIONS
         // ==========================================
+        function ubahStokLocal(items, direction) {
+            if (!Array.isArray(items)) return;
+            items.forEach(it => {
+                const b = localDB.barang.find(x => String(x.id_barang) === String(it.id_barang));
+                if (b) {
+                    const curTersedia = parseInt(b.stok_tersedia, 10) || 0;
+                    const total = parseInt(b.stok_total, 10) || 1;
+                    const delta = (parseInt(it.jumlah, 10) || 1) * direction;
+                    b.stok_tersedia = Math.max(0, Math.min(total, curTersedia + delta));
+                    b.status = b.stok_tersedia > 0 ? "Tersedia" : "Sedang tidak tersedia";
+                }
+            });
+        }
+
         async function aksiApprove(idPinjam) {
             const item = localDB.peminjaman.find(p => String(p.id_pinjam) === String(idPinjam));
             if (!item) return;
+
+            let items = [];
+            try { items = JSON.parse(item.items_json || "[]"); } catch(e) {}
+
+            // 1. CEK STOK SEBELUM APPROVE:
+            // Jika barang saat ini stoknya habis (sedang dipinjam / dikonfirmasi orang lain),
+            // SISTEM LANGSUNG MEMBLOKIR APPROVAL!
+            const barangHabis = [];
+            items.forEach(it => {
+                const b = localDB.barang.find(x => String(x.id_barang) === String(it.id_barang));
+                const tersedia = b ? (parseInt(b.stok_tersedia, 10) || 0) : 0;
+                const diminta = parseInt(it.jumlah, 10) || 1;
+                if (diminta > tersedia) {
+                    barangHabis.push({
+                        nama: it.nama_barang || (b ? b.nama_barang : 'Barang'),
+                        tersedia: tersedia,
+                        diminta: diminta
+                    });
+                }
+            });
+
+            if (barangHabis.length > 0) {
+                const listStr = barangHabis.map(bh => `• ${bh.nama} (Tersedia: ${bh.tersedia} unit, Diminta: ${bh.diminta} unit)`).join('\n');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Tidak Bisa Disetujui!',
+                    html: `<p class="text-xs mb-2 text-rose-600 font-bold">Barang berikut saat ini stoknya habis atau sedang aktif dipinjam peminjam lain:</p><pre class="text-xs bg-gray-100 dark:bg-gray-800 p-2.5 rounded-xl text-left font-sans whitespace-pre-wrap leading-relaxed">${listStr}</pre><p class="text-xs mt-2 text-slate-700 dark:text-slate-300">Anda tidak dapat menyetujui pengajuan ini sebelum barang tersebut dikembalikan ke inventaris.</p>`,
+                    confirmButtonColor: '#FF7300',
+                    confirmButtonText: 'Tutup'
+                });
+                return;
+            }
 
             const konflik = periksaBentrokJadwal(item, localDB.peminjaman, localDB.barang);
             if (konflik.length > 0) {
@@ -1102,7 +1148,7 @@ Terima kasih.
 
             const { isConfirmed } = await Swal.fire({
                 title: 'Setujui Pengajuan?',
-                text: 'Sistem akan mengunci stok barang untuk jadwal ini dan otomatis menghasilkan Surat Perjanjian Resmi.',
+                text: 'Sistem akan mengunci stok barang untuk peminjam ini dan otomatis menghasilkan Surat Perjanjian Resmi.',
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonColor: '#FF7300',
@@ -1110,6 +1156,9 @@ Terima kasih.
                 cancelButtonText: 'Batal'
             });
             if (!isConfirmed) return;
+
+            // Kunci stok langsung di memori lokal
+            ubahStokLocal(items, -1);
 
             await updateStatusOnline(idPinjam, "MENUNGGU KONFIRMASI PEMINJAM");
             
@@ -1138,14 +1187,19 @@ Terima kasih.
             if (!isConfirmed) return;
 
             const target = localDB.peminjaman.find(p => String(p.id_pinjam) === String(idPinjam));
-            await updateStatusOnline(idPinjam, "DITOLAK", alasan || "Pengajuan ditolak oleh pengurus.");
-
             if (target) {
+                const oldStatus = (target.status || "").toUpperCase();
+                if (oldStatus === "MENUNGGU KONFIRMASI PEMINJAM" || oldStatus === "DIKONFIRMASI" || oldStatus === "SEDANG DIPINJAM") {
+                    let items = [];
+                    try { items = JSON.parse(target.items_json || "[]"); } catch(e) {}
+                    ubahStokLocal(items, 1);
+                }
                 target.status = "DITOLAK";
                 target.catatan_admin = alasan || "Pengajuan ditolak oleh pengurus.";
                 saveLocalDB();
             }
 
+            await updateStatusOnline(idPinjam, "DITOLAK", alasan || "Pengajuan ditolak oleh pengurus.");
             Swal.fire({ icon: 'success', title: 'Pengajuan Ditolak', timer: 1200, showConfirmButton: false });
             renderDashboard();
         }
@@ -1162,12 +1216,19 @@ Terima kasih.
             });
             if (!isConfirmed) return;
 
-            await updateStatusOnline(idPinjam, "DIBATALKAN", "Dibatalkan oleh admin/peminjam.");
             const target = localDB.peminjaman.find(p => String(p.id_pinjam) === String(idPinjam));
             if (target) {
+                const oldStatus = (target.status || "").toUpperCase();
+                if (oldStatus === "MENUNGGU KONFIRMASI PEMINJAM" || oldStatus === "DIKONFIRMASI" || oldStatus === "SEDANG DIPINJAM") {
+                    let items = [];
+                    try { items = JSON.parse(target.items_json || "[]"); } catch(e) {}
+                    ubahStokLocal(items, 1);
+                }
                 target.status = "DIBATALKAN";
                 saveLocalDB();
             }
+
+            await updateStatusOnline(idPinjam, "DIBATALKAN", "Dibatalkan oleh admin/peminjam.");
             renderDashboard();
         }
 
@@ -1896,6 +1957,8 @@ Terima kasih.
             });
 
             bukaModal('modal-surat');
+            const sc = document.getElementById('surat-scroll-container');
+            if (sc) sc.scrollTop = 0;
         }
 
         function cetakSuratPerjanjian() { window.print(); }

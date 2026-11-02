@@ -840,6 +840,22 @@
                 return;
             }
 
+            // Validasi ketersediaan barang di keranjang
+            const itemHabis = cart.filter(it => {
+                const b = localDB.barang.find(x => String(x.id_barang) === String(it.id_barang));
+                return b && (parseInt(b.stok_tersedia, 10) || 0) < it.jumlah;
+            });
+            if (itemHabis.length > 0) {
+                const listHabis = itemHabis.map(h => `• ${h.nama_barang}`).join('\n');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Barang Tidak Tersedia',
+                    html: `<p class="text-xs mb-2 text-rose-600 font-bold">Barang berikut saat ini sedang habis atau dipinjam orang lain:</p><pre class="text-xs bg-gray-100 dark:bg-gray-800 p-2 rounded text-left font-sans">${listHabis}</pre><p class="text-xs mt-2 text-slate-600 dark:text-slate-300">Silakan hapus barang tersebut dari keranjang Anda.</p>`,
+                    confirmButtonColor: '#FF7300'
+                });
+                return;
+            }
+
             tutupModal('modal-keranjang');
 
             // Render summary items in form
@@ -867,6 +883,22 @@
 
         async function submitFormPengajuan(e) {
             e.preventDefault();
+
+            // Cek ketersediaan stok fisik barang
+            const itemHabis = cart.filter(it => {
+                const b = localDB.barang.find(x => String(x.id_barang) === String(it.id_barang));
+                return b && (parseInt(b.stok_tersedia, 10) || 0) < it.jumlah;
+            });
+            if (itemHabis.length > 0) {
+                const listHabis = itemHabis.map(h => `• ${h.nama_barang}`).join('\n');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Barang Tidak Tersedia',
+                    html: `<p class="text-xs mb-2 text-rose-600 font-bold">Barang berikut saat ini sedang habis atau dipinjam orang lain:</p><pre class="text-xs bg-gray-100 dark:bg-gray-800 p-2 rounded text-left font-sans">${listHabis}</pre><p class="text-xs mt-2 text-slate-600 dark:text-slate-300">Pengajuan tidak dapat dikirim untuk barang yang sedang habis.</p>`,
+                    confirmButtonColor: '#FF7300'
+                });
+                return;
+            }
 
             const tglAmbil = document.getElementById('pjm-tgl-ambil').value;
             const tglKembali = document.getElementById('pjm-tgl-kembali').value;

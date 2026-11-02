@@ -279,7 +279,7 @@ function handleAjukanPinjam(data) {
     return jsonResponse({ success: false, message: "Keranjang peminjaman masih kosong!" });
   }
 
-  // Validasi ketersediaan barang (berdasarkan total unit inventaris)
+  // Validasi ketersediaan barang (wajib tersedia saat ini di inventaris)
   const barangRows = getTableData(SHEET_BARANG);
   for (let i = 0; i < items.length; i++) {
     const it = items[i];
@@ -287,12 +287,12 @@ function handleAjukanPinjam(data) {
     if (!target) {
       return jsonResponse({ success: false, message: "Barang tidak ditemukan: " + (it.nama_barang || "") });
     }
-    const totalUnit = parseInt(target.stok_total, 10) || 0;
+    const tersedia = parseInt(target.stok_tersedia, 10) || 0;
     const requested = parseInt(it.jumlah, 10) || 1;
-    if (requested > totalUnit) {
+    if (requested > tersedia) {
       return jsonResponse({
         success: false, 
-        message: "Jumlah unit diminta (" + requested + ") melebihi total inventaris (" + totalUnit + " unit) untuk: " + target.nama_barang
+        message: "Mohon maaf, barang '" + target.nama_barang + "' saat ini sedang tidak tersedia atau habis dipinjam (Tersedia: " + tersedia + " unit)."
       });
     }
   }
@@ -428,8 +428,8 @@ function handleAdminUpdateStatus(data) {
   let items = [];
   try { items = JSON.parse(itemsJsonStr); } catch(e) {}
 
-  // ALUR 1: APPROVE -> MENUNGGU KONFIRMASI PEMINJAM (Surat dibuat, stok fisik belum terpotong karena peminjam belum konfirmasi)
-  if (statusBaru === "MENUNGGU KONFIRMASI PEMINJAM") {
+  // ALUR 1: APPROVE -> MENUNGGU KONFIRMASI PEMINJAM / DIKONFIRMASI (Kunci Stok Resmi)
+  if (statusBaru === "MENUNGGU KONFIRMASI PEMINJAM" || statusBaru === "DIKONFIRMASI") {
     // Generate no surat otomatis jika belum ada: SPB-YYYYMMDD-XXXX
     if (!curNoSurat) {
       const todayStr = Utilities.formatDate(new Date(), "Asia/Jakarta", "yyyyMMdd");
@@ -437,18 +437,38 @@ function handleAdminUpdateStatus(data) {
       curNoSurat = "SPB/" + todayStr + "/" + noUrut + "/LDK-IMIP";
       sheetP.getRange(rowIdx, idxNoSurat + 1).setValue(curNoSurat);
     }
-  }
 
-  // ALUR 1B: PEMINJAM SUDAH KONFIRMASI -> DIKONFIRMASI (Kunci stok resmi)
-  if (statusBaru === "DIKONFIRMASI") {
-    if (oldStatus === "MENUNGGU VERIFIKASI" || oldStatus === "MENUNGGU KONFIRMASI PEMINJAM") {
+    if (oldStatus === "MENUNGGU VERIFIKASI") {
+      // CEK APAKAH STOK CUKUP SEBELUM MENGUNCI:
+      const bData = sheetB.getDataRange().getValues();
+      const bHeaders = bData[0].map(h => String(h).trim().toLowerCase());
+      const idxBId = bHeaders.indexOf("id_barang");
+      const idxBTersedia = bHeaders.indexOf("stok_tersedia");
+      const idxBNama = bHeaders.indexOf("nama_barang");
+
+      for (let j = 0; j < items.length; j++) {
+        const it = items[j];
+        for (let r = 1; r < bData.length; r++) {
+          if (String(bData[r][idxBId]).trim() === String(it.id_barang).trim()) {
+            const curTersedia = parseInt(bData[r][idxBTersedia], 10) || 0;
+            const requested = parseInt(it.jumlah, 10) || 1;
+            if (requested > curTersedia) {
+              return jsonResponse({
+                success: false,
+                message: "Tidak bisa disetujui: Barang '" + bData[r][idxBNama] + "' saat ini stoknya habis atau sedang dipinjam oleh peminjam lain (Tersedia: " + curTersedia + " unit)."
+              });
+            }
+            break;
+          }
+        }
+      }
       ubahStokMultiBarang(sheetB, items, -1);
     }
   }
 
   // ALUR 2: DITOLAK ATAU DIBATALKAN -> Lepaskan stok yang terkunci
   if (statusBaru === "DITOLAK" || statusBaru === "DIBATALKAN") {
-    if (oldStatus === "DIKONFIRMASI" || oldStatus === "SEDANG DIPINJAM") {
+    if (oldStatus === "MENUNGGU KONFIRMASI PEMINJAM" || oldStatus === "DIKONFIRMASI" || oldStatus === "SEDANG DIPINJAM") {
       ubahStokMultiBarang(sheetB, items, 1); // Kembalikan stok
     }
   }
