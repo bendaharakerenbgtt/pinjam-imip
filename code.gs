@@ -428,7 +428,7 @@ function handleAdminUpdateStatus(data) {
   let items = [];
   try { items = JSON.parse(itemsJsonStr); } catch(e) {}
 
-  // ALUR 1: APPROVE -> MENUNGGU KONFIRMASI PEMINJAM (Stok Dikunci)
+  // ALUR 1: APPROVE -> MENUNGGU KONFIRMASI PEMINJAM (Surat dibuat, stok fisik belum terpotong karena peminjam belum konfirmasi)
   if (statusBaru === "MENUNGGU KONFIRMASI PEMINJAM") {
     // Generate no surat otomatis jika belum ada: SPB-YYYYMMDD-XXXX
     if (!curNoSurat) {
@@ -437,16 +437,18 @@ function handleAdminUpdateStatus(data) {
       curNoSurat = "SPB/" + todayStr + "/" + noUrut + "/LDK-IMIP";
       sheetP.getRange(rowIdx, idxNoSurat + 1).setValue(curNoSurat);
     }
+  }
 
-    // Kunci stok untuk barang yang disetujui (jika sebelumnya belum terkunci)
-    if (oldStatus === "MENUNGGU VERIFIKASI") {
+  // ALUR 1B: PEMINJAM SUDAH KONFIRMASI -> DIKONFIRMASI (Kunci stok resmi)
+  if (statusBaru === "DIKONFIRMASI") {
+    if (oldStatus === "MENUNGGU VERIFIKASI" || oldStatus === "MENUNGGU KONFIRMASI PEMINJAM") {
       ubahStokMultiBarang(sheetB, items, -1);
     }
   }
 
   // ALUR 2: DITOLAK ATAU DIBATALKAN -> Lepaskan stok yang terkunci
   if (statusBaru === "DITOLAK" || statusBaru === "DIBATALKAN") {
-    if (oldStatus === "MENUNGGU KONFIRMASI PEMINJAM" || oldStatus === "DIKONFIRMASI") {
+    if (oldStatus === "DIKONFIRMASI" || oldStatus === "SEDANG DIPINJAM") {
       ubahStokMultiBarang(sheetB, items, 1); // Kembalikan stok
     }
   }
@@ -638,6 +640,19 @@ function handleEditBarang(data) {
         sheetB.getRange(rowIdx, idxTotal + 1).setValue(newTotal);
         const curTersedia = parseInt(bData[i][idxTersedia], 10) || 0;
         if (curTersedia > newTotal) sheetB.getRange(rowIdx, idxTersedia + 1).setValue(newTotal);
+      }
+
+      if (data.stok_tersedia !== undefined) {
+        const newTersedia = parseInt(data.stok_tersedia, 10) || 0;
+        sheetB.getRange(rowIdx, idxTersedia + 1).setValue(newTersedia);
+        const idxStatus = bHeaders.indexOf("status");
+        if (idxStatus !== -1) {
+          const newStatus = data.status || (newTersedia > 0 ? "Tersedia" : "Sedang tidak tersedia");
+          sheetB.getRange(rowIdx, idxStatus + 1).setValue(newStatus);
+        }
+      } else if (data.status) {
+        const idxStatus = bHeaders.indexOf("status");
+        if (idxStatus !== -1) sheetB.getRange(rowIdx, idxStatus + 1).setValue(data.status);
       }
 
       sheetB.getRange(rowIdx, idxUpdated + 1).setValue(new Date());

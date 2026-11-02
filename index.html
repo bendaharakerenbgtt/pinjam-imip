@@ -21,6 +21,8 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
+        @custom-variant dark (&:where(.dark-mode, .dark, .dark-mode *, .dark *));
+
         :root {
             --bg-main: #FAF5EF;              /* Warm Cream */
             --bg-card: #FFFFFF;              /* Crisp White */
@@ -480,10 +482,10 @@
         function initTheme() {
             const isDark = localStorage.getItem('theme') === 'dark';
             if (isDark) {
-                document.documentElement.classList.add('dark-mode');
+                document.documentElement.classList.add('dark-mode', 'dark');
                 document.getElementById('theme-icon').className = 'fa-solid fa-sun text-sm text-amber-400';
             } else {
-                document.documentElement.classList.remove('dark-mode');
+                document.documentElement.classList.remove('dark-mode', 'dark');
                 document.getElementById('theme-icon').className = 'fa-solid fa-moon text-sm';
             }
         }
@@ -492,11 +494,11 @@
             const html = document.documentElement;
             const icon = document.getElementById('theme-icon');
             if (html.classList.contains('dark-mode')) {
-                html.classList.remove('dark-mode');
+                html.classList.remove('dark-mode', 'dark');
                 localStorage.setItem('theme', 'light');
                 icon.className = 'fa-solid fa-moon text-sm';
             } else {
-                html.classList.add('dark-mode');
+                html.classList.add('dark-mode', 'dark');
                 localStorage.setItem('theme', 'dark');
                 icon.className = 'fa-solid fa-sun text-sm text-amber-400';
             }

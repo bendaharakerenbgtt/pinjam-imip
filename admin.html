@@ -20,6 +20,8 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
+        @custom-variant dark (&:where(.dark-mode, .dark, .dark-mode *, .dark *));
+
         :root {
             --bg-main: #FAF5EF;              /* Warm Cream */
             --bg-card: #FFFFFF;              /* Crisp White */
@@ -654,10 +656,10 @@
         function initTheme() {
             const isDark = localStorage.getItem('theme') === 'dark';
             if (isDark) {
-                document.documentElement.classList.add('dark-mode');
+                document.documentElement.classList.add('dark-mode', 'dark');
                 document.getElementById('theme-icon').className = 'fa-solid fa-sun text-sm text-amber-400';
             } else {
-                document.documentElement.classList.remove('dark-mode');
+                document.documentElement.classList.remove('dark-mode', 'dark');
                 document.getElementById('theme-icon').className = 'fa-solid fa-moon text-sm';
             }
         }
@@ -666,11 +668,11 @@
             const html = document.documentElement;
             const icon = document.getElementById('theme-icon');
             if (html.classList.contains('dark-mode')) {
-                html.classList.remove('dark-mode');
+                html.classList.remove('dark-mode', 'dark');
                 localStorage.setItem('theme', 'light');
                 icon.className = 'fa-solid fa-moon text-sm';
             } else {
-                html.classList.add('dark-mode');
+                html.classList.add('dark-mode', 'dark');
                 localStorage.setItem('theme', 'dark');
                 icon.className = 'fa-solid fa-sun text-sm text-amber-400';
             }
@@ -1406,26 +1408,31 @@ Terima kasih.
                 card.innerHTML = `
                     <div class="space-y-2 flex-1">
                         <div class="flex flex-wrap items-center gap-2">
-                            <span class="font-mono text-xs font-bold text-[#FF7300] bg-orange-500/10 px-2.5 py-0.5 rounded">${item.id_pinjam}</span>
-                            <span class="px-2.5 py-0.5 rounded text-[10px] font-bold ${getStatusClass(item.status)}">${item.status}</span>
-                            ${tglKembaliAktualClean && tglKembaliAktualClean !== '-' ? `<span class="text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 dark:bg-emerald-500/20 px-2 py-0.5 rounded"><i class="fa-solid fa-circle-check text-emerald-500 mr-1"></i> Kembali Aktual: ${tglKembaliAktualClean}</span>` : ''}
+                            <span class="font-mono text-xs font-bold text-[#FF7300] bg-orange-500/10 px-2.5 py-0.5 rounded border border-orange-300/60 dark:border-orange-500/30">${item.id_pinjam}</span>
+                            <span class="px-2.5 py-0.5 rounded text-[10px] font-black ${getStatusClass(item.status)}">${item.status}</span>
+                            ${tglKembaliAktualClean && tglKembaliAktualClean !== '-' ? `<span class="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-500/10 dark:bg-emerald-500/20 px-2.5 py-0.5 rounded border border-emerald-500/30"><i class="fa-solid fa-circle-check text-emerald-600 mr-1"></i> Kembali: ${tglKembaliAktualClean}</span>` : ''}
                         </div>
 
-                        <h4 class="font-black font-outfit text-sm sm:text-base text-slate-900 dark:text-white">${item.nama_peminjam} <span class="text-xs text-slate-700 dark:text-slate-300 font-semibold">(${item.asal_organisasi} • PJ: ${item.nama_penanggung_jawab || item.nama_peminjam})</span></h4>
+                        <h4 class="font-black font-outfit text-sm sm:text-base ui-heading">
+                            ${item.nama_peminjam} 
+                            <span class="text-xs font-semibold ui-muted">(${item.asal_organisasi} • PJ: ${item.nama_penanggung_jawab || item.nama_peminjam})</span>
+                        </h4>
                         
-                        <div class="ui-pill p-2.5 rounded-xl text-xs space-y-0.5 border border-orange-200/50 dark:border-gray-800">
-                            <span class="text-[10px] font-extrabold uppercase text-[#FF7300] dark:text-orange-400 block tracking-wider">Barang Dipinjam:</span>
-                            <p class="font-extrabold text-slate-950 dark:text-white text-xs">${itemsList || 'Perlengkapan'}</p>
+                        <div class="ui-pill p-2.5 rounded-xl text-xs space-y-0.5 border border-orange-200/70 dark:border-gray-800">
+                            <span class="text-[10px] font-black uppercase text-[#FF7300] block tracking-wider">Barang Dipinjam:</span>
+                            <p class="font-black ui-heading text-xs">${itemsList || 'Perlengkapan'}</p>
                         </div>
 
-                        <p class="text-xs font-bold text-slate-900 dark:text-slate-100"><i class="fa-solid fa-calendar mr-1.5 text-[#FF7300]"></i> Periode: <strong class="text-slate-950 dark:text-white">${tglAmbilClean} s.d ${tglKembaliClean}</strong></p>
+                        <p class="text-xs font-bold ui-body">
+                            <i class="fa-solid fa-calendar mr-1.5 text-[#FF7300]"></i> Periode: <strong class="ui-heading">${tglAmbilClean} s.d ${tglKembaliClean}</strong>
+                        </p>
 
                         ${catatanTampil ? `
-                            <div class="p-3 rounded-xl bg-orange-500/10 dark:bg-orange-950/40 border-l-4 border-l-[#FF7300] border border-orange-300/40 dark:border-orange-500/30 text-xs shadow-sm space-y-1">
-                                <span class="font-extrabold text-[#FF7300] dark:text-orange-400 flex items-center gap-1.5 text-xs">
+                            <div class="p-3 rounded-xl border-l-4 border-l-[#FF7300] border border-orange-300/80 dark:border-orange-500/30 text-xs shadow-xs space-y-1 bg-[#FFF7ED] dark:bg-orange-950/40">
+                                <span class="font-black text-[#FF7300] flex items-center gap-1.5 text-xs">
                                     <i class="fa-solid fa-note-sticky text-sm"></i> Catatan Admin Inventaris:
                                 </span>
-                                <p class="font-bold text-slate-950 dark:text-orange-100 text-xs pl-0.5 leading-relaxed">${catatanTampil}</p>
+                                <p class="font-bold ui-body text-xs pl-0.5 leading-relaxed">${catatanTampil}</p>
                             </div>
                         ` : ''}
                     </div>
