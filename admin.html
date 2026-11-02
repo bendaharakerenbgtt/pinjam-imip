@@ -1956,12 +1956,25 @@ Terima kasih.
                 tbody.appendChild(tr);
             });
 
+            document.title = getJudulSuratPdf(item);
             bukaModal('modal-surat');
             const sc = document.getElementById('surat-scroll-container');
             if (sc) sc.scrollTop = 0;
         }
 
-        function cetakSuratPerjanjian() { window.print(); }
+        const defaultAdminTitle = "Pinjamip — Dashboard Pengurus Inventaris";
+
+        function getJudulSuratPdf(item) {
+            if (!item) return "Surat Perjanjian Peminjaman Inventaris Barang";
+            const cleanNama = (item.nama_peminjam || 'Peminjam').replace(/[/\\?%*:|"<>]/g, '').trim();
+            const cleanId = (item.id_pinjam || '').replace(/[/\\?%*:|"<>]/g, '').trim();
+            return `Surat Perjanjian Peminjaman Inventaris Barang - ${cleanNama} (${cleanId})`;
+        }
+
+        function cetakSuratPerjanjian() { 
+            document.title = getJudulSuratPdf(currentSuratItem);
+            window.print(); 
+        }
 
         function kirimSuratViaWa() {
             if (!currentSuratItem) return;
@@ -2008,7 +2021,32 @@ Terima kasih.
         }
 
         function bukaModal(id) { document.getElementById(id)?.classList.remove('hidden'); }
-        function tutupModal(id) { document.getElementById(id)?.classList.add('hidden'); }
+        function tutupModal(id) { 
+            document.getElementById(id)?.classList.add('hidden'); 
+            if (id === 'modal-surat') {
+                document.title = defaultAdminTitle;
+            }
+        }
+
+        window.addEventListener('beforeprint', () => {
+            const modalSurat = document.getElementById('modal-surat');
+            if (modalSurat && !modalSurat.classList.contains('hidden') && currentSuratItem) {
+                document.title = getJudulSuratPdf(currentSuratItem);
+            }
+        });
+
+        window.addEventListener('afterprint', () => {
+            const modalSurat = document.getElementById('modal-surat');
+            if (!modalSurat || modalSurat.classList.contains('hidden')) {
+                document.title = defaultAdminTitle;
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                ['modal-surat', 'modal-kembali', 'modal-barang', 'modal-lightbox'].forEach(id => tutupModal(id));
+            }
+        });
 
         function compressImage(file, maxDimension, quality, callback) {
             const reader = new FileReader();
