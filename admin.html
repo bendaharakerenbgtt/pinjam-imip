@@ -324,7 +324,7 @@
                     <form onsubmit="simpanPengaturan(event)" class="space-y-3.5 text-xs sm:text-sm">
                         <div>
                             <label class="block ui-heading font-semibold mb-1">Nama Organisasi:</label>
-                            <input type="text" id="set-nama-organisasi" required value="LDK IMIP — Lembaga Dakwah Kampus"
+                            <input type="text" id="set-nama-organisasi" required value="LDK IMIP"
                                    class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
                         </div>
 
@@ -403,7 +403,7 @@
                     </div>
 
                     <div class="text-xs space-y-1.5" style="font-family: 'Times New Roman', serif;">
-                        <p>Pada hari ini, telah disetujui perjanjian peminjaman fasilitas/inventaris organisasi <span id="surat-org-name-body">Lembaga Dakwah Kampus (LDK IMIP)</span> oleh pihak peminjam dengan rincian sebagai berikut:</p>
+                        <p>Pada hari ini, telah disetujui perjanjian peminjaman fasilitas/inventaris organisasi <span id="surat-org-name-body">LDK IMIP</span> oleh pihak peminjam dengan rincian sebagai berikut:</p>
                         
                         <table class="w-full text-xs border-collapse">
                             <tr><td class="w-36 py-0.5 font-bold">Nama Peminjam</td><td class="w-3">:</td><td id="surat-peminjam-nama">-</td></tr>
@@ -629,7 +629,7 @@
         };
 
         let appSettings = {
-            nama_organisasi: "LDK IMIP — Lembaga Dakwah Kampus",
+            nama_organisasi: "LDK IMIP",
             no_wa_admin: "085770976399",
             alamat: "Politeknik Negeri Media Kreatif Jakarta"
         };
@@ -642,7 +642,12 @@
                 if (parsed.peminjaman) localDB.peminjaman = parsed.peminjaman;
             }
             const savedSettings = localStorage.getItem(STORAGE_KEY_SET);
-            if (savedSettings) appSettings = JSON.parse(savedSettings);
+            if (savedSettings) {
+                appSettings = JSON.parse(savedSettings);
+                if (appSettings.nama_organisasi) {
+                    appSettings.nama_organisasi = appSettings.nama_organisasi.replace(/\s*[-—–]\s*Lembaga Dakwah Kampus/gi, "").replace(/Lembaga Dakwah Kampus/gi, "").trim() || "LDK IMIP";
+                }
+            }
         } catch(e) {}
 
         function saveLocalDB() { localStorage.setItem(STORAGE_KEY_LOCAL, JSON.stringify(localDB)); }
@@ -1830,7 +1835,7 @@ Terima kasih.
         // TAB 5: PENGATURAN
         // ==========================================
         function applySettingsToUI() {
-            const orgName = appSettings.nama_organisasi || "LDK IMIP — Lembaga Dakwah Kampus";
+            const orgName = (appSettings.nama_organisasi || "LDK IMIP").replace(/\s*[-—–]\s*Lembaga Dakwah Kampus/gi, "").replace(/Lembaga Dakwah Kampus/gi, "").trim() || "LDK IMIP";
             document.title = `Admin Panel — ${orgName}`;
             const headerBrand = document.getElementById('top-brand-name');
             if (headerBrand) headerBrand.innerText = `Pinjamip Admin`;
@@ -1842,7 +1847,7 @@ Terima kasih.
             const elWa = document.getElementById('set-no-wa');
             const elAlamat = document.getElementById('set-alamat');
             const elPin = document.getElementById('set-pin');
-            if (elNama) elNama.value = appSettings.nama_organisasi || "LDK IMIP — Lembaga Dakwah Kampus";
+            if (elNama) elNama.value = (appSettings.nama_organisasi || "LDK IMIP").replace(/\s*[-—–]\s*Lembaga Dakwah Kampus/gi, "").replace(/Lembaga Dakwah Kampus/gi, "").trim() || "LDK IMIP";
             if (elWa) elWa.value = appSettings.no_wa_admin || "085770976399";
             if (elAlamat) elAlamat.value = appSettings.alamat || "Politeknik Negeri Media Kreatif Jakarta";
             if (elPin) elPin.value = getAdminPin();
@@ -1913,7 +1918,8 @@ Terima kasih.
                 saveLocalDB();
             }
 
-            const orgName = appSettings.nama_organisasi || "LDK IMIP — Lembaga Dakwah Kampus";
+            let orgName = (appSettings.nama_organisasi || "LDK IMIP").replace(/\s*[-—–]\s*Lembaga Dakwah Kampus/gi, "").replace(/Lembaga Dakwah Kampus/gi, "").trim();
+            if (!orgName) orgName = "LDK IMIP";
             const elOrgBody = document.getElementById('surat-org-name-body');
             if (elOrgBody) elOrgBody.innerText = orgName;
             const elOrgTtd = document.getElementById('surat-org-name-ttd');

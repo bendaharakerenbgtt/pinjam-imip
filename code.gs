@@ -98,7 +98,7 @@ function setupSheetsDanDrive() {
   if (!sheetS) {
     sheetS = ss.insertSheet(SHEET_PENGATURAN);
     sheetS.appendRow(["key", "value"]);
-    sheetS.appendRow(["nama_organisasi", "LDK IMIP — Lembaga Dakwah Kampus"]);
+    sheetS.appendRow(["nama_organisasi", "LDK IMIP"]);
     sheetS.appendRow(["no_wa_admin", ADMIN_WA_DEFAULT]);
     sheetS.appendRow(["alamat", "Politeknik Negeri Media Kreatif Jakarta"]);
     sheetS.appendRow(["admin_pin", ADMIN_PIN_DEFAULT]);
@@ -733,7 +733,7 @@ function getSettings() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheetS = ss.getSheetByName(SHEET_PENGATURAN);
   const defaultSettings = {
-    nama_organisasi: "LDK IMIP — Lembaga Dakwah Kampus",
+    nama_organisasi: "LDK IMIP",
     no_wa_admin: ADMIN_WA_DEFAULT,
     alamat: "Politeknik Negeri Media Kreatif Jakarta"
   };
