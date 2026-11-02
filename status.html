@@ -362,23 +362,32 @@
                         </div>
                     </div>
 
-                    <!-- Jadwal & Tujuan -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs ui-muted pt-1">
-                        <div>
-                            <span class="block text-[10px] uppercase font-bold text-gray-400">Periode Peminjaman:</span>
-                            <span class="font-semibold ui-heading"><i class="fa-solid fa-calendar mr-1 text-[#FF7300]"></i> ${tglAmbilClean} s.d ${tglKembaliClean}</span>
+                    <!-- Jadwal & Tujuan (High Contrast) -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-1">
+                        <div class="ui-pill p-2.5 rounded-xl">
+                            <span class="block text-[10px] uppercase font-bold text-slate-700 dark:text-slate-300">Periode Peminjaman:</span>
+                            <span class="font-bold text-slate-900 dark:text-white text-xs"><i class="fa-solid fa-calendar mr-1 text-[#FF7300]"></i> ${tglAmbilClean} s.d ${tglKembaliClean}</span>
                         </div>
-                        <div>
-                            <span class="block text-[10px] uppercase font-bold text-gray-400">Keperluan:</span>
-                            <span class="ui-body italic">"${item.tujuan || '-'}"</span>
+                        <div class="ui-pill p-2.5 rounded-xl">
+                            <span class="block text-[10px] uppercase font-bold text-slate-700 dark:text-slate-300">Keperluan:</span>
+                            <span class="font-medium text-slate-800 dark:text-slate-200 text-xs italic">"${item.tujuan || '-'}"</span>
                         </div>
                     </div>
 
-                    <!-- Petunjuk / Catatan Publik dari Admin -->
-                    <div class="p-3 rounded-xl bg-orange-500/10 border border-orange-500/20 text-xs text-orange-950 dark:text-orange-200 leading-relaxed space-y-1">
-                        <span class="font-bold text-[#FF7300] block mb-0.5"><i class="fa-solid fa-circle-info mr-1"></i> Informasi Status:</span>
-                        <p>${statusMeta.desc}</p>
-                        ${item.catatan_publik ? `<div class="mt-1 pt-1 border-t border-orange-200 dark:border-orange-800 font-semibold text-[#FF7300]">Catatan Admin Inventaris: ${item.catatan_publik}</div>` : ''}
+                    <!-- Informasi Status & Catatan Admin (Kontras Tinggi & Solid - Anti Nyaru) -->
+                    <div class="p-3.5 rounded-xl bg-orange-50/90 dark:bg-orange-950/40 border-l-4 border-l-[#FF7300] border border-orange-200 dark:border-orange-900/60 text-xs shadow-sm space-y-1.5">
+                        <span class="font-extrabold text-[#C2410C] dark:text-orange-400 flex items-center gap-1.5 text-xs">
+                            <i class="fa-solid fa-circle-info text-sm"></i> Informasi Status:
+                        </span>
+                        <p class="font-semibold text-slate-800 dark:text-slate-100 text-xs leading-relaxed">${statusMeta.desc}</p>
+                        ${item.catatan_publik ? `
+                            <div class="mt-2 pt-2 border-t border-orange-200/80 dark:border-orange-900/80">
+                                <span class="font-extrabold text-[#C2410C] dark:text-orange-400 flex items-center gap-1 text-xs">
+                                    <i class="fa-solid fa-note-sticky"></i> Catatan Khusus Admin:
+                                </span>
+                                <p class="font-bold text-slate-900 dark:text-white text-xs mt-0.5">${item.catatan_publik}</p>
+                            </div>
+                        ` : ''}
                     </div>
 
                     <!-- Tombol Chat WA ke Admin -->

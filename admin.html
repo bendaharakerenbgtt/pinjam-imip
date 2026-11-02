@@ -331,12 +331,6 @@
                                    class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
                         </div>
 
-                        <div class="pt-2 border-t border-orange-200 dark:border-gray-800">
-                            <label class="block ui-heading font-semibold mb-1">Deployment URL Google Apps Script:</label>
-                            <input type="url" id="set-api-url" placeholder="https://script.google.com/macros/s/.../exec"
-                                   class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading text-xs focus:outline-none focus:border-[#FF7300]">
-                        </div>
-
                         <div class="pt-2 flex justify-end">
                             <button type="submit" id="btn-save-settings" class="px-5 py-2.5 rounded-xl btn-kabinet font-bold text-xs shadow-md">
                                 Simpan Perubahan
@@ -857,20 +851,20 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
                         <div class="space-y-1">
-                            <span class="text-[10px] uppercase font-bold text-gray-400">Peminjam & Penanggung Jawab</span>
+                            <span class="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400 block tracking-wider">Peminjam & Penanggung Jawab</span>
                             <p class="font-bold ui-heading text-sm">${item.nama_peminjam}</p>
                             <p class="ui-body">PJ: ${item.nama_penanggung_jawab || '-'}</p>
                             <p class="ui-muted">${item.asal_organisasi} (${item.kategori_peminjam || 'Kampus'})</p>
                             <p class="font-mono text-xs text-[#FF7300] font-semibold">${item.kontak_wa}</p>
                         </div>
                         <div class="space-y-1">
-                            <span class="text-[10px] uppercase font-bold text-gray-400">Jadwal Pengambilan & Kembali</span>
+                            <span class="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400 block tracking-wider">Jadwal Pengambilan & Kembali</span>
                             <p class="font-semibold ui-heading"><i class="fa-solid fa-calendar mr-1 text-[#FF7300]"></i> Ambil: ${tglAmbilClean}</p>
                             <p class="font-semibold ui-heading"><i class="fa-solid fa-calendar-check mr-1 text-emerald-500"></i> Kembali: ${tglKembaliClean}</p>
                             <p class="ui-muted italic pt-1">"${item.tujuan || '-'}"</p>
                         </div>
                         <div class="space-y-1.5">
-                            <span class="text-[10px] uppercase font-bold text-gray-400">Rincian Barang yang Diminta:</span>
+                            <span class="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400 block tracking-wider">Rincian Barang yang Diminta:</span>
                             <div class="ui-pill p-2.5 rounded-xl">
                                 ${itemsTableHtml || 'Tidak ada detail barang'}
                             </div>
@@ -1098,18 +1092,18 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
                         <div>
-                            <span class="text-[10px] uppercase font-bold text-gray-400 block">Peminjam</span>
+                            <span class="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400 block tracking-wider">Peminjam</span>
                             <p class="font-bold ui-heading text-sm">${item.nama_peminjam}</p>
                             <p class="ui-body">${item.asal_organisasi} (${item.kontak_wa})</p>
                         </div>
                         <div>
-                            <span class="text-[10px] uppercase font-bold text-gray-400 block">Batas Pengembalian</span>
+                            <span class="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400 block tracking-wider">Batas Pengembalian</span>
                             <p class="font-bold text-sm sm:text-base ${delayLabel === 'TERLAMBAT' ? 'text-rose-500' : 'ui-heading'}">
                                 ${String(item.tgl_pengembalian || '').replace(/ 00:00:00/g, '')}
                             </p>
                         </div>
                         <div>
-                            <span class="text-[10px] uppercase font-bold text-gray-400 block">Barang Dipinjam</span>
+                            <span class="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400 block tracking-wider">Barang Dipinjam</span>
                             <p class="ui-body font-medium">${itemsList}</p>
                         </div>
                     </div>
@@ -1232,31 +1226,34 @@
 
                 const tglAmbilClean = String(item.tgl_pengambilan || "").replace(/ 00:00:00/g, "").replace(/T.*$/, "");
                 const tglKembaliClean = String(item.tgl_pengembalian || "").replace(/ 00:00:00/g, "").replace(/T.*$/, "");
+                const tglKembaliAktualClean = String(item.tgl_kembali_aktual || "").replace(/ 00:00:00/g, "").replace(/T.*$/, "");
                 const catatanTampil = item.catatan_kembali || item.catatan_admin || (item.kondisi_kembali ? `Kondisi saat kembali: ${item.kondisi_kembali}` : "");
 
                 const card = document.createElement('div');
                 card.className = "ui-card p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row sm:items-start justify-between gap-3 text-xs border-orange-200 dark:border-white/10";
                 card.innerHTML = `
-                    <div class="space-y-1.5 flex-1">
+                    <div class="space-y-2 flex-1">
                         <div class="flex flex-wrap items-center gap-2">
-                            <span class="font-mono text-xs font-bold text-[#FF7300]">${item.id_pinjam}</span>
+                            <span class="font-mono text-xs font-bold text-[#FF7300] bg-orange-500/10 px-2.5 py-0.5 rounded">${item.id_pinjam}</span>
                             <span class="px-2.5 py-0.5 rounded text-[10px] font-bold ${getStatusClass(item.status)}">${item.status}</span>
-                            ${item.tgl_kembali_aktual ? `<span class="text-[10px] ui-muted"><i class="fa-solid fa-clock-rotate-left mr-1"></i> Kembali Aktual: ${item.tgl_kembali_aktual}</span>` : ''}
+                            ${tglKembaliAktualClean ? `<span class="text-[11px] font-semibold text-slate-700 dark:text-slate-300"><i class="fa-solid fa-circle-check text-emerald-500 mr-1"></i> Kembali Aktual: ${tglKembaliAktualClean}</span>` : ''}
                         </div>
 
-                        <h4 class="font-bold font-outfit text-sm sm:text-base ui-heading">${item.nama_peminjam} <span class="text-xs ui-muted font-normal">(${item.asal_organisasi} • PJ: ${item.nama_penanggung_jawab || item.nama_peminjam})</span></h4>
+                        <h4 class="font-bold font-outfit text-sm sm:text-base text-slate-900 dark:text-white">${item.nama_peminjam} <span class="text-xs text-slate-500 dark:text-slate-400 font-normal">(${item.asal_organisasi} • PJ: ${item.nama_penanggung_jawab || item.nama_peminjam})</span></h4>
                         
-                        <div class="ui-pill p-2 rounded-xl text-xs space-y-0.5">
-                            <span class="text-[10px] font-bold uppercase text-gray-400 block">Barang Dipinjam:</span>
-                            <p class="ui-body font-medium">${itemsList || 'Perlengkapan'}</p>
+                        <div class="ui-pill p-2.5 rounded-xl text-xs space-y-0.5">
+                            <span class="text-[10px] font-bold uppercase text-slate-600 dark:text-slate-400 block tracking-wider">Barang Dipinjam:</span>
+                            <p class="font-bold text-slate-900 dark:text-slate-100 text-xs">${itemsList || 'Perlengkapan'}</p>
                         </div>
 
-                        <p class="text-[11px] ui-muted"><i class="fa-solid fa-calendar mr-1 text-[#FF7300]"></i> Periode: <strong>${tglAmbilClean}</strong> s.d <strong>${tglKembaliClean}</strong></p>
+                        <p class="text-xs font-semibold text-slate-800 dark:text-slate-200"><i class="fa-solid fa-calendar mr-1.5 text-[#FF7300]"></i> Periode: <strong class="text-slate-900 dark:text-white">${tglAmbilClean} s.d ${tglKembaliClean}</strong></p>
 
                         ${catatanTampil ? `
-                            <div class="p-2.5 rounded-xl bg-orange-500/10 border border-orange-500/25 text-xs text-orange-950 dark:text-orange-200 leading-relaxed">
-                                <span class="font-bold text-[#FF7300] block mb-0.5"><i class="fa-solid fa-note-sticky mr-1"></i> Catatan Admin Inventaris:</span>
-                                <p>${catatanTampil}</p>
+                            <div class="p-3 rounded-xl bg-orange-50/90 dark:bg-orange-950/40 border-l-4 border-l-[#FF7300] border border-orange-200 dark:border-orange-900/60 text-xs shadow-sm space-y-1">
+                                <span class="font-extrabold text-[#C2410C] dark:text-orange-400 flex items-center gap-1.5 text-xs">
+                                    <i class="fa-solid fa-note-sticky text-sm"></i> Catatan Admin Inventaris:
+                                </span>
+                                <p class="font-bold text-slate-900 dark:text-white text-xs pl-0.5 leading-relaxed">${catatanTampil}</p>
                             </div>
                         ` : ''}
                     </div>
@@ -1597,7 +1594,6 @@
             document.getElementById('set-no-wa').value = appSettings.no_wa_admin || "085770976399";
             document.getElementById('set-alamat').value = appSettings.alamat || "Politeknik Negeri Media Kreatif Jakarta";
             document.getElementById('set-pin').value = getAdminPin();
-            document.getElementById('set-api-url').value = getApiUrl();
         }
 
         async function simpanPengaturan(e) {
@@ -1610,15 +1606,14 @@
             appSettings.no_wa_admin = document.getElementById('set-no-wa').value.trim();
             appSettings.alamat = document.getElementById('set-alamat').value.trim();
             const newPin = document.getElementById('set-pin').value.trim();
-            const newApiUrl = document.getElementById('set-api-url').value.trim();
 
             if (newPin) localStorage.setItem(STORAGE_KEY_PIN, newPin);
-            localStorage.setItem(STORAGE_KEY_API, newApiUrl);
             saveSettingsLocal();
 
-            if (newApiUrl) {
+            const apiUrl = getApiUrl();
+            if (apiUrl) {
                 try {
-                    await fetch(newApiUrl, {
+                    await fetch(apiUrl, {
                         method: "POST",
                         body: JSON.stringify({
                             action: "admin_update_settings",
