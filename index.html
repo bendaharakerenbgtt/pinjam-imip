@@ -623,13 +623,13 @@
                 let statusBadgeClass = "bg-[#FF7300] text-white";
 
                 if (tersedia <= 0) {
-                    statusLabel = "Sedang tidak tersedia";
+                    statusLabel = "Habis";
                     statusBadgeClass = "bg-rose-600 text-white";
                 } else if (tersedia === 1) {
-                    statusLabel = "Stok Terbatas (1)";
+                    statusLabel = "Sisa 1";
                     statusBadgeClass = "bg-amber-500 text-white";
                 } else {
-                    statusLabel = `Tersedia (${tersedia})`;
+                    statusLabel = `Stok: ${tersedia}`;
                     statusBadgeClass = "bg-[#FF7300] text-white";
                 }
 
@@ -643,9 +643,6 @@
                                  onerror="this.src='IMIP.png'">
                             <span class="absolute top-1.5 left-1.5 px-2 py-0.5 rounded-md text-[9px] sm:text-[10px] font-extrabold uppercase backdrop-blur-md ${statusBadgeClass} shadow-xs">
                                 ${statusLabel}
-                            </span>
-                            <span class="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-md text-[9px] sm:text-[10px] font-semibold bg-black/65 text-white truncate max-w-[80px] sm:max-w-none">
-                                ${item.kategori || 'Umum'}
                             </span>
                         </div>
 
