@@ -53,14 +53,13 @@
             --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
         }
 
-        *, ::before, ::after {
+        body, input, button, select, textarea {
             font-family: 'Plus Jakarta Sans', sans-serif;
         }
 
         body {
             background-color: var(--bg-main);
             color: var(--text-body);
-            font-family: 'Plus Jakarta Sans', sans-serif;
             min-height: 100vh;
             transition: background-color 0.25s ease, color 0.25s ease;
             -webkit-tap-highlight-color: transparent;
@@ -70,8 +69,12 @@
             font-family: 'Outfit', sans-serif !important;
         }
 
-        input, button, select, textarea {
-            font-family: 'Plus Jakarta Sans', sans-serif !important;
+        /* Protect Font Awesome Icons */
+        i.fa-solid, i.fa-regular, i.fa-brands, .fa, .fa-solid, .fa-brands, [class*="fa-"] {
+            font-family: var(--fa-style-family, "Font Awesome 6 Free") !important;
+        }
+        i.fa-brands, .fa-brands {
+            font-family: "Font Awesome 6 Brands" !important;
         }
 
         .ui-card {
@@ -133,12 +136,9 @@
 
         <!-- Header Katalog -->
         <div class="flex items-center justify-between gap-2 pt-1 pb-1">
-            <div>
-                <h1 class="text-lg sm:text-2xl font-black font-outfit ui-heading tracking-tight leading-tight">
-                    Katalog Inventaris
-                </h1>
-                <p class="text-[11px] sm:text-xs ui-muted">Perlengkapan resmi IMIP siap dipinjam</p>
-            </div>
+            <h1 class="text-xl sm:text-2xl font-black font-outfit ui-heading tracking-tight">
+                Katalog Inventaris
+            </h1>
             <a href="status.html" class="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl ui-pill text-xs font-bold ui-heading hover:text-[#FF7300] flex items-center gap-1.5 shadow-xs transition-all whitespace-nowrap" title="Lacak Pengajuan">
                 <i class="fa-solid fa-clock-rotate-left text-[#FF7300]"></i> <span>Lacak Status</span>
             </a>

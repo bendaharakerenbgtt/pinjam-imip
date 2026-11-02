@@ -52,14 +52,13 @@
             --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
         }
 
-        *, ::before, ::after {
+        body, input, button, select, textarea {
             font-family: 'Plus Jakarta Sans', sans-serif;
         }
 
         body {
             background-color: var(--bg-main);
             color: var(--text-body);
-            font-family: 'Plus Jakarta Sans', sans-serif;
             min-height: 100vh;
             transition: background-color 0.25s ease, color 0.25s ease;
             -webkit-tap-highlight-color: transparent;
@@ -69,8 +68,12 @@
             font-family: 'Outfit', sans-serif !important;
         }
 
-        input, button, select, textarea {
-            font-family: 'Plus Jakarta Sans', sans-serif !important;
+        /* Protect Font Awesome Icons */
+        i.fa-solid, i.fa-regular, i.fa-brands, .fa, .fa-solid, .fa-brands, [class*="fa-"] {
+            font-family: var(--fa-style-family, "Font Awesome 6 Free") !important;
+        }
+        i.fa-brands, .fa-brands {
+            font-family: "Font Awesome 6 Brands" !important;
         }
 
         .ui-card {
