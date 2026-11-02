@@ -52,6 +52,10 @@
             --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
         }
 
+        *, ::before, ::after {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
         body {
             background-color: var(--bg-main);
             color: var(--text-body);
@@ -61,7 +65,13 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        .font-outfit { font-family: 'Outfit', sans-serif; }
+        h1, h2, h3, .font-outfit {
+            font-family: 'Outfit', sans-serif !important;
+        }
+
+        input, button, select, textarea {
+            font-family: 'Plus Jakarta Sans', sans-serif !important;
+        }
 
         .ui-card {
             background: var(--bg-card);

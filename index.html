@@ -53,6 +53,10 @@
             --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
         }
 
+        *, ::before, ::after {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
         body {
             background-color: var(--bg-main);
             color: var(--text-body);
@@ -62,7 +66,13 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        .font-outfit { font-family: 'Outfit', sans-serif; }
+        h1, h2, h3, .font-outfit {
+            font-family: 'Outfit', sans-serif !important;
+        }
+
+        input, button, select, textarea {
+            font-family: 'Plus Jakarta Sans', sans-serif !important;
+        }
 
         .ui-card {
             background: var(--bg-card);
@@ -121,12 +131,15 @@
     <!-- MAIN CONTENT -->
     <main class="max-w-6xl mx-auto px-3 sm:px-6 pt-1 space-y-3 sm:space-y-4">
 
-        <!-- Header Katalog Tanpa Sub Judul (Clean & Ramping) -->
-        <div class="flex items-center justify-between gap-2 pt-1 pb-0.5">
-            <h1 class="text-base sm:text-2xl font-extrabold font-outfit ui-heading tracking-tight">
-                Katalog Inventaris IMIP
-            </h1>
-            <a href="status.html" class="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl ui-pill text-xs font-bold ui-heading hover:text-[#FF7300] flex items-center gap-1.5 shadow-sm transition-all" title="Lacak Pengajuan">
+        <!-- Header Katalog -->
+        <div class="flex items-center justify-between gap-2 pt-1 pb-1">
+            <div>
+                <h1 class="text-lg sm:text-2xl font-black font-outfit ui-heading tracking-tight leading-tight">
+                    Katalog Inventaris
+                </h1>
+                <p class="text-[11px] sm:text-xs ui-muted">Perlengkapan resmi IMIP siap dipinjam</p>
+            </div>
+            <a href="status.html" class="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl ui-pill text-xs font-bold ui-heading hover:text-[#FF7300] flex items-center gap-1.5 shadow-xs transition-all whitespace-nowrap" title="Lacak Pengajuan">
                 <i class="fa-solid fa-clock-rotate-left text-[#FF7300]"></i> <span>Lacak Status</span>
             </a>
         </div>
@@ -151,8 +164,8 @@
             <p class="text-xs ui-muted mt-2">Memuat daftar barang...</p>
         </div>
 
-        <!-- Grid Barang -->
-        <div id="katalog-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-5">
+        <!-- Grid Barang: 2 Kolom di Mobile, 3 Kolom di Layar Lebar (Proporsional & Rapi) -->
+        <div id="katalog-grid" class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-4.5">
             <!-- Rendered dynamically -->
         </div>
 
@@ -621,44 +634,48 @@
                 }
 
                 const card = document.createElement('div');
-                card.className = "ui-card rounded-2xl overflow-hidden flex flex-col justify-between hover:border-orange-400 transition-all duration-300";
+                card.className = "ui-card rounded-2xl overflow-hidden flex flex-col justify-between hover:border-orange-400 transition-all duration-300 shadow-xs";
                 card.innerHTML = `
-                    <div class="cursor-pointer" onclick="bukaModalDetail('${item.id_barang}')">
-                        <div class="relative h-36 sm:h-44 w-full bg-gray-200 dark:bg-gray-800 overflow-hidden">
+                    <div class="cursor-pointer flex-1 flex flex-col" onclick="bukaModalDetail('${item.id_barang}')">
+                        <div class="relative h-28 sm:h-44 w-full bg-gray-200 dark:bg-gray-800 overflow-hidden">
                             <img src="${item.foto_url || 'IMIP.png'}" alt="${item.nama_barang}" 
                                  class="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                                  onerror="this.src='IMIP.png'">
-                            <span class="absolute top-2 left-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase backdrop-blur-md ${statusBadgeClass} shadow-md">
+                            <span class="absolute top-1.5 left-1.5 px-2 py-0.5 rounded-md text-[9px] sm:text-[10px] font-extrabold uppercase backdrop-blur-md ${statusBadgeClass} shadow-xs">
                                 ${statusLabel}
                             </span>
-                            <span class="absolute top-2 right-2 px-2 py-0.5 rounded text-[10px] font-semibold bg-black/60 text-white">
+                            <span class="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-md text-[9px] sm:text-[10px] font-semibold bg-black/65 text-white truncate max-w-[80px] sm:max-w-none">
                                 ${item.kategori || 'Umum'}
                             </span>
                         </div>
 
-                        <div class="p-3.5 sm:p-4 space-y-1.5">
-                            <span class="text-[10px] font-bold text-[#FF7300] uppercase">${item.kategori || 'Inventaris'}</span>
-                            <h3 class="font-outfit font-extrabold text-sm sm:text-base ui-heading leading-tight line-clamp-1">
-                                ${item.nama_barang}
-                            </h3>
-                            <p class="text-xs ui-muted leading-relaxed line-clamp-2">
-                                ${item.deskripsi || 'Tidak ada deskripsi tambahan.'}
-                            </p>
-                            <div class="pt-1 text-xs flex items-center justify-between">
-                                <span class="font-semibold text-[#FF7300]">
-                                    <i class="fa-solid fa-circle-check text-[11px] mr-1"></i>${item.kondisi || 'Bagus'}
+                        <div class="p-2.5 sm:p-3.5 space-y-1 flex-1 flex flex-col justify-between">
+                            <div>
+                                <span class="text-[9px] sm:text-[10px] font-bold text-[#FF7300] uppercase tracking-wide block truncate">${item.kategori || 'Inventaris'}</span>
+                                <h3 class="font-outfit font-extrabold text-xs sm:text-base ui-heading leading-snug line-clamp-2 min-h-[2rem] sm:min-h-[2.5rem]" title="${item.nama_barang}">
+                                    ${item.nama_barang}
+                                </h3>
+                                <p class="text-[10.5px] sm:text-xs ui-muted leading-relaxed line-clamp-1 mt-0.5">
+                                    ${item.deskripsi || 'Perlengkapan inventaris IMIP'}
+                                </p>
+                            </div>
+
+                            <div class="pt-1.5 border-t border-orange-100 dark:border-gray-800/80 flex items-center justify-between text-[10px] sm:text-xs">
+                                <span class="font-semibold text-emerald-600 dark:text-emerald-400 truncate">
+                                    <i class="fa-solid fa-circle-check text-[9px] mr-0.5"></i>${item.kondisi || 'Bagus'}
                                 </span>
-                                <span class="text-[11px] ui-muted font-medium">
-                                    Total: ${item.stok_total || 1} unit
+                                <span class="ui-muted font-medium whitespace-nowrap">
+                                    Tot: ${item.stok_total || 1}
                                 </span>
                             </div>
                         </div>
                     </div>
 
-                    <div class="p-3.5 sm:p-4 pt-0">
+                    <div class="p-2.5 sm:p-3.5 pt-0">
                         <button onclick="tambahKeKeranjang('${item.id_barang}')" ${tersedia <= 0 ? 'disabled' : ''} 
-                                class="w-full py-2 sm:py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 ${tersedia > 0 ? 'btn-kabinet shadow-md' : 'bg-gray-300 dark:bg-gray-800 text-gray-500 cursor-not-allowed'}">
-                            <i class="fa-solid fa-cart-plus text-xs"></i> ${tersedia > 0 ? 'Tambah ke Keranjang' : 'Stok Habis'}
+                                class="w-full py-1.5 sm:py-2.5 rounded-xl font-bold text-[11px] sm:text-xs transition-all flex items-center justify-center gap-1.5 ${tersedia > 0 ? 'btn-kabinet shadow-sm' : 'bg-gray-300 dark:bg-gray-800 text-gray-500 cursor-not-allowed'}">
+                            <i class="fa-solid fa-cart-plus text-[11px]"></i>
+                            <span>${tersedia > 0 ? '+ Keranjang' : 'Habis'}</span>
                         </button>
                     </div>
                 `;
