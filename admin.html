@@ -597,6 +597,7 @@
     <!-- JAVASCRIPT DASHBOARD ADMIN (LOGIKA WORKFLOW & PDF) -->
     <!-- ============================================================== -->
     <script>
+        const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbzUgvH7eqh5zKClv1qCjMxcfXWxKQEkU5b0LAalXpSmGupmxgcBjhzuhVVRfVL82enx3g/exec";
         const STORAGE_KEY_API   = "PINJAM_IMIP_API_URL";
         const STORAGE_KEY_PIN   = "PINJAM_IMIP_ADMIN_PIN";
         const STORAGE_KEY_LOCAL = "PINJAM_IMIP_LOCAL_DB";
@@ -719,7 +720,7 @@
         }
 
         function getApiUrl() {
-            return (localStorage.getItem(STORAGE_KEY_API) || "").trim();
+            return (localStorage.getItem(STORAGE_KEY_API) || DEFAULT_API_URL).trim();
         }
 
         async function fetchAdminDataOnline() {
