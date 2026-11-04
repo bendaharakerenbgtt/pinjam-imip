@@ -754,12 +754,48 @@
 
             if (!digits || digits.length < 8 || s === "#ERROR!" || s.includes("ERROR")) {
                 Swal.fire({
-                    icon: 'warning',
-                    title: 'Nomor WhatsApp Tidak Valid',
-                    html: `<p class="text-xs text-slate-700 dark:text-slate-300">Data nomor WhatsApp peminjam ini (<strong>${item.nama_peminjam}</strong>) kosong atau bertuliskan error: <strong>${s || 'Kosong'}</strong>.</p>
-                           <p class="text-xs text-slate-500 mt-2">Periksa nomor WhatsApp di database spreadsheet agar dapat dihubungi via WA.</p>`,
-                    confirmButtonColor: '#FF7300',
-                    confirmButtonText: 'Tutup'
+                    icon: 'info',
+                    title: 'Perbaiki Nomor WhatsApp',
+                    html: `<p class="text-xs text-slate-700 dark:text-slate-300 mb-2">Nomor di spreadsheet untuk peminjam ini (<strong>${item.nama_peminjam}</strong>) sempat error (<code>#ERROR!</code>). Masukkan nomor WhatsApp yang benar untuk langsung chat & perbarui database:</p>`,
+                    input: 'tel',
+                    inputValue: '0895321704010',
+                    inputPlaceholder: 'Contoh: 0895321704010',
+                    showCancelButton: true,
+                    confirmButtonText: '<i class="fa-brands fa-whatsapp"></i> Simpan & Buka Chat',
+                    cancelButtonText: 'Batal',
+                    confirmButtonColor: '#10B981',
+                    inputValidator: (val) => {
+                        const d = (val || "").replace(/[^0-9]/g, "");
+                        if (d.length < 9) return 'Nomor WhatsApp minimal 9 digit angka!';
+                    }
+                }).then(async (res) => {
+                    if (res.isConfirmed && res.value) {
+                        const inputNum = res.value.replace(/[^0-9]/g, "");
+                        const fixedWa = inputNum.startsWith("62") ? ("0" + inputNum.slice(2)) : (inputNum.startsWith("0") ? inputNum : ("0" + inputNum));
+                        item.kontak_wa = fixedWa;
+                        saveLocalDB();
+                        renderDashboard();
+
+                        // Sync ke Google Spreadsheet
+                        const apiUrl = getApiUrl();
+                        if (apiUrl) {
+                            try {
+                                await fetch(apiUrl, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                                    body: JSON.stringify({
+                                        action: "admin_update_kontak",
+                                        pin: getAdminPin(),
+                                        id_pinjam: idPinjam,
+                                        kontak_wa: fixedWa
+                                    })
+                                });
+                            } catch(e) {}
+                        }
+
+                        // Langsung buka chat setelah diperbaiki
+                        bukaChatWa(idPinjam, tipe);
+                    }
                 });
                 return;
             }

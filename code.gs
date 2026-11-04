@@ -249,6 +249,30 @@ function doPost(e) {
       return handleAdminUpdateStatus(payload);
     }
 
+    // 3b. ADMIN: UPDATE KONTAK WA PEMINJAM (JIKA DATA LAMA RUSAK/ERROR)
+    if (action === "admin_update_kontak") {
+      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      const sheetP = ss.getSheetByName(SHEET_PEMINJAMAN);
+      const idPinjam = payload.id_pinjam;
+      let newWa = String(payload.kontak_wa || "").replace(/[^0-9]/g, "");
+      if (newWa.startsWith("62")) newWa = "0" + newWa.slice(2);
+      else if (newWa && !newWa.startsWith("0")) newWa = "0" + newWa;
+      const safeWa = newWa ? ("'" + newWa) : "";
+
+      const pData = sheetP.getDataRange().getValues();
+      const pHeaders = pData[0].map(h => String(h).trim().toLowerCase());
+      const idxId = pHeaders.indexOf("id_pinjam");
+      const idxWa = pHeaders.indexOf("kontak_wa");
+
+      for (let i = 1; i < pData.length; i++) {
+        if (String(pData[i][idxId]).trim() === String(idPinjam).trim()) {
+          sheetP.getRange(i + 1, idxWa + 1).setValue(safeWa);
+          return jsonResponse({ success: true, message: "Nomor WhatsApp berhasil diperbarui di spreadsheet!", kontak_wa: safeWa });
+        }
+      }
+      return jsonResponse({ success: false, message: "Peminjaman tidak ditemukan." });
+    }
+
     // 4. ADMIN: CRUD BARANG
     if (action === "admin_tambah_barang") {
       return handleTambahBarang(payload);
