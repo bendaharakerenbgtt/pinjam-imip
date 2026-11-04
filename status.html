@@ -98,85 +98,85 @@
 <body class="selection:bg-orange-500 selection:text-white min-h-screen flex flex-col justify-between">
 
     <!-- TOP NAVBAR -->
-    <header class="sticky top-0 z-40 w-full px-3 sm:px-6 pt-3 pb-2">
-        <div class="max-w-4xl mx-auto ui-card rounded-2xl px-4 py-3 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <a href="index.html" class="flex items-center gap-2 text-xs font-semibold ui-muted hover:text-[#FF7300]">
-                    <i class="fa-solid fa-arrow-left"></i> <span class="hidden sm:inline">Kembali ke Katalog</span>
+    <header class="sticky top-0 z-40 w-full px-3 sm:px-6 pt-2.5 pb-1.5">
+        <div class="max-w-4xl mx-auto ui-card rounded-2xl px-3.5 py-2 sm:py-2.5 flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+                <a href="index.html" class="flex items-center gap-1.5 text-xs font-semibold ui-muted hover:text-[#FF7300]">
+                    <i class="fa-solid fa-arrow-left"></i> <span class="hidden sm:inline">Katalog</span>
                 </a>
                 <span class="text-orange-200 dark:text-gray-700">|</span>
                 <div class="flex items-center gap-2">
-                    <img src="IMIP.png" alt="IMIP Logo" class="h-6 w-auto object-contain" onerror="this.src='icons/icon-192.png'">
-                    <span class="font-outfit font-extrabold text-base sm:text-lg ui-heading tracking-tight">Cek Status</span>
+                    <img src="IMIP.png" alt="IMIP Logo" class="h-5 sm:h-6 w-auto object-contain" onerror="this.src='icons/icon-192.png'">
+                    <span class="font-outfit font-extrabold text-sm sm:text-base ui-heading tracking-tight">Cek Status</span>
                 </div>
             </div>
 
-            <button onclick="toggleTheme()" class="w-9 h-9 rounded-xl ui-pill flex items-center justify-center ui-body hover:text-[#FF7300]">
-                <i id="theme-icon" class="fa-solid fa-moon text-sm"></i>
+            <button onclick="toggleTheme()" class="w-8 h-8 rounded-xl ui-pill flex items-center justify-center ui-body hover:text-[#FF7300]">
+                <i id="theme-icon" class="fa-solid fa-moon text-xs"></i>
             </button>
         </div>
     </header>
 
     <!-- CONTENT WRAPPER -->
-    <main class="max-w-4xl mx-auto w-full px-3 sm:px-6 pt-2 sm:pt-4 space-y-4 sm:space-y-6 flex-1">
+    <main class="max-w-4xl mx-auto w-full px-3 sm:px-6 pt-2 sm:pt-4 space-y-3 sm:space-y-4 flex-1">
 
         <!-- Search Box -->
-        <div class="ui-card rounded-2xl p-4 sm:p-7 space-y-3.5 text-center max-w-xl mx-auto border-orange-200 dark:border-white/10">
-            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-orange-500/10 text-[#FF7300] border border-orange-500/20 flex items-center justify-center mx-auto text-lg sm:text-xl">
+        <div class="ui-card rounded-2xl p-4 sm:p-6 space-y-3 text-center max-w-md mx-auto border-orange-200 dark:border-white/10 shadow-sm">
+            <div class="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-orange-500/10 text-[#FF7300] border border-orange-500/20 flex items-center justify-center mx-auto text-base sm:text-lg">
                 <i class="fa-solid fa-clock-rotate-left"></i>
             </div>
             <div>
-                <h1 class="text-lg sm:text-2xl font-bold font-outfit ui-heading">Cek Status Peminjaman</h1>
-                <p class="text-xs ui-muted mt-1 leading-relaxed">
-                    Ketik <strong>Nomor WhatsApp</strong> Anda atau <strong>Kode Peminjaman</strong>.
+                <h1 class="text-base sm:text-lg font-bold font-outfit ui-heading">Cek Status Peminjaman</h1>
+                <p class="text-[11.5px] ui-muted mt-0.5 leading-relaxed">
+                    Ketik <strong>Nomor WhatsApp</strong> atau <strong>Kode Peminjaman</strong> Anda.
                 </p>
             </div>
 
-            <!-- Petunjuk Lupa Kode (Bisa Ditutup / Toggleable) -->
-            <div class="space-y-1.5 text-left">
-                <div class="flex items-center justify-between">
-                    <button type="button" onclick="togglePetunjukInfo()" class="text-[11px] font-bold text-[#FF7300] hover:underline flex items-center gap-1.5 transition-all">
-                        <i class="fa-solid fa-circle-question"></i> <span id="text-toggle-petunjuk">Tutup Petunjuk Bantuan</span>
-                    </button>
-                </div>
-
-                <div id="info-petunjuk-box" class="p-3 rounded-xl bg-orange-500/10 border border-orange-500/25 relative text-xs transition-all">
-                    <button type="button" onclick="togglePetunjukInfo()" class="absolute top-2 right-2 text-gray-400 hover:text-gray-700 dark:hover:text-white p-1" title="Tutup Petunjuk">
-                        <i class="fa-solid fa-xmark text-sm"></i>
-                    </button>
-                    <div class="flex items-center gap-1.5 font-bold text-[#FF7300] mb-1">
-                        <i class="fa-solid fa-lightbulb"></i>
-                        <span>Petunjuk Mudah:</span>
-                    </div>
-                    <p class="text-[11.5px] ui-body leading-relaxed pr-6">
-                        • <strong>Paling Mudah:</strong> Cukup masukkan nomor WhatsApp aktif Anda (contoh: <span class="font-mono font-semibold">0857...</span> atau <span class="font-mono">0859...</span>), sistem langsung melacak seluruh pengajuan Anda.<br>
-                        • <strong>Atau Kode Peminjaman:</strong> Kode berformat <span class="font-mono font-bold text-[#FF7300]">PJM-TANGGAL-XXXX</span> (contoh: <span class="font-mono">PJM-20261102-6614</span>).
-                    </p>
-                </div>
-            </div>
-
-            <form onsubmit="cariStatus(event)" class="flex flex-col sm:flex-row gap-2">
-                <input type="text" id="input-query" placeholder="Ketik No. WA (0857...) atau Kode Peminjaman..." required
-                       class="flex-1 px-3.5 py-2.5 rounded-xl ui-card ui-heading text-xs sm:text-sm focus:outline-none focus:border-[#FF7300]">
-                <button type="submit" id="btn-cari" class="px-5 py-2.5 rounded-xl btn-kabinet font-bold text-xs flex items-center justify-center gap-1.5 shadow-md">
+            <form onsubmit="cariStatus(event)" class="flex flex-col sm:flex-row gap-2 pt-0.5">
+                <input type="text" id="input-query" placeholder="Ketik No. WA / Kode PJM..." required
+                       class="flex-1 px-3 py-2 rounded-xl ui-card ui-heading text-xs sm:text-sm focus:outline-none focus:border-[#FF7300]">
+                <button type="submit" id="btn-cari" class="px-4 py-2 rounded-xl btn-kabinet font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm whitespace-nowrap">
                     <i class="fa-solid fa-magnifying-glass"></i> Cari Status
                 </button>
             </form>
 
-            <p class="text-[11px] ui-muted pt-0.5">
-                <i class="fa-solid fa-shield-halved text-[#FF7300] mr-1"></i> Data identitas pribadi Anda aman dan dilindungi sistem.
+            <!-- Petunjuk Bantuan (Ringkas & Collapsible) -->
+            <div class="space-y-1.5 text-left pt-0.5">
+                <div class="text-center">
+                    <button type="button" onclick="togglePetunjukInfo()" class="text-[11px] font-semibold text-[#FF7300] hover:underline inline-flex items-center gap-1">
+                        <i class="fa-regular fa-circle-question"></i> <span id="text-toggle-petunjuk">Bantuan pencarian</span>
+                    </button>
+                </div>
+
+                <div id="info-petunjuk-box" class="hidden p-2.5 rounded-xl bg-orange-500/10 border border-orange-500/25 relative text-xs transition-all">
+                    <button type="button" onclick="togglePetunjukInfo()" class="absolute top-1.5 right-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-white p-1" title="Tutup">
+                        <i class="fa-solid fa-xmark text-xs"></i>
+                    </button>
+                    <div class="flex items-center gap-1 font-bold text-[#FF7300] mb-1 text-[11px]">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>Petunjuk Pencarian:</span>
+                    </div>
+                    <ul class="text-[11px] ui-body space-y-0.5 pr-4 list-disc list-inside leading-relaxed">
+                        <li><strong>No. WhatsApp:</strong> Gunakan nomor WA aktif yang didaftarkan (contoh: <span class="font-mono">0857...</span>).</li>
+                        <li><strong>Kode Pinjam:</strong> Format <span class="font-mono font-semibold text-[#FF7300]">PJM-TANGGAL-XXXX</span>.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <p class="text-[10.5px] ui-muted pt-0.5">
+                <i class="fa-solid fa-shield-halved text-[#FF7300] mr-1"></i> Data identitas pribadi Anda aman & terlindungi.
             </p>
         </div>
 
         <!-- Result Container -->
-        <div id="result-container" class="space-y-4 max-w-xl mx-auto">
+        <div id="result-container" class="space-y-3 max-w-md mx-auto">
             <!-- Dynamically populated -->
         </div>
 
     </main>
 
     <!-- FOOTER -->
-    <footer class="max-w-4xl mx-auto w-full px-4 py-8 mt-auto text-center text-xs ui-muted">
+    <footer class="max-w-4xl mx-auto w-full px-4 py-3 sm:py-4 mt-auto text-center text-[11px] sm:text-xs ui-muted">
         <p>© 2026 Pinjamip — LDK IMIP</p>
     </footer>
 
@@ -237,10 +237,10 @@
             const txt = document.getElementById('text-toggle-petunjuk');
             if (box.classList.contains('hidden')) {
                 box.classList.remove('hidden');
-                txt.innerText = "Tutup Petunjuk Bantuan";
+                txt.innerText = "Tutup bantuan";
             } else {
                 box.classList.add('hidden');
-                txt.innerText = "Lihat Petunjuk Bantuan";
+                txt.innerText = "Bantuan pencarian";
             }
         }
 
