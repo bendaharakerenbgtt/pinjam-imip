@@ -722,9 +722,22 @@
             }
         }
 
+        function formatNomorWa(rawWa) {
+            let s = String(rawWa || "").trim().replace(/^'/, "");
+            if (!s || s === "#ERROR!" || s.includes("ERROR") || s.length < 5) {
+                return "-";
+            }
+            let digits = s.replace(/[^0-9]/g, "");
+            if (digits.startsWith("62")) digits = "0" + digits.slice(2);
+            else if (digits.startsWith("8")) digits = "0" + digits;
+            return digits || s;
+        }
+
         function formatWaLink(phone, message = "") {
-            if (!phone) return "#";
-            let clean = phone.toString().replace(/[^0-9]/g, "");
+            let s = String(phone || "").trim().replace(/^'/, "");
+            if (!s || s === "#ERROR!" || s.includes("ERROR")) return "#";
+            let clean = s.replace(/[^0-9]/g, "");
+            if (!clean || clean.length < 8) return "#";
             if (clean.startsWith("0")) clean = "62" + clean.slice(1);
             else if (clean.startsWith("8")) clean = "62" + clean;
             else if (!clean.startsWith("62") && clean.length >= 9) clean = "62" + clean;
@@ -1059,31 +1072,40 @@ Jazakumullah Khairan Katsiran.
                 card.innerHTML = `
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-orange-200 dark:border-gray-800 pb-3">
                         <div class="flex items-center flex-wrap gap-2">
-                            <span class="font-mono text-xs font-bold ui-pill px-2.5 py-1 rounded text-[#FF7300]">${item.id_pinjam}</span>
+                            <span class="font-mono text-xs font-bold ui-pill px-2.5 py-1 rounded text-[#FF7300] whitespace-nowrap">${item.id_pinjam}</span>
                             <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${getStatusClass(item.status)}">
                                 ${item.status}
                             </span>
-                            ${isBentrok ? `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black ${hasHardBentrok ? 'bg-rose-600' : 'bg-amber-600'} text-white animate-pulse flex items-center gap-1"><i class="fa-solid fa-triangle-exclamation"></i> ${hasHardBentrok ? 'BENTROK STOK TERKUNCI' : 'BENTROK ANTRIAN JADWAL'}</span>` : ''}
+                            ${isBentrok ? `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black ${hasHardBentrok ? 'bg-rose-600' : 'bg-amber-600'} text-white animate-pulse flex items-center gap-1 whitespace-nowrap"><i class="fa-solid fa-triangle-exclamation"></i> ${hasHardBentrok ? 'BENTROK STOK TERKUNCI' : 'BENTROK ANTRIAN JADWAL'}</span>` : ''}
                         </div>
                         <span class="text-xs ui-muted"><i class="fa-solid fa-clock mr-1"></i> Diajukan: ${item.created_at || '-'}</span>
                     </div>
 
                     ${isBentrok ? `
-                        <div class="p-3 rounded-xl bg-rose-500/15 border-2 border-rose-500/40 text-rose-800 dark:text-rose-200 text-xs space-y-1.5 shadow-sm">
-                            <div class="flex items-center gap-1.5 font-black text-rose-600 dark:text-rose-400">
-                                <i class="fa-solid fa-triangle-exclamation text-base"></i>
-                                <span>${hasHardBentrok ? 'TIDAK BISA DISETUJUI: BENTROK DENGAN PEMINJAMAN AKTIF/TERKUNCI!' : 'PERINGATAN: BEREBUT JADWAL DENGAN ANTRIAN PENGAJUAN LAIN!'}</span>
+                        <div class="p-3 sm:p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-700/60 text-xs space-y-2 shadow-xs">
+                            <div class="flex items-start gap-1.5 font-bold text-rose-700 dark:text-rose-400">
+                                <i class="fa-solid fa-triangle-exclamation text-sm mt-0.5 shrink-0"></i>
+                                <span class="text-xs uppercase tracking-tight">${hasHardBentrok ? 'TIDAK DAPAT DISETUJUI: Bentrok Peminjaman Terkunci!' : 'PERINGATAN: Berebut Jadwal dengan Antrian Lain!'}</span>
                             </div>
-                            <ul class="list-disc list-inside space-y-1 text-[11px] font-semibold text-slate-900 dark:text-rose-100">
+
+                            <div class="space-y-1.5 pt-0.5">
                                 ${konflikJadwal.map(k => `
-                                    <li>
-                                        <strong>${k.nama_barang} (${k.bentrok_qty} unit)</strong> bertabrakan dengan 
-                                        <span class="font-mono text-[#FF7300] font-bold">${k.bentrok_dengan_id}</span> 
-                                        (${k.bentrok_dengan_nama} — <em>${k.bentrok_dengan_status}</em>) pada periode <em>${k.bentrok_periode}</em>.
-                                    </li>
+                                    <div class="p-2 sm:p-2.5 rounded-lg bg-white dark:bg-gray-900/80 border border-rose-200 dark:border-rose-800/50 space-y-1">
+                                        <div class="flex items-center justify-between gap-1.5 flex-wrap">
+                                            <span class="font-bold text-slate-900 dark:text-white text-xs">• ${k.nama_barang} <span class="text-[#FF7300]">(${k.bentrok_qty} unit)</span></span>
+                                            <span class="font-mono text-[11px] font-bold px-2 py-0.5 rounded bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-700 whitespace-nowrap">
+                                                ${k.bentrok_dengan_id}
+                                            </span>
+                                        </div>
+                                        <div class="text-[11px] text-slate-700 dark:text-slate-300 leading-tight flex items-center justify-between gap-2 flex-wrap pt-0.5">
+                                            <span>Peminjam: <strong>${k.bentrok_dengan_nama}</strong> (${k.bentrok_dengan_status})</span>
+                                            <span class="text-slate-500 dark:text-slate-400 font-mono text-[10.5px]"><i class="fa-regular fa-calendar mr-1"></i>${k.bentrok_periode}</span>
+                                        </div>
+                                    </div>
                                 `).join('')}
-                            </ul>
-                            <p class="text-[10.5px] text-rose-700 dark:text-rose-300 font-medium">
+                            </div>
+
+                            <p class="text-[10.5px] text-rose-800 dark:text-rose-300 font-medium">
                                 Total stok inventaris (${konflikJadwal[0].total_stok} unit) tidak mencukupi untuk memenuhi seluruh peminjaman di tanggal yang sama.
                             </p>
                         </div>
@@ -1095,7 +1117,7 @@ Jazakumullah Khairan Katsiran.
                             <p class="font-bold ui-heading text-sm">${item.nama_peminjam}</p>
                             <p class="ui-body">Ketua Pelaksana: ${item.nama_penanggung_jawab || '-'}</p>
                             <p class="ui-muted">${item.asal_organisasi} (${item.kategori_peminjam || 'Kampus'})</p>
-                            <p class="font-mono text-xs text-[#FF7300] font-semibold">${item.kontak_wa}</p>
+                            <p class="font-mono text-xs text-[#FF7300] font-semibold">${formatNomorWa(item.kontak_wa)}</p>
                         </div>
                         <div class="space-y-1">
                             <span class="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400 block tracking-wider">Jadwal Pengambilan & Kembali</span>
@@ -1466,7 +1488,7 @@ Jazakumullah Khairan Katsiran.
                 card.innerHTML = `
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-orange-200 dark:border-gray-800 pb-3">
                         <div class="flex items-center gap-2">
-                            <span class="font-mono text-xs font-bold ui-pill px-2.5 py-1 rounded text-[#FF7300]">${item.id_pinjam}</span>
+                            <span class="font-mono text-xs font-bold ui-pill px-2.5 py-1 rounded text-[#FF7300] whitespace-nowrap">${item.id_pinjam}</span>
                             <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${delayClass}">
                                 ${delayLabel}
                             </span>
@@ -1478,7 +1500,7 @@ Jazakumullah Khairan Katsiran.
                         <div>
                             <span class="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400 block tracking-wider">Peminjam</span>
                             <p class="font-bold ui-heading text-sm">${item.nama_peminjam}</p>
-                            <p class="ui-body">${item.asal_organisasi} (${item.kontak_wa})</p>
+                            <p class="ui-body">${item.asal_organisasi} (${formatNomorWa(item.kontak_wa)})</p>
                         </div>
                         <div>
                             <span class="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400 block tracking-wider">Batas Pengembalian</span>
@@ -1654,7 +1676,7 @@ Jazakumullah Khairan Katsiran.
                 card.innerHTML = `
                     <div class="space-y-2 flex-1">
                         <div class="flex flex-wrap items-center gap-2">
-                            <span class="font-mono text-xs font-bold text-[#FF7300] bg-orange-500/10 px-2.5 py-0.5 rounded border border-orange-300/60 dark:border-orange-500/30">${item.id_pinjam}</span>
+                            <span class="font-mono text-xs font-bold text-[#FF7300] bg-orange-500/10 px-2.5 py-0.5 rounded border border-orange-300/60 dark:border-orange-500/30 whitespace-nowrap">${item.id_pinjam}</span>
                             <span class="px-2.5 py-0.5 rounded text-[10px] font-black ${getStatusClass(item.status)}">${item.status}</span>
                             ${tglKembaliAktualClean && tglKembaliAktualClean !== '-' ? `<span class="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-500/10 dark:bg-emerald-500/20 px-2.5 py-0.5 rounded border border-emerald-500/30"><i class="fa-solid fa-circle-check text-emerald-600 mr-1"></i> Kembali: ${tglKembaliAktualClean}</span>` : ''}
                         </div>
