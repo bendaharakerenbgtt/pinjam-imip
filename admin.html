@@ -1082,31 +1082,31 @@ Jazakumullah Khairan Katsiran.
                     </div>
 
                     ${isBentrok ? `
-                        <div class="p-3 sm:p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-700/60 text-xs space-y-2 shadow-xs">
-                            <div class="flex items-start gap-1.5 font-bold text-rose-700 dark:text-rose-400">
-                                <i class="fa-solid fa-triangle-exclamation text-sm mt-0.5 shrink-0"></i>
-                                <span class="text-xs uppercase tracking-tight">${hasHardBentrok ? 'TIDAK DAPAT DISETUJUI: Bentrok Peminjaman Terkunci!' : 'PERINGATAN: Berebut Jadwal dengan Antrian Lain!'}</span>
+                        <div class="p-3 sm:p-3.5 rounded-xl border-l-4 ${hasHardBentrok ? 'border-l-rose-500 bg-rose-500/10 border-rose-200 dark:border-rose-900/50' : 'border-l-amber-500 bg-amber-500/10 border-amber-200 dark:border-amber-900/50'} border text-xs space-y-2">
+                            <div class="flex items-center gap-1.5 font-bold ${hasHardBentrok ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400'} text-xs">
+                                <i class="fa-solid fa-triangle-exclamation text-sm"></i>
+                                <span>${hasHardBentrok ? 'Tidak Dapat Disetujui: Stok Terkunci untuk Peminjam Lain' : 'Peringatan: Jadwal Bentrok dengan Antrian Lain'}</span>
                             </div>
 
-                            <div class="space-y-1.5 pt-0.5">
+                            <div class="space-y-1.5">
                                 ${konflikJadwal.map(k => `
-                                    <div class="p-2 sm:p-2.5 rounded-lg bg-white dark:bg-gray-900/80 border border-rose-200 dark:border-rose-800/50 space-y-1">
-                                        <div class="flex items-center justify-between gap-1.5 flex-wrap">
-                                            <span class="font-bold text-slate-900 dark:text-white text-xs">• ${k.nama_barang} <span class="text-[#FF7300]">(${k.bentrok_qty} unit)</span></span>
-                                            <span class="font-mono text-[11px] font-bold px-2 py-0.5 rounded bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-700 whitespace-nowrap">
-                                                ${k.bentrok_dengan_id}
+                                    <div class="ui-pill p-2 sm:p-2.5 rounded-lg text-xs space-y-0.5">
+                                        <div class="font-bold ui-heading flex items-center justify-between gap-2">
+                                            <span>• ${k.nama_barang} (${k.bentrok_qty} unit)</span>
+                                            <span class="text-[11px] font-semibold ${k.tipe_bentrok === 'KUNCI' ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400'}">
+                                                ${k.tipe_bentrok === 'KUNCI' ? 'Sudah Terkunci' : 'Sesama Antrian'}
                                             </span>
                                         </div>
-                                        <div class="text-[11px] text-slate-700 dark:text-slate-300 leading-tight flex items-center justify-between gap-2 flex-wrap pt-0.5">
-                                            <span>Peminjam: <strong>${k.bentrok_dengan_nama}</strong> (${k.bentrok_dengan_status})</span>
-                                            <span class="text-slate-500 dark:text-slate-400 font-mono text-[10.5px]"><i class="fa-regular fa-calendar mr-1"></i>${k.bentrok_periode}</span>
-                                        </div>
+                                        <p class="text-[11.5px] ui-body">
+                                            Antrian peminjam: <strong class="ui-heading">${k.bentrok_dengan_nama}</strong> 
+                                            <span class="ui-muted font-mono text-[10.5px]">(${k.bentrok_periode})</span>
+                                        </p>
                                     </div>
                                 `).join('')}
                             </div>
 
-                            <p class="text-[10.5px] text-rose-800 dark:text-rose-300 font-medium">
-                                Total stok inventaris (${konflikJadwal[0].total_stok} unit) tidak mencukupi untuk memenuhi seluruh peminjaman di tanggal yang sama.
+                            <p class="text-[11px] ui-muted pt-0.5">
+                                <i class="fa-solid fa-circle-info mr-1 text-[#FF7300]"></i> Total stok inventaris (${konflikJadwal[0].total_stok} unit) tidak mencukupi untuk memenuhi kedua peminjaman di tanggal yang sama.
                             </p>
                         </div>
                     ` : ''}
