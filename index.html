@@ -21,7 +21,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
-        @custom-variant dark (&:where(.dark-mode, .dark, .dark-mode *, .dark *));
+        @variant dark (&:where(.dark-mode, .dark, .dark-mode *, .dark *));
 
         :root {
             --bg-main: #FAF5EF;              /* Warm Cream */
@@ -996,10 +996,18 @@
             btn.disabled = true;
             btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Mengirim Pengajuan...`;
 
+            // Standarisasi nomor WA ke angka bersih (awalan 0) agar aman di database/sheet dan tidak dianggap formula
+            let cleanWa = rawWa;
+            if (cleanWa.startsWith("62")) {
+                cleanWa = "0" + cleanWa.slice(2);
+            } else if (!cleanWa.startsWith("0")) {
+                cleanWa = "0" + cleanWa;
+            }
+
             const payload = {
                 action: "ajukan_pinjam",
                 nama_peminjam: document.getElementById('pjm-nama').value.trim(),
-                kontak_wa: document.getElementById('pjm-wa').value.trim(),
+                kontak_wa: cleanWa,
                 asal_organisasi: document.getElementById('pjm-organisasi').value.trim(),
                 kategori_peminjam: document.getElementById('pjm-kategori').value,
                 nama_penanggung_jawab: document.getElementById('pjm-pj').value.trim(),

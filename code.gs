@@ -179,10 +179,13 @@ function doGet(e) {
           parsedItems = JSON.parse(row.items_json || "[]");
         } catch(e) {}
 
-        // Masking WA (misal: 0857****6399)
-        const waStr = String(row.kontak_wa || "");
+        // Masking WA (misal: 0857****6399) - cegah string #ERROR! dari formula spreadsheet
+        let waStr = String(row.kontak_wa || "").trim().replace(/^'/, "");
+        if (waStr === "#ERROR!" || waStr.includes("ERROR") || waStr.length < 5) {
+          waStr = cleanNum.length >= 8 ? (cleanNum.startsWith("62") ? ("0" + cleanNum.slice(2)) : cleanNum) : "Terdaftar";
+        }
         let maskedWa = waStr;
-        if (waStr.length > 7) {
+        if (waStr.length > 7 && !waStr.includes("Terdaftar")) {
           maskedWa = waStr.substring(0, 4) + "****" + waStr.substring(waStr.length - 4);
         }
 
@@ -387,12 +390,23 @@ function handleAjukanPinjam(data) {
 
   const catatanAwalAdmin = bentrokAntrian.length > 0 ? "⚠️ BENTROK ANTRIAN: " + bentrokAntrian.join("; ") : "";
   const now = new Date();
+
+  // Sanitasi kontak WA agar aman dari interpretasi formula Excel/Sheets (hindari #ERROR! akibat leading '+')
+  let rawWaInput = String(data.kontak_wa || "").trim();
+  let cleanWaDigits = rawWaInput.replace(/[^0-9]/g, "");
+  if (cleanWaDigits.startsWith("62")) {
+    cleanWaDigits = "0" + cleanWaDigits.slice(2);
+  } else if (cleanWaDigits && !cleanWaDigits.startsWith("0")) {
+    cleanWaDigits = "0" + cleanWaDigits;
+  }
+  const safeKontakWa = cleanWaDigits ? ("'" + cleanWaDigits) : "";
+
   // Status awal PRD: MENUNGGU VERIFIKASI (stok belum dikunci)
   const newRow = [
     idPinjam,
     "", // No surat perjanjian akan di-generate saat approve
     data.nama_peminjam || "",
-    data.kontak_wa || "",
+    safeKontakWa,
     data.asal_organisasi || "",
     data.kategori_peminjam || "Kampus",
     data.nama_penanggung_jawab || "",

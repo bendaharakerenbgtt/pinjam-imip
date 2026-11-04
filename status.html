@@ -18,7 +18,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
-        @custom-variant dark (&:where(.dark-mode, .dark, .dark-mode *, .dark *));
+        @variant dark (&:where(.dark-mode, .dark, .dark-mode *, .dark *));
 
         :root {
             --bg-main: #FAF5EF;              /* Warm Cream */
@@ -303,8 +303,11 @@
                 }).map(p => {
                     let items = [];
                     try { items = JSON.parse(p.items_json || "[]"); } catch(e) {}
-                    let waStr = String(p.kontak_wa || "");
-                    let maskedWa = waStr.length > 7 ? (waStr.substring(0, 4) + "****" + waStr.substring(waStr.length - 4)) : waStr;
+                    let waStr = String(p.kontak_wa || "").trim().replace(/^'/, "");
+                    let maskedWa = waStr;
+                    if (waStr && waStr !== "#ERROR!" && !waStr.includes("ERROR") && waStr.length > 7) {
+                        maskedWa = waStr.substring(0, 4) + "****" + waStr.substring(waStr.length - 4);
+                    }
 
                     return {
                         id_pinjam: p.id_pinjam,
@@ -344,8 +347,8 @@
                 let itemsListHtml = "";
                 if (Array.isArray(item.items) && item.items.length > 0) {
                     itemsListHtml = item.items.map(it => `
-                        <div class="flex items-center justify-between text-xs py-0.5 border-b border-orange-100 dark:border-gray-800">
-                            <span class="ui-heading font-medium">• ${it.nama_barang}</span>
+                        <div class="flex items-center justify-between text-xs py-1 border-b border-orange-200/60 dark:border-gray-800">
+                            <span class="ui-heading font-semibold">• ${it.nama_barang}</span>
                             <span class="font-bold text-[#FF7300]">${it.jumlah} unit</span>
                         </div>
                     `).join("");
@@ -357,61 +360,96 @@
                 const tglAmbilClean = formatTglRapi(item.tgl_pengambilan);
                 const tglKembaliClean = formatTglRapi(item.tgl_pengembalian);
 
+                // Sanitasi nomor kontak WA (cegah tulisan #ERROR! dari formula spreadsheet lama)
+                let rawKontak = String(item.kontak_wa_masked || item.kontak_wa || "").trim().replace(/^'/, "");
+                let cleanMaskedWa = rawKontak;
+                if (!cleanMaskedWa || cleanMaskedWa === "#ERROR!" || cleanMaskedWa.includes("ERROR") || cleanMaskedWa.length < 5) {
+                    const rawDigits = rawQuery.replace(/[^0-9]/g, "");
+                    if (rawDigits.length >= 8) {
+                        const standardWa = rawDigits.startsWith("62") ? ("0" + rawDigits.slice(2)) : rawDigits;
+                        cleanMaskedWa = standardWa.length > 7 ? (standardWa.substring(0, 4) + "****" + standardWa.substring(standardWa.length - 4)) : standardWa;
+                    } else {
+                        cleanMaskedWa = "Nomor Terverifikasi";
+                    }
+                }
+
                 const waPesan = `Assalamu'alaikum Admin Inventaris LDK IMIP, saya ingin menanyakan perkembangan pengajuan peminjaman *${item.id_pinjam}* atas nama *${item.nama_peminjam}* (${item.asal_organisasi}). Jazakumullah khairan.`;
                 const waLinkAdmin = `https://wa.me/6285770976399?text=${encodeURIComponent(waPesan)}`;
 
                 const card = document.createElement('div');
-                card.className = "ui-card p-4 sm:p-5 rounded-2xl space-y-3 border-orange-200 dark:border-white/10";
+                card.className = "ui-card p-4 sm:p-5 rounded-2xl space-y-3.5 border-orange-200 dark:border-white/10 shadow-sm";
                 card.innerHTML = `
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-orange-200 dark:border-gray-800 pb-3">
-                        <div>
-                            <span class="font-mono text-xs font-bold ui-pill px-2.5 py-0.5 rounded text-[#FF7300]">${item.id_pinjam}</span>
-                            <h3 class="font-outfit font-bold text-base ui-heading mt-1">${item.nama_peminjam}</h3>
-                            <p class="text-xs ui-muted">${item.asal_organisasi || 'Umum'} • Kontak: ${item.kontak_wa_masked}</p>
+                    <!-- Header Card: ID, Nama, Status -->
+                    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-2.5 border-b border-orange-200/70 dark:border-gray-800 pb-3">
+                        <div class="space-y-1">
+                            <span class="inline-block font-mono text-[11px] font-bold px-2.5 py-0.5 rounded bg-orange-500/10 text-[#FF7300] border border-orange-500/20">
+                                ${item.id_pinjam}
+                            </span>
+                            <h3 class="font-outfit font-extrabold text-base sm:text-lg ui-heading tracking-tight leading-snug">
+                                ${item.nama_peminjam}
+                            </h3>
+                            <p class="text-xs ui-muted flex items-center gap-1.5 flex-wrap">
+                                <span><i class="fa-solid fa-building-user text-[11px] mr-1"></i>${item.asal_organisasi || 'Umum'}</span>
+                                <span class="opacity-40">•</span>
+                                <span><i class="fa-solid fa-phone text-[11px] mr-1"></i>Kontak: <strong class="ui-body font-mono font-semibold">${cleanMaskedWa}</strong></span>
+                            </p>
                         </div>
-                        <span class="self-start sm:self-auto px-3 py-1 rounded-full text-xs font-bold ${statusMeta.badgeClass}">
+                        <span class="self-start sm:self-auto px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap shadow-xs ${statusMeta.badgeClass}">
                             ${statusMeta.label}
                         </span>
                     </div>
 
                     <!-- Daftar Barang -->
                     <div class="ui-pill p-3 rounded-xl space-y-1.5">
-                        <span class="text-[10px] font-bold uppercase text-[#FF7300] tracking-wider block">Daftar Barang yang Diajukan:</span>
-                        <div class="space-y-1">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-[#FF7300] block">
+                            <i class="fa-solid fa-boxes-stacked mr-1"></i> Daftar Barang yang Diajukan
+                        </span>
+                        <div class="space-y-0.5">
                             ${itemsListHtml}
                         </div>
                     </div>
 
-                    <!-- Jadwal & Tujuan (High Contrast) -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-1">
-                        <div class="ui-pill p-2.5 rounded-xl">
-                            <span class="block text-[10px] uppercase font-bold text-slate-700 dark:text-slate-300">Periode Peminjaman:</span>
-                            <span class="font-bold text-slate-900 dark:text-white text-xs"><i class="fa-solid fa-calendar mr-1 text-[#FF7300]"></i> ${tglAmbilClean} s.d ${tglKembaliClean}</span>
+                    <!-- Jadwal & Keperluan (Kontras Tinggi & Tegas) -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                        <div class="ui-pill p-2.5 rounded-xl space-y-1">
+                            <span class="block text-[10px] uppercase font-bold ui-muted tracking-wider">
+                                Periode Peminjaman
+                            </span>
+                            <span class="font-bold ui-heading text-xs flex items-center gap-1.5">
+                                <i class="fa-regular fa-calendar-days text-[#FF7300]"></i> ${tglAmbilClean} s.d ${tglKembaliClean}
+                            </span>
                         </div>
-                        <div class="ui-pill p-2.5 rounded-xl">
-                            <span class="block text-[10px] uppercase font-bold text-slate-700 dark:text-slate-300">Keperluan:</span>
-                            <span class="font-medium text-slate-800 dark:text-slate-200 text-xs italic">"${item.tujuan || '-'}"</span>
+                        <div class="ui-pill p-2.5 rounded-xl space-y-1">
+                            <span class="block text-[10px] uppercase font-bold ui-muted tracking-wider">
+                                Keperluan
+                            </span>
+                            <span class="font-semibold ui-body text-xs italic block">
+                                "${item.tujuan || '-'}"
+                            </span>
                         </div>
                     </div>
 
-                    <!-- Informasi Status & Catatan Admin (Kontras Tinggi & Solid - Anti Nyaru) -->
-                    <div class="p-3.5 rounded-xl bg-amber-50/95 dark:bg-amber-950/50 border-l-4 border-l-[#FF7300] border border-amber-300 dark:border-amber-700/60 text-xs shadow-sm space-y-1.5">
-                        <span class="font-extrabold text-amber-900 dark:text-amber-300 flex items-center gap-1.5 text-xs">
-                            <i class="fa-solid fa-circle-info text-sm"></i> Informasi Status:
-                        </span>
-                        <p class="font-bold text-slate-950 dark:text-amber-100 text-xs leading-relaxed">${statusMeta.desc}</p>
+                    <!-- Informasi Status & Catatan Admin (Serasi & Kontras Jelas) -->
+                    <div class="p-3 sm:p-3.5 rounded-xl bg-orange-500/10 border-l-4 border-l-[#FF7300] border border-orange-200 dark:border-white/10 text-xs space-y-1.5">
+                        <div class="flex items-center gap-1.5 font-bold text-[#FF7300] text-xs">
+                            <i class="fa-solid fa-circle-info text-sm"></i>
+                            <span>Informasi Status:</span>
+                        </div>
+                        <p class="font-semibold ui-heading text-xs leading-relaxed">
+                            ${statusMeta.desc}
+                        </p>
                         ${item.catatan_publik ? `
-                            <div class="mt-2 pt-2 border-t border-amber-300/80 dark:border-amber-700/80">
-                                <span class="font-extrabold text-amber-900 dark:text-amber-300 flex items-center gap-1 text-xs">
+                            <div class="mt-2 pt-2 border-t border-orange-200/60 dark:border-white/10">
+                                <span class="font-bold text-[#FF7300] flex items-center gap-1 text-xs">
                                     <i class="fa-solid fa-note-sticky"></i> Catatan Khusus Admin:
                                 </span>
-                                <p class="font-black text-slate-950 dark:text-amber-50 text-xs mt-0.5">${item.catatan_publik}</p>
+                                <p class="font-semibold ui-body text-xs mt-0.5">${item.catatan_publik}</p>
                             </div>
                         ` : ''}
                     </div>
 
                     <!-- Tombol Chat WA ke Admin -->
-                    <a href="${waLinkAdmin}" target="_blank" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all">
+                    <a href="${waLinkAdmin}" target="_blank" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all">
                         <i class="fa-brands fa-whatsapp text-sm"></i> Hubungi Admin Inventaris via WhatsApp
                     </a>
                 `;
@@ -424,50 +462,50 @@
             if (s === "MENUNGGU VERIFIKASI") {
                 return {
                     label: "Menunggu Verifikasi",
-                    badgeClass: "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30",
+                    badgeClass: "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700",
                     desc: "Pengajuan Anda telah diterima dan sedang diperiksa ketersediaannya oleh Admin Inventaris LDK IMIP."
                 };
             } else if (s === "MENUNGGU KONFIRMASI PEMINJAM") {
                 return {
                     label: "Menunggu Konfirmasi Anda",
-                    badgeClass: "bg-[#FF7300]/15 text-[#FF7300] border border-orange-500/30",
+                    badgeClass: "bg-orange-100 text-[#EA580C] dark:bg-orange-950/60 dark:text-orange-300 border border-orange-300 dark:border-orange-700",
                     desc: "Pengajuan telah disetujui secara administratif. Admin Inventaris telah/akan mengirimkan Surat Perjanjian Peminjaman via WhatsApp. Harap konfirmasi persetujuan Anda."
                 };
             } else if (s === "DIKONFIRMASI") {
                 return {
                     label: "Dikonfirmasi (Siap Diambil)",
-                    badgeClass: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30",
+                    badgeClass: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700",
                     desc: "Perjanjian peminjaman telah dikonfirmasi kedua pihak. Barang siap diambil sesuai tanggal yang telah disepakati."
                 };
             } else if (s === "SEDANG DIPINJAM") {
                 return {
                     label: "Sedang Dipinjam",
-                    badgeClass: "bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30",
+                    badgeClass: "bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-300 dark:border-blue-700",
                     desc: "Barang telah diserahterimakan dan saat ini dalam masa peminjaman Anda. Harap merawat barang dan mengembalikan tepat waktu."
                 };
             } else if (s === "SELESAI") {
                 return {
                     label: "Selesai Dikembalikan",
-                    badgeClass: "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40 font-bold",
+                    badgeClass: "bg-teal-100 text-teal-800 dark:bg-teal-950/60 dark:text-teal-300 border border-teal-300 dark:border-teal-700",
                     desc: "Barang telah diverifikasi kembali oleh Admin Inventaris. Terima kasih telah menjaga inventaris organisasi."
                 };
             } else if (s === "DITOLAK") {
                 return {
                     label: "Ditolak",
-                    badgeClass: "bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30",
+                    badgeClass: "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300 dark:border-rose-700",
                     desc: "Mohon maaf, pengajuan belum dapat disetujui untuk jadwal ini (misal: inventaris bentrok pemakaian prioritas)."
                 };
             } else if (s === "DIBATALKAN") {
                 return {
                     label: "Dibatalkan",
-                    badgeClass: "bg-gray-300 dark:bg-gray-800 text-gray-500 border border-gray-400 dark:border-gray-700",
+                    badgeClass: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 border border-gray-300 dark:border-gray-700",
                     desc: "Pengajuan peminjaman telah dibatalkan."
                 };
             }
 
             return {
                 label: s || "Unknown",
-                badgeClass: "bg-gray-200 dark:bg-gray-800 text-gray-500",
+                badgeClass: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 border border-gray-300",
                 desc: "Status pengajuan dalam proses pembaruan."
             };
         }
