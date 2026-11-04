@@ -895,6 +895,15 @@ function getTableData(sheetName) {
       if (val instanceof Date) {
         val = Utilities.formatDate(val, "Asia/Jakarta", "yyyy-MM-dd HH:mm:ss");
       }
+      // Pulihkan nomor WA jika Google Sheets sempat menghapus angka 0 di depan
+      if (headers[c] === "kontak_wa" && val !== undefined && val !== null) {
+        let sWa = String(val).trim().replace(/^'/, "");
+        if (/^\d+$/.test(sWa)) {
+          if (sWa.startsWith("62")) sWa = "0" + sWa.slice(2);
+          else if (sWa.startsWith("8")) sWa = "0" + sWa;
+        }
+        val = sWa;
+      }
       obj[headers[c]] = val;
     }
     result.push(obj);

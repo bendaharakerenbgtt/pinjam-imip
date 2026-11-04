@@ -745,6 +745,69 @@
             return `https://wa.me/${clean}${enc}`;
         }
 
+        function bukaChatWa(idPinjam, tipe = 'konfirmasi') {
+            const item = localDB.peminjaman.find(p => String(p.id_pinjam) === String(idPinjam));
+            if (!item) return;
+
+            let s = String(item.kontak_wa || "").trim().replace(/^'/, "");
+            let digits = s.replace(/[^0-9]/g, "");
+
+            if (!digits || digits.length < 8 || s === "#ERROR!" || s.includes("ERROR")) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Nomor WhatsApp Tidak Valid',
+                    html: `<p class="text-xs text-slate-700 dark:text-slate-300">Data nomor WhatsApp peminjam ini (<strong>${item.nama_peminjam}</strong>) kosong atau bertuliskan error: <strong>${s || 'Kosong'}</strong>.</p>
+                           <p class="text-xs text-slate-500 mt-2">Periksa nomor WhatsApp di database spreadsheet agar dapat dihubungi via WA.</p>`,
+                    confirmButtonColor: '#FF7300',
+                    confirmButtonText: 'Tutup'
+                });
+                return;
+            }
+
+            if (digits.startsWith("0")) digits = "62" + digits.slice(1);
+            else if (digits.startsWith("8")) digits = "62" + digits;
+            else if (!digits.startsWith("62")) digits = "62" + digits;
+
+            let pesan = "";
+            const tglAmbilClean = formatTglRapi(item.tgl_pengambilan);
+            const tglKembaliClean = formatTglRapi(item.tgl_pengembalian);
+
+            if (tipe === 'konfirmasi') {
+                pesan = buatPesanKonfirmasiWa(item);
+            } else if (tipe === 'pengingat') {
+                pesan = `*PENGINGAT PENGEMBALIAN INVENTARIS*
+━━━━━━━━━━━━━━━━━━━━━━━━
+_Assalamu'alaikum Warahmatullahi Wabarakatuh_
+
+Halo Saudara/i *${item.nama_peminjam}* (${item.asal_organisasi || 'Peminjam'}),
+
+Kami dari Pengurus Inventaris LDK IMIP ingin mengingatkan perihal peminjaman barang Anda:
+• No. Pinjam : *${item.id_pinjam}*
+• Batas Pengembalian : *${tglKembaliClean}*
+
+Mohon agar barang dikembalikan tepat waktu sesuai jadwal dalam kondisi bersih dan lengkap. Jika ada kendala, silakan segera kabari kami.
+
+Jazakumullah Khairan Katsiran.
+━━━━━━━━━━━━━━━━━━━━━━━━
+*Pengurus Inventaris LDK IMIP*`;
+            } else if (tipe === 'riwayat') {
+                pesan = `*RIWAYAT PEMINJAMAN INVENTARIS*
+━━━━━━━━━━━━━━━━━━━━━━━━
+_Assalamu'alaikum Warahmatullahi Wabarakatuh_
+
+Halo Saudara/i *${item.nama_peminjam}* (${item.asal_organisasi || 'Peminjam'}),
+
+Terima kasih telah meminjam dan menjaga fasilitas inventaris LDK IMIP (*${item.id_pinjam}*). Peminjaman ini telah tercatat SELESAI di sistem kami. Semoga berkah dan bermanfaat.
+
+Jazakumullah Khairan Katsiran.
+━━━━━━━━━━━━━━━━━━━━━━━━
+*Pengurus Inventaris LDK IMIP*`;
+            }
+
+            const waUrl = `https://wa.me/${digits}?text=${encodeURIComponent(pesan)}`;
+            window.open(waUrl, '_blank');
+        }
+
         function formatTglRapi(dateStr) {
             if (!dateStr) return "-";
             return String(dateStr).replace(/(\s+|T)\d{2}:\d{2}:\d{2}.*$/i, "").trim() || String(dateStr);
@@ -1135,9 +1198,9 @@ Jazakumullah Khairan Katsiran.
 
                     <div class="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-orange-200 dark:border-gray-800">
                         <div class="flex flex-wrap items-center gap-2">
-                            <a href="${formatWaLink(item.kontak_wa, buatPesanKonfirmasiWa(item))}" target="_blank" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm">
+                            <button type="button" onclick="bukaChatWa('${item.id_pinjam}', 'konfirmasi')" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all">
                                 <i class="fa-brands fa-whatsapp text-sm"></i> Chat WA
-                            </a>
+                            </button>
 
                             ${item.dokumen_identitas ? `
                                 <button onclick="bukaLightbox('${item.dokumen_identitas}', 'Identitas: ${item.nama_peminjam}')" class="px-3 py-1.5 rounded-xl ui-pill text-xs font-semibold ui-body hover:text-[#FF7300] flex items-center gap-1.5">
@@ -1516,23 +1579,9 @@ Jazakumullah Khairan Katsiran.
 
                     <div class="pt-3 border-t border-orange-200 dark:border-gray-800 flex flex-wrap justify-between items-center gap-2">
                         <div class="flex items-center gap-2">
-                            <a href="${formatWaLink(item.kontak_wa, `*PENGINGAT PENGEMBALIAN INVENTARIS*
-━━━━━━━━━━━━━━━━━━━━━━━━
-_Assalamu'alaikum Warahmatullahi Wabarakatuh_
-
-Halo Saudara/i *${item.nama_peminjam}* (${item.asal_organisasi || 'Peminjam'}),
-
-Kami dari Pengurus Inventaris LDK IMIP ingin mengingatkan perihal peminjaman barang Anda:
-• No. Pinjam : *${item.id_pinjam}*
-• Batas Pengembalian : *${tglKembaliClean}*
-
-Mohon agar barang dikembalikan tepat waktu sesuai jadwal dalam kondisi bersih dan lengkap. Jika ada kendala, silakan segera kabari kami.
-
-Jazakumullah Khairan Katsiran.
-━━━━━━━━━━━━━━━━━━━━━━━━
-*Pengurus Inventaris LDK IMIP*`)}" target="_blank" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm">
+                            <button type="button" onclick="bukaChatWa('${item.id_pinjam}', 'pengingat')" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all">
                                 <i class="fa-brands fa-whatsapp text-sm"></i> Chat WA
-                            </a>
+                            </button>
                             <button onclick="bukaModalSuratPerjanjian('${item.id_pinjam}')" class="px-3 py-1.5 rounded-xl ui-pill text-xs font-semibold ui-heading hover:text-[#FF7300]">
                                 <i class="fa-solid fa-file-contract mr-1"></i> Surat
                             </button>
@@ -1706,19 +1755,9 @@ Jazakumullah Khairan Katsiran.
                     </div>
 
                     <div class="flex sm:flex-col items-center gap-2 self-stretch sm:self-auto sm:min-w-[130px] pt-1">
-                        <a href="${formatWaLink(item.kontak_wa, `*RIWAYAT PEMINJAMAN INVENTARIS*
-━━━━━━━━━━━━━━━━━━━━━━━━
-_Assalamu'alaikum Warahmatullahi Wabarakatuh_
-
-Halo Saudara/i *${item.nama_peminjam}* (${item.asal_organisasi || 'Peminjam'}),
-
-Terima kasih telah meminjam dan menjaga fasilitas inventaris LDK IMIP (*${item.id_pinjam}*). Peminjaman ini telah tercatat SELESAI di sistem kami. Semoga berkah dan bermanfaat.
-
-Jazakumullah Khairan Katsiran.
-━━━━━━━━━━━━━━━━━━━━━━━━
-*Pengurus Inventaris LDK IMIP*`)}" target="_blank" class="flex-1 sm:w-full px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm">
+                        <button type="button" onclick="bukaChatWa('${item.id_pinjam}', 'riwayat')" class="flex-1 sm:w-full px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all">
                             <i class="fa-brands fa-whatsapp text-sm"></i> Chat WA
-                        </a>
+                        </button>
                         <button onclick="bukaModalSuratPerjanjian('${item.id_pinjam}')" class="flex-1 sm:w-full px-3 py-1.5 rounded-xl ui-pill font-bold text-xs ui-heading hover:text-[#FF7300] flex items-center justify-center gap-1.5">
                             <i class="fa-solid fa-file-contract text-[#FF7300]"></i> Surat
                         </button>
