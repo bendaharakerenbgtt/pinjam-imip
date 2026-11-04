@@ -119,9 +119,19 @@ function doGet(e) {
 
     if (action === "get_katalog" || action === "get_all") {
       const dataBarang = getTableData(SHEET_BARANG);
+      const allLoans = getTableData(SHEET_PEMINJAMAN);
+      const activeSt = ["MENUNGGU VERIFIKASI", "MENUNGGU KONFIRMASI PEMINJAM", "DIKONFIRMASI", "SEDANG DIPINJAM"];
+      const jadwalAktif = allLoans.filter(p => activeSt.includes(String(p.status || "").toUpperCase())).map(p => ({
+        id_pinjam: p.id_pinjam,
+        status: p.status,
+        tgl_pengambilan: p.tgl_pengambilan,
+        tgl_pengembalian: p.tgl_pengembalian,
+        items_json: p.items_json
+      }));
       return jsonResponse({
         success: true,
-        barang: dataBarang
+        barang: dataBarang,
+        jadwal_aktif: jadwalAktif
       });
     }
 
@@ -297,40 +307,68 @@ function handleAjukanPinjam(data) {
     }
   }
 
-  // Deteksi bentrok jadwal awal dengan peminjaman yang sedang aktif / terjadwal
-  let bentrokInfo = [];
+  // Deteksi bentrok jadwal (akumulasi multi-peminjam) terhadap peminjaman aktif & antrian
+  let bentrokKunci = [];
+  let bentrokAntrian = [];
   const allLoans = getTableData(SHEET_PEMINJAMAN);
   const tglAmbilA = (data.tgl_pengambilan || "").slice(0, 10);
   const tglKembaliA = (data.tgl_pengembalian || "").slice(0, 10);
-  const activeStatuses = ["MENUNGGU KONFIRMASI PEMINJAM", "DIKONFIRMASI", "SEDANG DIPINJAM"];
+  const lockedStatuses = ["MENUNGGU KONFIRMASI PEMINJAM", "DIKONFIRMASI", "SEDANG DIPINJAM"];
 
   if (tglAmbilA && tglKembaliA) {
-    items.forEach(it => {
+    for (let idx = 0; idx < items.length; idx++) {
+      const it = items[idx];
       const idB = String(it.id_barang);
       const targetB = barangRows.find(b => String(b.id_barang) === idB);
       const totalStok = targetB ? (parseInt(targetB.stok_total, 10) || 1) : 1;
       const requestedQty = parseInt(it.jumlah, 10) || 1;
 
+      let sumLocked = 0;
+      let sumQueue = 0;
+      const lockedNames = [];
+      const queueNames = [];
+
       allLoans.forEach(otherP => {
         const sO = (otherP.status || "").toUpperCase();
-        if (!activeStatuses.includes(sO)) return;
+        const isLocked = lockedStatuses.includes(sO);
+        const isQueue = (sO === "MENUNGGU VERIFIKASI");
+        if (!isLocked && !isQueue) return;
+
         const tglAmbilB = (otherP.tgl_pengambilan || "").slice(0, 10);
         const tglKembaliB = (otherP.tgl_pengembalian || "").slice(0, 10);
         if (!tglAmbilB || !tglKembaliB) return;
 
-        // Overlap tanggal
+        // Overlap tanggal: (A_start <= B_end) && (A_end >= B_start)
         if (tglAmbilA <= tglKembaliB && tglKembaliA >= tglAmbilB) {
           let itemsB = [];
           try { itemsB = JSON.parse(otherP.items_json || "[]"); } catch(e) {}
           const matchB = itemsB.find(ib => String(ib.id_barang) === idB);
           if (matchB) {
             const qtyB = parseInt(matchB.jumlah, 10) || 1;
-            if (requestedQty + qtyB > totalStok) {
-              bentrokInfo.push(it.nama_barang + " bentrok dg " + otherP.id_pinjam + " (" + otherP.nama_peminjam + ")");
+            if (isLocked) {
+              sumLocked += qtyB;
+              lockedNames.push(otherP.id_pinjam + " (" + tglAmbilB + " s.d " + tglKembaliB + ")");
+            } else if (isQueue) {
+              sumQueue += qtyB;
+              queueNames.push(otherP.id_pinjam + " (" + otherP.nama_peminjam + ")");
             }
           }
         }
       });
+
+      if (requestedQty + sumLocked > totalStok) {
+        bentrokKunci.push(it.nama_barang + " sudah dibooking pada jadwal: " + lockedNames.join(", "));
+      } else if (requestedQty + sumLocked + sumQueue > totalStok) {
+        bentrokAntrian.push(it.nama_barang + " berebut jadwal dg antrian: " + queueNames.join(", "));
+      }
+    }
+  }
+
+  // Jika bentrok dengan peminjaman yang sudah terkunci di tanggal tersebut, tolak langsung
+  if (bentrokKunci.length > 0) {
+    return jsonResponse({
+      success: false,
+      message: "Tidak dapat mengajukan pada tanggal tersebut karena jadwal bentrok: " + bentrokKunci.join("; ")
     });
   }
 
@@ -347,7 +385,7 @@ function handleAjukanPinjam(data) {
     identitasUrl = data.dokumen_identitas || "";
   }
 
-  const catatanAwalAdmin = bentrokInfo.length > 0 ? "⚠️ BENTROK JADWAL: " + bentrokInfo.join("; ") : "";
+  const catatanAwalAdmin = bentrokAntrian.length > 0 ? "⚠️ BENTROK ANTRIAN: " + bentrokAntrian.join("; ") : "";
   const now = new Date();
   // Status awal PRD: MENUNGGU VERIFIKASI (stok belum dikunci)
   const newRow = [
@@ -398,6 +436,8 @@ function handleAdminUpdateStatus(data) {
   const idxId = pHeaders.indexOf("id_pinjam");
   const idxNoSurat = pHeaders.indexOf("no_surat");
   const idxItems = pHeaders.indexOf("items_json");
+  const idxTglAmbil = pHeaders.indexOf("tgl_pengambilan");
+  const idxTglKembaliRencana = pHeaders.indexOf("tgl_pengembalian");
   const idxStatus = pHeaders.indexOf("status");
   const idxCatatan = pHeaders.indexOf("catatan_admin");
   const idxTglSerah = pHeaders.indexOf("tgl_penyerahan");
@@ -410,6 +450,8 @@ function handleAdminUpdateStatus(data) {
   let oldStatus = "";
   let itemsJsonStr = "[]";
   let curNoSurat = "";
+  let tglAmbilTarget = "";
+  let tglKembaliTarget = "";
 
   for (let i = 1; i < pData.length; i++) {
     if (String(pData[i][idxId]).trim() === String(idPinjam).trim()) {
@@ -417,6 +459,8 @@ function handleAdminUpdateStatus(data) {
       oldStatus = String(pData[i][idxStatus]).trim().toUpperCase();
       itemsJsonStr = String(pData[i][idxItems] || "[]");
       curNoSurat = String(pData[i][idxNoSurat] || "");
+      tglAmbilTarget = idxTglAmbil !== -1 ? formatCellValue(pData[i][idxTglAmbil]).slice(0, 10) : "";
+      tglKembaliTarget = idxTglKembaliRencana !== -1 ? formatCellValue(pData[i][idxTglKembaliRencana]).slice(0, 10) : "";
       break;
     }
   }
@@ -430,33 +474,68 @@ function handleAdminUpdateStatus(data) {
 
   // ALUR 1: APPROVE -> MENUNGGU KONFIRMASI PEMINJAM / DIKONFIRMASI (Kunci Stok Resmi)
   if (statusBaru === "MENUNGGU KONFIRMASI PEMINJAM" || statusBaru === "DIKONFIRMASI") {
-    // Generate no surat otomatis jika belum ada: SPB-YYYYMMDD-XXXX
     if (!curNoSurat) {
-      const todayStr = Utilities.formatDate(new Date(), "Asia/Jakarta", "yyyyMMdd");
-      const noUrut = Math.floor(100 + Math.random() * 900);
-      curNoSurat = "SPB/" + todayStr + "/" + noUrut + "/LDK-IMIP";
+      if (data.no_surat) {
+        curNoSurat = String(data.no_surat).trim();
+      } else {
+        const todayStr = Utilities.formatDate(new Date(), "Asia/Jakarta", "yyyyMMdd");
+        const noUrut = Math.floor(100 + Math.random() * 900);
+        curNoSurat = "SPB/" + todayStr + "/" + noUrut + "/LDK-IMIP";
+      }
       sheetP.getRange(rowIdx, idxNoSurat + 1).setValue(curNoSurat);
     }
 
     if (oldStatus === "MENUNGGU VERIFIKASI") {
-      // CEK APAKAH STOK CUKUP SEBELUM MENGUNCI:
+      // CEK 1: APAKAH STOK TERSEDIA CUKUP SEBELUM MENGUNCI
       const bData = sheetB.getDataRange().getValues();
       const bHeaders = bData[0].map(h => String(h).trim().toLowerCase());
       const idxBId = bHeaders.indexOf("id_barang");
       const idxBTersedia = bHeaders.indexOf("stok_tersedia");
+      const idxBTotal = bHeaders.indexOf("stok_total");
       const idxBNama = bHeaders.indexOf("nama_barang");
+
+      const lockedStatuses = ["MENUNGGU KONFIRMASI PEMINJAM", "DIKONFIRMASI", "SEDANG DIPINJAM"];
 
       for (let j = 0; j < items.length; j++) {
         const it = items[j];
+        const idB = String(it.id_barang).trim();
+        const requested = parseInt(it.jumlah, 10) || 1;
+
         for (let r = 1; r < bData.length; r++) {
-          if (String(bData[r][idxBId]).trim() === String(it.id_barang).trim()) {
+          if (String(bData[r][idxBId]).trim() === idB) {
             const curTersedia = parseInt(bData[r][idxBTersedia], 10) || 0;
-            const requested = parseInt(it.jumlah, 10) || 1;
+            const totalStok = parseInt(bData[r][idxBTotal], 10) || 1;
+            const namaBrg = bData[r][idxBNama];
+
             if (requested > curTersedia) {
               return jsonResponse({
                 success: false,
-                message: "Tidak bisa disetujui: Barang '" + bData[r][idxBNama] + "' saat ini stoknya habis atau sedang dipinjam oleh peminjam lain (Tersedia: " + curTersedia + " unit)."
+                message: "Tidak bisa disetujui: Barang '" + namaBrg + "' saat ini stoknya habis atau sedang dipinjam oleh peminjam lain (Tersedia: " + curTersedia + " unit)."
               });
+            }
+
+            // CEK 2: AKUMULASI BENTROK TANGGAL DENGAN PEMINJAMAN TERKUNCI LAINNYA
+            if (tglAmbilTarget && tglKembaliTarget) {
+              let sumLocked = 0;
+              for (let pIdx = 1; pIdx < pData.length; pIdx++) {
+                if (pIdx + 1 === rowIdx) continue;
+                const stOther = String(pData[pIdx][idxStatus]).trim().toUpperCase();
+                if (!lockedStatuses.includes(stOther)) continue;
+                const oAmbil = idxTglAmbil !== -1 ? formatCellValue(pData[pIdx][idxTglAmbil]).slice(0, 10) : "";
+                const oKembali = idxTglKembaliRencana !== -1 ? formatCellValue(pData[pIdx][idxTglKembaliRencana]).slice(0, 10) : "";
+                if (oAmbil && oKembali && tglAmbilTarget <= oKembali && tglKembaliTarget >= oAmbil) {
+                  let oItems = [];
+                  try { oItems = JSON.parse(String(pData[pIdx][idxItems] || "[]")); } catch(e) {}
+                  const mO = oItems.find(x => String(x.id_barang).trim() === idB);
+                  if (mO) sumLocked += (parseInt(mO.jumlah, 10) || 1);
+                }
+              }
+              if (requested + sumLocked > totalStok) {
+                return jsonResponse({
+                  success: false,
+                  message: "Tidak bisa disetujui: Barang '" + namaBrg + "' bentrok jadwal pada tanggal " + tglAmbilTarget + " s.d " + tglKembaliTarget + " (Total stok tidak mencukupi)."
+                });
+              }
             }
             break;
           }
@@ -480,13 +559,20 @@ function handleAdminUpdateStatus(data) {
 
   // ALUR 4: VERIFIKASI PENGEMBALIAN -> SELESAI
   if (statusBaru === "SELESAI") {
+    const kondisiStr = String(data.kondisi_kembali || "Baik");
     sheetP.getRange(rowIdx, idxTglKembali + 1).setValue(data.tgl_kembali_aktual || new Date());
-    sheetP.getRange(rowIdx, idxKondisiKembali + 1).setValue(data.kondisi_kembali || "Baik");
+    sheetP.getRange(rowIdx, idxKondisiKembali + 1).setValue(kondisiStr);
     if (data.catatan_kembali) sheetP.getRange(rowIdx, idxCatatanKembali + 1).setValue(data.catatan_kembali);
 
-    // Kembalikan stok yang layak pakai ke inventaris
+    const isLayakPakai = kondisiStr.toLowerCase().includes("baik") || kondisiStr.toLowerCase().includes("ringan");
     const returnedItems = data.returned_items || items;
-    ubahStokMultiBarang(sheetB, returnedItems, 1);
+    if (isLayakPakai) {
+      // Kembalikan stok yang layak pakai ke inventaris
+      ubahStokMultiBarang(sheetB, returnedItems, 1);
+    } else {
+      // Jika Rusak Berat atau Hilang, kurangi stok_total (dan jangan kembalikan stok_tersedia)
+      kurangiStokTotalRusakHilang(sheetB, returnedItems);
+    }
   }
 
   // Update Status umum
@@ -498,6 +584,30 @@ function handleAdminUpdateStatus(data) {
     success: true,
     message: "Status peminjaman berhasil diperbarui menjadi: " + statusBaru,
     no_surat: curNoSurat
+  });
+}
+
+function kurangiStokTotalRusakHilang(sheetB, items) {
+  const bData = sheetB.getDataRange().getValues();
+  const bHeaders = bData[0].map(h => String(h).trim().toLowerCase());
+  const idxId = bHeaders.indexOf("id_barang");
+  const idxTersedia = bHeaders.indexOf("stok_tersedia");
+  const idxTotal = bHeaders.indexOf("stok_total");
+  const idxStatus = bHeaders.indexOf("status");
+
+  items.forEach(it => {
+    const qty = parseInt(it.jumlah, 10) || 1;
+    for (let i = 1; i < bData.length; i++) {
+      if (String(bData[i][idxId]).trim() === String(it.id_barang).trim()) {
+        const curTersedia = parseInt(bData[i][idxTersedia], 10) || 0;
+        const curTotal = parseInt(bData[i][idxTotal], 10) || 1;
+        const newTotal = Math.max(curTersedia, curTotal - qty);
+        sheetB.getRange(i + 1, idxTotal + 1).setValue(newTotal);
+        sheetB.getRange(i + 1, idxStatus + 1).setValue(curTersedia > 0 ? "Tersedia" : "Sedang tidak tersedia");
+        bData[i][idxTotal] = newTotal;
+        break;
+      }
+    }
   });
 }
 

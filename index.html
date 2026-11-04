@@ -520,6 +520,9 @@
                 const json = await res.json();
                 if (json.success && json.barang) {
                     localDB.barang = json.barang;
+                    if (Array.isArray(json.jadwal_aktif)) {
+                        localDB.peminjaman = json.jadwal_aktif;
+                    }
                     saveLocalDB();
                 }
             } catch(e) {}
@@ -873,16 +876,39 @@
 
             // Set default dates (hari ini & lusa)
             const today = new Date().toISOString().split('T')[0];
-            document.getElementById('pjm-tgl-ambil').value = today;
-            document.getElementById('pjm-tgl-ambil').min = today;
-            document.getElementById('pjm-tgl-kembali').value = today;
-            document.getElementById('pjm-tgl-kembali').min = today;
+            const elTglAmbil = document.getElementById('pjm-tgl-ambil');
+            const elTglKembali = document.getElementById('pjm-tgl-kembali');
+            elTglAmbil.value = today;
+            elTglAmbil.min = today;
+            elTglKembali.value = today;
+            elTglKembali.min = today;
+
+            elTglAmbil.onchange = () => {
+                elTglKembali.min = elTglAmbil.value || today;
+                if (elTglKembali.value < elTglAmbil.value) {
+                    elTglKembali.value = elTglAmbil.value;
+                }
+            };
 
             bukaModal('modal-form-pengajuan');
         }
 
+        function normTglStr(val) {
+            if (!val) return "";
+            const s = String(val).trim();
+            if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+            const d = new Date(s);
+            if (!isNaN(d.getTime())) {
+                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            }
+            return s.slice(0, 10);
+        }
+
+        let isSubmittingPinjam = false;
+
         async function submitFormPengajuan(e) {
             e.preventDefault();
+            if (isSubmittingPinjam) return;
 
             // Cek ketersediaan stok fisik barang
             const itemHabis = cart.filter(it => {
@@ -900,13 +926,69 @@
                 return;
             }
 
+            const rawWa = document.getElementById('pjm-wa').value.trim().replace(/[^0-9]/g, '');
+            if (rawWa.length < 9 || rawWa.length > 15) {
+                Swal.fire({ icon: 'warning', title: 'Nomor WhatsApp Tidak Valid', text: 'Masukkan nomor WhatsApp aktif yang valid (9-15 digit angka).', confirmButtonColor: '#FF7300' });
+                return;
+            }
+
+            const today = new Date().toISOString().split('T')[0];
             const tglAmbil = document.getElementById('pjm-tgl-ambil').value;
             const tglKembali = document.getElementById('pjm-tgl-kembali').value;
+            if (tglAmbil < today) {
+                Swal.fire({ icon: 'warning', title: 'Tanggal Tidak Valid', text: 'Tanggal pengambilan tidak boleh di masa lalu.', confirmButtonColor: '#FF7300' });
+                return;
+            }
             if (tglKembali < tglAmbil) {
                 Swal.fire({ icon: 'warning', title: 'Tanggal Tidak Valid', text: 'Tanggal pengembalian tidak boleh lebih awal dari tanggal pengambilan.', confirmButtonColor: '#FF7300' });
                 return;
             }
 
+            // Cek bentrok jadwal terhadap peminjaman yang sudah terkunci (MENUNGGU KONFIRMASI PEMINJAM / DIKONFIRMASI / SEDANG DIPINJAM)
+            const statusTerkunci = ["MENUNGGU KONFIRMASI PEMINJAM", "DIKONFIRMASI", "SEDANG DIPINJAM"];
+            const daftarBentrok = [];
+            cart.forEach(it => {
+                const idB = String(it.id_barang);
+                const brg = localDB.barang.find(b => String(b.id_barang) === idB);
+                const totalStok = brg ? (parseInt(brg.stok_total, 10) || 1) : 1;
+                const reqQty = parseInt(it.jumlah, 10) || 1;
+                let sumLocked = 0;
+                const periodeLocked = [];
+
+                (localDB.peminjaman || []).forEach(p => {
+                    const st = (p.status || "").toUpperCase();
+                    if (!statusTerkunci.includes(st)) return;
+                    const pMulai = normTglStr(p.tgl_pengambilan);
+                    const pSelesai = normTglStr(p.tgl_pengembalian);
+                    if (!pMulai || !pSelesai) return;
+
+                    if (tglAmbil <= pSelesai && tglKembali >= pMulai) {
+                        let pItems = [];
+                        try { pItems = typeof p.items_json === 'string' ? JSON.parse(p.items_json || "[]") : (p.items || []); } catch(e) {}
+                        const m = pItems.find(x => String(x.id_barang) === idB);
+                        if (m) {
+                            sumLocked += (parseInt(m.jumlah, 10) || 1);
+                            periodeLocked.push(`${pMulai} s.d ${pSelesai}`);
+                        }
+                    }
+                });
+
+                if (reqQty + sumLocked > totalStok) {
+                    daftarBentrok.push(`• ${it.nama_barang} (Sudah dibooking pada: ${periodeLocked.join(', ')})`);
+                }
+            });
+
+            if (daftarBentrok.length > 0) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Jadwal Tanggal Bentrok!',
+                    html: `<p class="text-xs mb-2 text-rose-600 font-bold">Barang berikut sudah terjadwal/dipinjam pada rentang tanggal yang Anda pilih:</p><pre class="text-xs bg-gray-100 dark:bg-gray-800 p-2.5 rounded-xl text-left font-sans whitespace-pre-wrap">${daftarBentrok.join('\n')}</pre><p class="text-xs mt-2 text-slate-600 dark:text-slate-300">Silakan pilih tanggal pengambilan/pengembalian lain atau hapus barang tersebut dari keranjang.</p>`,
+                    confirmButtonColor: '#FF7300'
+                });
+                return;
+            }
+
+            isSubmittingPinjam = true;
             const btn = document.getElementById('btn-submit-pengajuan');
             btn.disabled = true;
             btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Mengirim Pengajuan...`;
@@ -942,6 +1024,7 @@
                     });
                     const resJson = await res.json();
                     if (!resJson.success) {
+                        isSubmittingPinjam = false;
                         btn.disabled = false;
                         btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Kirim Pengajuan Sekarang`;
                         Swal.fire({
@@ -985,6 +1068,7 @@
             document.getElementById('form-pengajuan-pinjam').reset();
             tutupModal('modal-form-pengajuan');
 
+            isSubmittingPinjam = false;
             btn.disabled = false;
             btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Kirim Pengajuan Sekarang`;
 

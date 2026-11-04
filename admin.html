@@ -825,7 +825,8 @@ Terima kasih.
             const todayStr = new Date().toISOString().slice(0, 10);
             const lateLoans = localDB.peminjaman.filter(p => {
                 const isDipinjam = (p.status || "").toUpperCase() === "SEDANG DIPINJAM";
-                return isDipinjam && p.tgl_pengembalian && p.tgl_pengembalian < todayStr;
+                const tglKembali = formatTglRapi(p.tgl_pengembalian);
+                return isDipinjam && tglKembali && tglKembali !== '-' && tglKembali < todayStr;
             }).length;
 
             const totalTersedia = localDB.barang.filter(b => b.status !== "Diarsipkan").reduce((acc, b) => acc + (parseInt(b.stok_tersedia, 10) || 0), 0);
@@ -864,9 +865,9 @@ Terima kasih.
                 return [];
             }
 
-            const tglMulaiA = (pengajuanTarget.tgl_pengambilan || "").slice(0, 10);
-            const tglSelesaiA = (pengajuanTarget.tgl_pengembalian || "").slice(0, 10);
-            if (!tglMulaiA || !tglSelesaiA) return [];
+            const tglMulaiA = formatTglRapi(pengajuanTarget.tgl_pengambilan);
+            const tglSelesaiA = formatTglRapi(pengajuanTarget.tgl_pengembalian);
+            if (!tglMulaiA || !tglSelesaiA || tglMulaiA === '-' || tglSelesaiA === '-') return [];
 
             let itemsA = [];
             try {
@@ -876,6 +877,7 @@ Terima kasih.
             if (!Array.isArray(itemsA) || itemsA.length === 0) return [];
 
             const statusKunci = ["MENUNGGU KONFIRMASI PEMINJAM", "DIKONFIRMASI", "SEDANG DIPINJAM"];
+            const targetStatus = (pengajuanTarget.status || "").toUpperCase();
             const konflikList = [];
 
             itemsA.forEach(itemA => {
@@ -884,14 +886,21 @@ Terima kasih.
                 const totalStok = brg ? (parseInt(brg.stok_total, 10) || 1) : 1;
                 const requestedQtyA = parseInt(itemA.jumlah, 10) || 1;
 
+                let sumLockedQty = 0;
+                let sumQueueQty = 0;
+                const lockedMatches = [];
+                const queueMatches = [];
+
                 (semuaPeminjaman || []).forEach(otherP => {
                     if (String(otherP.id_pinjam) === String(pengajuanTarget.id_pinjam)) return;
                     const statusO = (otherP.status || "").toUpperCase();
-                    if (!statusKunci.includes(statusO)) return;
+                    const isLockedO = statusKunci.includes(statusO);
+                    const isQueueO = statusO === "MENUNGGU VERIFIKASI";
+                    if (!isLockedO && !isQueueO) return;
 
-                    const tglMulaiB = (otherP.tgl_pengambilan || "").slice(0, 10);
-                    const tglSelesaiB = (otherP.tgl_pengembalian || "").slice(0, 10);
-                    if (!tglMulaiB || !tglSelesaiB) return;
+                    const tglMulaiB = formatTglRapi(otherP.tgl_pengambilan);
+                    const tglSelesaiB = formatTglRapi(otherP.tgl_pengembalian);
+                    if (!tglMulaiB || !tglSelesaiB || tglMulaiB === '-' || tglSelesaiB === '-') return;
 
                     // Overlap: (A_start <= B_end) && (A_end >= B_start)
                     const overlap = (tglMulaiA <= tglSelesaiB) && (tglSelesaiA >= tglMulaiB);
@@ -901,22 +910,37 @@ Terima kasih.
                         const matchItemB = itemsB.find(ib => String(ib.id_barang) === idB);
                         if (matchItemB) {
                             const qtyB = parseInt(matchItemB.jumlah, 10) || 1;
-                            if (requestedQtyA + qtyB > totalStok) {
-                                konflikList.push({
-                                    id_barang: idB,
-                                    nama_barang: itemA.nama_barang || (brg ? brg.nama_barang : 'Barang'),
-                                    total_stok: totalStok,
-                                    diminta: requestedQtyA,
-                                    bentrok_dengan_id: otherP.id_pinjam,
-                                    bentrok_dengan_nama: otherP.nama_peminjam,
-                                    bentrok_dengan_status: otherP.status,
-                                    bentrok_periode: `${formatTglRapi(tglMulaiB)} s.d ${formatTglRapi(tglSelesaiB)}`,
-                                    bentrok_qty: qtyB
-                                });
+                            const detailObj = {
+                                id_barang: idB,
+                                nama_barang: itemA.nama_barang || (brg ? brg.nama_barang : 'Barang'),
+                                total_stok: totalStok,
+                                diminta: requestedQtyA,
+                                bentrok_dengan_id: otherP.id_pinjam,
+                                bentrok_dengan_nama: otherP.nama_peminjam,
+                                bentrok_dengan_status: otherP.status,
+                                bentrok_periode: `${tglMulaiB} s.d ${tglSelesaiB}`,
+                                bentrok_qty: qtyB,
+                                tipe_bentrok: isLockedO ? 'KUNCI' : 'ANTRIAN'
+                            };
+                            if (isLockedO) {
+                                sumLockedQty += qtyB;
+                                lockedMatches.push(detailObj);
+                            } else if (isQueueO) {
+                                sumQueueQty += qtyB;
+                                queueMatches.push(detailObj);
                             }
                         }
                     }
                 });
+
+                // 1. Cek apakah akumulasi dengan peminjaman yang sudah DIKUNCI melebihi total stok
+                if (requestedQtyA + sumLockedQty > totalStok) {
+                    lockedMatches.forEach(m => konflikList.push(m));
+                }
+                // 2. Jika pengajuan masih MENUNGGU VERIFIKASI, cek apakah akumulasi dengan sesama antrian melebihi total stok
+                if (targetStatus === "MENUNGGU VERIFIKASI" && (requestedQtyA + sumLockedQty + sumQueueQty > totalStok)) {
+                    queueMatches.forEach(m => konflikList.push(m));
+                }
             });
 
             return konflikList;
@@ -966,6 +990,7 @@ Terima kasih.
 
                 const konflikJadwal = periksaBentrokJadwal(item, localDB.peminjaman, localDB.barang);
                 const isBentrok = konflikJadwal.length > 0;
+                const hasHardBentrok = konflikJadwal.some(k => k.tipe_bentrok === 'KUNCI');
 
                 let itemsTableHtml = items.map(it => `
                     <div class="flex items-center justify-between text-xs py-1 border-b border-orange-100 dark:border-gray-800">
@@ -986,7 +1011,7 @@ Terima kasih.
                             <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${getStatusClass(item.status)}">
                                 ${item.status}
                             </span>
-                            ${isBentrok ? `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-500 text-white animate-pulse flex items-center gap-1"><i class="fa-solid fa-triangle-exclamation"></i> BENTROK JADWAL</span>` : ''}
+                            ${isBentrok ? `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black ${hasHardBentrok ? 'bg-rose-600' : 'bg-amber-600'} text-white animate-pulse flex items-center gap-1"><i class="fa-solid fa-triangle-exclamation"></i> ${hasHardBentrok ? 'BENTROK STOK TERKUNCI' : 'BENTROK ANTRIAN JADWAL'}</span>` : ''}
                         </div>
                         <span class="text-xs ui-muted"><i class="fa-solid fa-clock mr-1"></i> Diajukan: ${item.created_at || '-'}</span>
                     </div>
@@ -995,19 +1020,19 @@ Terima kasih.
                         <div class="p-3 rounded-xl bg-rose-500/15 border-2 border-rose-500/40 text-rose-800 dark:text-rose-200 text-xs space-y-1.5 shadow-sm">
                             <div class="flex items-center gap-1.5 font-black text-rose-600 dark:text-rose-400">
                                 <i class="fa-solid fa-triangle-exclamation text-base"></i>
-                                <span>PERINGATAN: BENTROK JADWAL DENGAN PEMINJAMAN LAIN!</span>
+                                <span>${hasHardBentrok ? 'TIDAK BISA DISETUJUI: BENTROK DENGAN PEMINJAMAN AKTIF/TERKUNCI!' : 'PERINGATAN: BEREBUT JADWAL DENGAN ANTRIAN PENGAJUAN LAIN!'}</span>
                             </div>
                             <ul class="list-disc list-inside space-y-1 text-[11px] font-semibold text-slate-900 dark:text-rose-100">
                                 ${konflikJadwal.map(k => `
                                     <li>
-                                        <strong>${k.nama_barang}</strong> bertabrakan dengan 
+                                        <strong>${k.nama_barang} (${k.bentrok_qty} unit)</strong> bertabrakan dengan 
                                         <span class="font-mono text-[#FF7300] font-bold">${k.bentrok_dengan_id}</span> 
-                                        (${k.bentrok_dengan_nama}) pada periode <em>${k.bentrok_periode}</em>.
+                                        (${k.bentrok_dengan_nama} — <em>${k.bentrok_dengan_status}</em>) pada periode <em>${k.bentrok_periode}</em>.
                                     </li>
                                 `).join('')}
                             </ul>
                             <p class="text-[10.5px] text-rose-700 dark:text-rose-300 font-medium">
-                                Total stok inventaris (${konflikJadwal[0].total_stok} unit) tidak mencukupi jika kedua peminjaman disetujui bersamaan.
+                                Total stok inventaris (${konflikJadwal[0].total_stok} unit) tidak mencukupi untuk memenuhi seluruh peminjaman di tanggal yang sama.
                             </p>
                         </div>
                     ` : ''}
@@ -1062,8 +1087,8 @@ Terima kasih.
                             ` : ''}
 
                             ${isMenungguKonfirmasi ? `
-                                <button onclick="aksiBatalkan('${item.id_pinjam}')" class="px-3 py-1.5 rounded-xl bg-gray-200 dark:bg-gray-800 text-xs font-bold ui-muted hover:text-rose-500">
-                                    Batalkan
+                                <button onclick="aksiBatalkan('${item.id_pinjam}')" class="px-3 py-1.5 rounded-xl bg-rose-500/15 text-rose-500 border border-rose-500/30 text-xs font-bold hover:bg-rose-500/25">
+                                    <i class="fa-solid fa-ban mr-1"></i> Batalkan
                                 </button>
                                 <button onclick="aksiKonfirmasiPeminjam('${item.id_pinjam}')" class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md">
                                     <i class="fa-solid fa-thumbs-up mr-1"></i> Peminjam Sudah Konfirmasi
@@ -1071,6 +1096,9 @@ Terima kasih.
                             ` : ''}
 
                             ${isDikonfirmasi ? `
+                                <button onclick="aksiBatalkan('${item.id_pinjam}')" class="px-3 py-1.5 rounded-xl bg-rose-500/15 text-rose-500 border border-rose-500/30 text-xs font-bold hover:bg-rose-500/25">
+                                    <i class="fa-solid fa-ban mr-1"></i> Batalkan
+                                </button>
                                 <button onclick="aksiSerahkanBarang('${item.id_pinjam}')" class="px-4 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md">
                                     <i class="fa-solid fa-handshake mr-1"></i> Serahkan Barang
                                 </button>
@@ -1106,9 +1134,7 @@ Terima kasih.
             let items = [];
             try { items = JSON.parse(item.items_json || "[]"); } catch(e) {}
 
-            // 1. CEK STOK SEBELUM APPROVE:
-            // Jika barang saat ini stoknya habis (sedang dipinjam / dikonfirmasi orang lain),
-            // SISTEM LANGSUNG MEMBLOKIR APPROVAL!
+            // 1. CEK STOK FISIK SEBELUM APPROVE:
             const barangHabis = [];
             items.forEach(it => {
                 const b = localDB.barang.find(x => String(x.id_barang) === String(it.id_barang));
@@ -1128,49 +1154,89 @@ Terima kasih.
                 Swal.fire({
                     icon: 'error',
                     title: 'Tidak Bisa Disetujui!',
-                    html: `<p class="text-xs mb-2 text-rose-600 font-bold">Barang berikut saat ini stoknya habis atau sedang aktif dipinjam peminjam lain:</p><pre class="text-xs bg-gray-100 dark:bg-gray-800 p-2.5 rounded-xl text-left font-sans whitespace-pre-wrap leading-relaxed">${listStr}</pre><p class="text-xs mt-2 text-slate-700 dark:text-slate-300">Anda tidak dapat menyetujui pengajuan ini sebelum barang tersebut dikembalikan ke inventaris.</p>`,
+                    html: `<p class="text-xs mb-2 text-rose-600 font-bold">Barang berikut saat ini stoknya habis atau sedang aktif dipinjam peminjam lain:</p><pre class="text-xs bg-gray-100 dark:bg-gray-800 p-2.5 rounded-xl text-left font-sans whitespace-pre-wrap leading-relaxed">${listStr}</pre><p class="text-xs mt-2 text-slate-700 dark:text-slate-300">Anda tidak dapat menyetujui pengajuan ini sebelum barang tersebut dikembalikan atau pengajuan lain dibatalkan.</p>`,
                     confirmButtonColor: '#FF7300',
                     confirmButtonText: 'Tutup'
                 });
                 return;
             }
 
-            const konflik = periksaBentrokJadwal(item, localDB.peminjaman, localDB.barang);
-            if (konflik.length > 0) {
-                const listK = konflik.map(k => `• ${k.nama_barang} bertabrakan dg ${k.bentrok_dengan_id} (${k.bentrok_dengan_nama})`).join('\n');
-                const { isConfirmed: lanjutBentrok } = await Swal.fire({
-                    title: '⚠️ Peringatan Bentrok Jadwal!',
-                    html: `<p class="text-xs mb-2 text-rose-600 font-bold">Peminjaman ini bentrok jadwal dengan peminjaman lain:</p><pre class="text-xs bg-gray-100 dark:bg-gray-800 p-2.5 rounded-xl text-left font-sans whitespace-pre-wrap leading-relaxed">${listK}</pre><p class="text-xs mt-2 text-slate-700 dark:text-slate-300">Apakah Anda yakin tetap ingin MENYETUJUI pengajuan ini?</p>`,
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#F43F5E',
-                    cancelButtonColor: '#6B7280',
-                    confirmButtonText: 'Tetap Setujui',
-                    cancelButtonText: 'Batal / Periksa Kembali'
+            // 2. CEK BENTROK JADWAL:
+            const semuaKonflik = periksaBentrokJadwal(item, localDB.peminjaman, localDB.barang);
+            const hardKonflik = semuaKonflik.filter(k => k.tipe_bentrok === 'KUNCI');
+            const antrianKonflik = semuaKonflik.filter(k => k.tipe_bentrok === 'ANTRIAN');
+
+            // Jika bentrok dengan peminjaman yang sudah DIKUNCI/DISETUJUI -> BLOKIR KERAS!
+            if (hardKonflik.length > 0) {
+                const listHard = hardKonflik.map(k => `• ${k.nama_barang} (${k.bentrok_qty} unit) sudah dikunci oleh ${k.bentrok_dengan_nama} [${k.bentrok_dengan_id}] pada ${k.bentrok_periode}`).join('\n');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Bentrok Jadwal Terkunci!',
+                    html: `<p class="text-xs mb-2 text-rose-600 font-bold">Tidak dapat menyetujui pengajuan ini karena stok pada tanggal tersebut sudah dikunci untuk peminjam lain:</p><pre class="text-xs bg-gray-100 dark:bg-gray-800 p-2.5 rounded-xl text-left font-sans whitespace-pre-wrap leading-relaxed">${listHard}</pre><p class="text-xs mt-2 text-slate-700 dark:text-slate-300">Batalkan peminjaman sebelumnya terlebih dahulu jika ingin mengalihkan barang ke peminjam ini.</p>`,
+                    confirmButtonColor: '#FF7300',
+                    confirmButtonText: 'Mengerti'
                 });
-                if (!lanjutBentrok) return;
+                return;
             }
 
-            const { isConfirmed } = await Swal.fire({
-                title: 'Setujui Pengajuan?',
-                text: 'Sistem akan mengunci stok barang untuk peminjam ini dan otomatis menghasilkan Surat Perjanjian Resmi.',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#FF7300',
-                confirmButtonText: 'Ya, Setujui',
-                cancelButtonText: 'Batal'
-            });
-            if (!isConfirmed) return;
+            // Jika berebut jadwal dengan sesama antrian MENUNGGU VERIFIKASI -> Konfirmasi pilihan admin
+            if (antrianKonflik.length > 0) {
+                const listQ = antrianKonflik.map(k => `• ${k.nama_barang} juga diajukan oleh ${k.bentrok_dengan_nama} [${k.bentrok_dengan_id}] pada ${k.bentrok_periode}`).join('\n');
+                const { isConfirmed: pilihIni } = await Swal.fire({
+                    title: '⚠️ Berebut Jadwal Antrian!',
+                    html: `<p class="text-xs mb-2 text-amber-600 font-bold">Ada antrian pengajuan lain yang mengincar barang & tanggal yang sama:</p><pre class="text-xs bg-gray-100 dark:bg-gray-800 p-2.5 rounded-xl text-left font-sans whitespace-pre-wrap leading-relaxed">${listQ}</pre><p class="text-xs mt-2 text-slate-700 dark:text-slate-300">Jika Anda menyetujui pengajuan <strong>${item.nama_peminjam}</strong>, maka stok akan dikunci untuknya dan antrian lain tidak dapat disetujui. Lanjutkan?</p>`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#FF7300',
+                    cancelButtonColor: '#6B7280',
+                    confirmButtonText: 'Ya, Pilih Peminjam Ini',
+                    cancelButtonText: 'Batal'
+                });
+                if (!pilihIni) return;
+            } else {
+                const { isConfirmed } = await Swal.fire({
+                    title: 'Setujui Pengajuan?',
+                    text: 'Sistem akan mengunci stok barang untuk peminjam ini dan otomatis menghasilkan Surat Perjanjian Resmi.',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#FF7300',
+                    confirmButtonText: 'Ya, Setujui',
+                    cancelButtonText: 'Batal'
+                });
+                if (!isConfirmed) return;
+            }
 
-            // Kunci stok langsung di memori lokal
-            ubahStokLocal(items, -1);
-
-            await updateStatusOnline(idPinjam, "MENUNGGU KONFIRMASI PEMINJAM");
-            
             if (!item.no_surat) {
                 const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
                 item.no_surat = `SPB/${todayStr}/${Math.floor(100 + Math.random() * 900)}/LDK-IMIP`;
             }
+
+            Swal.fire({
+                title: 'Memproses Persetujuan...',
+                text: 'Menyinkronkan & mengunci stok di database...',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            const resServer = await updateStatusOnline(idPinjam, "MENUNGGU KONFIRMASI PEMINJAM", "", "", item.no_surat);
+            if (resServer && resServer.success === false) {
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal Menyetujui!',
+                    text: resServer.message || 'Stok barang tidak mencukupi di server.',
+                    confirmButtonColor: '#FF7300'
+                });
+                renderDashboard();
+                return;
+            }
+            Swal.close();
+
+            if (resServer && resServer.no_surat) {
+                item.no_surat = resServer.no_surat;
+            }
+
+            // Kunci stok di memori lokal setelah server terkonfirmasi
+            ubahStokLocal(items, -1);
             item.status = "MENUNGGU KONFIRMASI PEMINJAM";
             saveLocalDB();
 
@@ -1191,6 +1257,12 @@ Terima kasih.
             });
             if (!isConfirmed) return;
 
+            const resServer = await updateStatusOnline(idPinjam, "DITOLAK", alasan || "Pengajuan ditolak oleh pengurus.");
+            if (resServer && resServer.success === false) {
+                Swal.fire({ icon: 'error', title: 'Gagal Menolak', text: resServer.message || 'Terjadi kesalahan server.' });
+                return;
+            }
+
             const target = localDB.peminjaman.find(p => String(p.id_pinjam) === String(idPinjam));
             if (target) {
                 const oldStatus = (target.status || "").toUpperCase();
@@ -1204,15 +1276,14 @@ Terima kasih.
                 saveLocalDB();
             }
 
-            await updateStatusOnline(idPinjam, "DITOLAK", alasan || "Pengajuan ditolak oleh pengurus.");
             Swal.fire({ icon: 'success', title: 'Pengajuan Ditolak', timer: 1200, showConfirmButton: false });
             renderDashboard();
         }
 
         async function aksiBatalkan(idPinjam) {
             const { isConfirmed } = await Swal.fire({
-                title: 'Batalkan Pengajuan?',
-                text: 'Stok yang sebelumnya dikunci akan otomatis dilepaskan kembali.',
+                title: 'Batalkan Peminjaman?',
+                text: 'Stok barang yang sebelumnya dikunci akan otomatis dikembalikan ke inventaris.',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#F43F5E',
@@ -1220,6 +1291,12 @@ Terima kasih.
                 cancelButtonText: 'Tutup'
             });
             if (!isConfirmed) return;
+
+            const resServer = await updateStatusOnline(idPinjam, "DIBATALKAN", "Dibatalkan oleh admin/peminjam.");
+            if (resServer && resServer.success === false) {
+                Swal.fire({ icon: 'error', title: 'Gagal Membatalkan', text: resServer.message || 'Terjadi kesalahan server.' });
+                return;
+            }
 
             const target = localDB.peminjaman.find(p => String(p.id_pinjam) === String(idPinjam));
             if (target) {
@@ -1233,12 +1310,17 @@ Terima kasih.
                 saveLocalDB();
             }
 
-            await updateStatusOnline(idPinjam, "DIBATALKAN", "Dibatalkan oleh admin/peminjam.");
+            Swal.fire({ icon: 'success', title: 'Peminjaman Dibatalkan', text: 'Stok barang telah dikembalikan ke inventaris.', timer: 1300, showConfirmButton: false });
             renderDashboard();
         }
 
         async function aksiKonfirmasiPeminjam(idPinjam) {
-            await updateStatusOnline(idPinjam, "DIKONFIRMASI");
+            const resServer = await updateStatusOnline(idPinjam, "DIKONFIRMASI");
+            if (resServer && resServer.success === false) {
+                Swal.fire({ icon: 'error', title: 'Gagal Konfirmasi', text: resServer.message || 'Stok tidak mencukupi.' });
+                renderDashboard();
+                return;
+            }
             const target = localDB.peminjaman.find(p => String(p.id_pinjam) === String(idPinjam));
             if (target) {
                 target.status = "DIKONFIRMASI";
@@ -1264,7 +1346,11 @@ Terima kasih.
             if (!isConfirmed) return;
 
             const today = new Date().toISOString().slice(0, 10);
-            await updateStatusOnline(idPinjam, "SEDANG DIPINJAM", "", today);
+            const resServer = await updateStatusOnline(idPinjam, "SEDANG DIPINJAM", "", today);
+            if (resServer && resServer.success === false) {
+                Swal.fire({ icon: 'error', title: 'Gagal Menyerahkan', text: resServer.message || 'Terjadi kesalahan server.' });
+                return;
+            }
             item.status = "SEDANG DIPINJAM";
             item.tgl_penyerahan = today;
             saveLocalDB();
@@ -1302,15 +1388,21 @@ Terima kasih.
                 let items = [];
                 try { items = JSON.parse(item.items_json || "[]"); } catch(e) {}
 
-                let delayLabel = "NORMAL";
-                let delayClass = "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30";
+                const isSedangDipinjam = (item.status || "").toUpperCase() === "SEDANG DIPINJAM";
+                const tglKembaliClean = formatTglRapi(item.tgl_pengembalian);
+                const tglSerahClean = formatTglRapi(item.tgl_penyerahan || item.tgl_pengambilan);
 
-                if (item.tgl_pengembalian) {
-                    if (todayStr > item.tgl_pengembalian) {
-                        delayLabel = "TERLAMBAT";
+                let delayLabel = isSedangDipinjam ? "SEDANG DIPINJAM (NORMAL)" : "DIKONFIRMASI (SIAP DIAMBIL)";
+                let delayClass = isSedangDipinjam
+                    ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
+                    : "bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30";
+
+                if (isSedangDipinjam && tglKembaliClean && tglKembaliClean !== '-') {
+                    if (todayStr > tglKembaliClean) {
+                        delayLabel = "TERLAMBAT KEMBALI";
                         delayClass = "bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30 animate-pulse";
-                    } else if (todayStr === item.tgl_pengembalian) {
-                        delayLabel = "SEGERA DIKEMBALIKAN (HARI INI)";
+                    } else if (todayStr === tglKembaliClean) {
+                        delayLabel = "JATUH TEMPO HARI INI";
                         delayClass = "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30";
                     }
                 }
@@ -1327,7 +1419,7 @@ Terima kasih.
                                 ${delayLabel}
                             </span>
                         </div>
-                        <span class="text-xs ui-muted">Diserahkan: ${item.tgl_penyerahan || item.tgl_pengambilan}</span>
+                        <span class="text-xs ui-muted">${isSedangDipinjam ? 'Diserahkan:' : 'Jadwal Ambil:'} ${tglSerahClean}</span>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
@@ -1338,8 +1430,8 @@ Terima kasih.
                         </div>
                         <div>
                             <span class="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400 block tracking-wider">Batas Pengembalian</span>
-                            <p class="font-bold text-sm sm:text-base ${delayLabel === 'TERLAMBAT' ? 'text-rose-500' : 'ui-heading'}">
-                                ${String(item.tgl_pengembalian || '').replace(/ 00:00:00/g, '')}
+                            <p class="font-bold text-sm sm:text-base ${delayLabel === 'TERLAMBAT KEMBALI' ? 'text-rose-500' : 'ui-heading'}">
+                                ${tglKembaliClean}
                             </p>
                         </div>
                         <div>
@@ -1350,16 +1442,27 @@ Terima kasih.
 
                     <div class="pt-3 border-t border-orange-200 dark:border-gray-800 flex flex-wrap justify-between items-center gap-2">
                         <div class="flex items-center gap-2">
-                            <a href="${formatWaLink(item.kontak_wa, 'Assalamu\'alaikum ' + item.nama_peminjam + ', kami dari Pengurus Inventaris LDK IMIP ingin mengingatkan perihal peminjaman *' + item.id_pinjam + '* dengan batas waktu pengembalian *' + String(item.tgl_pengembalian || '').replace(/ 00:00:00/g, '') + '*. Jazakumullah khairan.')}" target="_blank" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm">
+                            <a href="${formatWaLink(item.kontak_wa, 'Assalamu\'alaikum ' + item.nama_peminjam + ', kami dari Pengurus Inventaris LDK IMIP ingin mengingatkan perihal peminjaman *' + item.id_pinjam + '* dengan batas waktu pengembalian *' + tglKembaliClean + '*. Jazakumullah khairan.')}" target="_blank" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm">
                                 <i class="fa-brands fa-whatsapp text-sm"></i> Chat WA
                             </a>
                             <button onclick="bukaModalSuratPerjanjian('${item.id_pinjam}')" class="px-3 py-1.5 rounded-xl ui-pill text-xs font-semibold ui-heading hover:text-[#FF7300]">
                                 <i class="fa-solid fa-file-contract mr-1"></i> Surat
                             </button>
                         </div>
-                        <button onclick="bukaModalVerifikasiKembali('${item.id_pinjam}')" class="px-4 py-2 rounded-xl btn-kabinet font-bold text-xs shadow-md flex items-center gap-1.5">
-                            <i class="fa-solid fa-box-archive"></i> Verifikasi Pengembalian
-                        </button>
+                        <div class="flex flex-wrap items-center gap-2">
+                            ${isSedangDipinjam ? `
+                                <button onclick="bukaModalVerifikasiKembali('${item.id_pinjam}')" class="px-4 py-2 rounded-xl btn-kabinet font-bold text-xs shadow-md flex items-center gap-1.5">
+                                    <i class="fa-solid fa-box-archive"></i> Verifikasi Pengembalian
+                                </button>
+                            ` : `
+                                <button onclick="aksiBatalkan('${item.id_pinjam}')" class="px-3 py-1.5 rounded-xl bg-rose-500/15 text-rose-500 border border-rose-500/30 text-xs font-bold hover:bg-rose-500/25">
+                                    <i class="fa-solid fa-ban mr-1"></i> Batalkan
+                                </button>
+                                <button onclick="aksiSerahkanBarang('${item.id_pinjam}')" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md flex items-center gap-1.5">
+                                    <i class="fa-solid fa-handshake"></i> Serahkan Barang
+                                </button>
+                            `}
+                        </div>
                     </div>
                 `;
                 listEl.appendChild(card);
@@ -1384,20 +1487,31 @@ Terima kasih.
             const catatan = document.getElementById('kembali-catatan').value.trim();
 
             const target = localDB.peminjaman.find(p => String(p.id_pinjam) === String(idPinjam));
-            if (!target) return;
+            if (!target) {
+                btn.disabled = false;
+                btn.innerHTML = `Selesaikan Pengembalian`;
+                return;
+            }
 
             let items = [];
             try { items = JSON.parse(target.items_json || "[]"); } catch(e) {}
 
-            if (kondisi.toLowerCase().includes("baik") || kondisi.toLowerCase().includes("ringan")) {
-                items.forEach(it => {
-                    const b = localDB.barang.find(x => String(x.id_barang) === String(it.id_barang));
-                    if (b) {
-                        b.stok_tersedia = Math.min(parseInt(b.stok_total, 10), parseInt(b.stok_tersedia, 10) + parseInt(it.jumlah, 10));
-                        b.status = b.stok_tersedia > 0 ? "Tersedia" : "Sedang tidak tersedia";
+            const isLayakPakai = kondisi.toLowerCase().includes("baik") || kondisi.toLowerCase().includes("ringan");
+            items.forEach(it => {
+                const b = localDB.barang.find(x => String(x.id_barang) === String(it.id_barang));
+                if (b) {
+                    const qty = parseInt(it.jumlah, 10) || 1;
+                    if (isLayakPakai) {
+                        b.stok_tersedia = Math.min(parseInt(b.stok_total, 10), (parseInt(b.stok_tersedia, 10) || 0) + qty);
+                    } else {
+                        // Jika rusak berat atau hilang, kurangi stok_total agar tidak terhitung sedang dipinjam
+                        const curAv = parseInt(b.stok_tersedia, 10) || 0;
+                        const curTot = parseInt(b.stok_total, 10) || 1;
+                        b.stok_total = Math.max(curAv, curTot - qty);
                     }
-                });
-            }
+                    b.status = (parseInt(b.stok_tersedia, 10) || 0) > 0 ? "Tersedia" : "Sedang tidak tersedia";
+                }
+            });
 
             target.status = "SELESAI";
             target.tgl_kembali_aktual = tglAktual;
@@ -1989,11 +2103,11 @@ Terima kasih.
             window.open(waUrl, '_blank');
         }
 
-        async function updateStatusOnline(idPinjam, statusBaru, catatan = "", tglSerah = "") {
+        async function updateStatusOnline(idPinjam, statusBaru, catatan = "", tglSerah = "", noSurat = "") {
             const apiUrl = getApiUrl();
-            if (!apiUrl) return;
+            if (!apiUrl) return { success: true };
             try {
-                await fetch(apiUrl, {
+                const res = await fetch(apiUrl, {
                     method: "POST",
                     body: JSON.stringify({
                         action: "admin_update_status",
@@ -2001,10 +2115,15 @@ Terima kasih.
                         id_pinjam: idPinjam,
                         status: statusBaru,
                         catatan: catatan,
-                        tgl_penyerahan: tglSerah
+                        tgl_penyerahan: tglSerah,
+                        no_surat: noSurat
                     })
                 });
-            } catch(e) {}
+                const resJson = await res.json();
+                return resJson;
+            } catch(e) {
+                return { success: true, offline: true };
+            }
         }
 
         function getStatusClass(status) {
