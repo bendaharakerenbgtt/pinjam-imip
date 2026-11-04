@@ -106,7 +106,7 @@
         }
     </style>
 </head>
-<body class="selection:bg-orange-500 selection:text-white min-h-screen flex flex-col justify-between pb-28">
+<body class="selection:bg-orange-500 selection:text-white min-h-screen flex flex-col justify-between">
 
     <!-- TOP NAVBAR -->
     <header class="sticky top-2 z-40 w-full px-2.5 sm:px-6 mb-2">
@@ -197,7 +197,7 @@
     </div>
 
     <!-- FOOTER (Sticky di bagian bawah layar) -->
-    <footer class="w-full max-w-6xl mx-auto px-4 py-6 mt-auto border-t border-orange-200/60 dark:border-gray-800 text-center text-xs ui-muted flex flex-col sm:flex-row items-center justify-between gap-3">
+    <footer id="main-footer" class="w-full max-w-6xl mx-auto px-4 py-5 mt-auto border-t border-orange-200/60 dark:border-gray-800 text-center text-xs ui-muted flex flex-col sm:flex-row items-center justify-between gap-3 transition-all">
         <p>© 2026 Pinjamip — LDK IMIP</p>
         <div class="flex items-center gap-4">
             <a href="status.html" class="hover:text-[#FF7300] font-medium transition-all">
@@ -746,11 +746,14 @@
 
             const floating = document.getElementById('floating-cart-bar');
             const floatingText = document.getElementById('floating-cart-summary');
+            const footerEl = document.getElementById('main-footer') || document.querySelector('footer');
             if (totalQty > 0) {
                 if (floating) floating.classList.remove('hidden');
                 if (floatingText) floatingText.innerText = `${totalQty} Unit Barang Dipilih`;
+                if (footerEl) footerEl.classList.add('pb-24');
             } else {
                 if (floating) floating.classList.add('hidden');
+                if (footerEl) footerEl.classList.remove('pb-24');
             }
         }
 
