@@ -107,8 +107,38 @@
             backdrop-filter: blur(4px);
         }
 
+        /* Format Resmi Dokumen Surat Perjanjian: Times New Roman 12pt */
+        #printable-surat, #printable-surat * {
+            font-family: 'Times New Roman', Times, serif !important;
+        }
+        #printable-surat {
+            font-size: 12pt !important;
+            line-height: 1.35 !important;
+            color: #000000 !important;
+        }
+        #printable-surat p,
+        #printable-surat table,
+        #printable-surat td,
+        #printable-surat th,
+        #printable-surat ol,
+        #printable-surat li,
+        #printable-surat span {
+            font-size: 12pt !important;
+        }
+        #printable-surat h2 {
+            font-size: 13pt !important;
+            font-weight: bold !important;
+        }
+        #printable-surat .surat-nomor {
+            font-size: 11pt !important;
+        }
+
         /* Printable Letter Format */
         @media print {
+            @page {
+                size: A4 portrait;
+                margin: 1.2cm 1.5cm;
+            }
             body * { visibility: hidden; }
             #printable-surat, #printable-surat * { visibility: visible; }
             #printable-surat {
@@ -117,11 +147,13 @@
                 top: 0;
                 width: 100%;
                 margin: 0;
-                padding: 1.5cm;
+                padding: 0 !important;
                 box-shadow: none;
                 border: none;
                 background: #FFFFFF !important;
                 color: #000000 !important;
+                font-family: 'Times New Roman', Times, serif !important;
+                font-size: 12pt !important;
             }
             .no-print { display: none !important; }
         }
@@ -391,22 +423,22 @@
 
             <!-- KERTAS SURAT RESMI DENGAN CONTAINER SCROLL ANTI GEPENG -->
             <div id="surat-scroll-container" class="overflow-x-auto overflow-y-auto flex-1 p-2 sm:p-6 bg-slate-900/70 block">
-                <div id="printable-surat" class="w-full min-w-[580px] max-w-2xl bg-white text-black font-serif text-[11pt] sm:text-[12pt] leading-normal p-6 sm:p-10 shadow-2xl space-y-4 rounded-xl border border-gray-200 mx-auto my-0">
+                <div id="printable-surat" class="w-full min-w-[580px] max-w-2xl bg-white text-black p-6 sm:p-10 shadow-2xl space-y-4 rounded-xl border border-gray-200 mx-auto my-0">
                     <!-- KOP RESMI DARI BENDAHARA2026 -->
                     <div class="w-full mb-2 text-center">
                         <img src="surat/assets/kop_spz_official.png" alt="Kop Surat Resmi LDK IMIP" class="w-full h-auto max-h-36 object-contain block mx-auto" onerror="this.style.display='none'">
                     </div>
 
-                    <div class="text-center space-y-0.5 border-b-2 border-black pb-2">
-                        <h2 class="font-bold tracking-wider text-xs sm:text-sm uppercase underline" style="font-family: 'Times New Roman', serif;">SURAT PERJANJIAN PEMINJAMAN INVENTARIS BARANG</h2>
-                        <p id="surat-no-dokumen" class="text-[11px] font-mono">Nomor: SPB/20261102/001/LDK-IMIP</p>
+                    <div class="text-center space-y-1 border-b-2 border-black pb-2">
+                        <h2 class="font-bold tracking-wider uppercase underline">SURAT PERJANJIAN PEMINJAMAN INVENTARIS BARANG</h2>
+                        <p id="surat-no-dokumen" class="surat-nomor">Nomor: SPB/20261102/001/LDK-IMIP</p>
                     </div>
 
-                    <div class="text-xs space-y-1.5" style="font-family: 'Times New Roman', serif;">
-                        <p>Pada hari ini, telah disetujui perjanjian peminjaman fasilitas/inventaris organisasi <span id="surat-org-name-body">LDK IMIP</span> oleh pihak peminjam dengan rincian sebagai berikut:</p>
+                    <div class="space-y-2">
+                        <p class="text-justify leading-relaxed">Pada hari ini, telah disetujui perjanjian peminjaman fasilitas/inventaris organisasi <span id="surat-org-name-body">LDK IMIP</span> oleh pihak peminjam dengan rincian sebagai berikut:</p>
                         
-                        <table class="w-full text-xs border-collapse">
-                            <tr><td class="w-36 py-0.5 font-bold">Nama Peminjam</td><td class="w-3">:</td><td id="surat-peminjam-nama">-</td></tr>
+                        <table class="w-full border-collapse">
+                            <tr><td class="w-48 py-0.5 font-bold">Nama Peminjam</td><td class="w-4">:</td><td id="surat-peminjam-nama">-</td></tr>
                             <tr><td class="py-0.5 font-bold">Nomor WhatsApp</td><td>:</td><td id="surat-peminjam-wa">-</td></tr>
                             <tr><td class="py-0.5 font-bold">Asal Organisasi</td><td>:</td><td id="surat-peminjam-org">-</td></tr>
                             <tr><td class="py-0.5 font-bold">Ketua Pelaksana Kegiatan</td><td>:</td><td id="surat-peminjam-pj">-</td></tr>
@@ -415,24 +447,24 @@
                         </table>
                     </div>
 
-                    <div class="space-y-1">
-                        <span class="text-xs font-bold block" style="font-family: 'Times New Roman', serif;">Daftar Barang yang Diserahkan:</span>
-                        <table class="w-full text-xs border border-black border-collapse" style="font-family: 'Times New Roman', serif;">
+                    <div class="space-y-1.5">
+                        <span class="font-bold block">Daftar Barang yang Diserahkan:</span>
+                        <table class="w-full border border-black border-collapse">
                             <thead>
                                 <tr class="bg-gray-100 border-b border-black text-center font-bold">
-                                    <th class="border border-black p-1 w-8">No</th>
-                                    <th class="border border-black p-1 text-left">Nama Barang</th>
-                                    <th class="border border-black p-1 w-20">Jumlah</th>
-                                    <th class="border border-black p-1 w-28">Kondisi Awal</th>
+                                    <th class="border border-black p-1.5 w-10">No</th>
+                                    <th class="border border-black p-1.5 text-left">Nama Barang</th>
+                                    <th class="border border-black p-1.5 w-24">Jumlah</th>
+                                    <th class="border border-black p-1.5 w-32">Kondisi Awal</th>
                                 </tr>
                             </thead>
                             <tbody id="surat-items-table"></tbody>
                         </table>
                     </div>
 
-                    <div class="text-[10px] sm:text-[11px] space-y-0.5" style="font-family: 'Times New Roman', serif;">
+                    <div class="space-y-1">
                         <span class="font-bold block">Ketentuan & Syarat Peminjaman:</span>
-                        <ol class="list-decimal pl-4 space-y-0.5 leading-tight">
+                        <ol class="list-decimal pl-5 space-y-0.5 leading-snug text-justify">
                             <li>Peminjam bertanggung jawab menjaga barang selama masa peminjaman.</li>
                             <li>Barang wajib dikembalikan sesuai tanggal yang telah disepakati.</li>
                             <li>Peminjam tidak diperkenankan memindahtangankan barang kepada pihak lain tanpa persetujuan pengelola.</li>
@@ -443,13 +475,20 @@
                         </ol>
                     </div>
 
-                    <div class="pt-3 text-xs flex justify-between" style="font-family: 'Times New Roman', serif;">
-                        <div class="text-center w-44 sm:w-52 space-y-10 sm:space-y-12">
+                    <!-- AREA TANDA TANGAN (KOLOM TTD LEGA DENGAN ENTER / RUANG TTD) -->
+                    <div class="pt-4 flex justify-between items-start">
+                        <div class="text-center w-56">
                             <p>Pihak Peminjam,</p>
+                            <div class="h-24 sm:h-28 flex items-end justify-center pb-1">
+                                <!-- Area tanda tangan basah & materai -->
+                            </div>
                             <p id="surat-ttd-peminjam" class="font-bold underline">( Nama Lengkap )</p>
                         </div>
-                        <div class="text-center w-44 sm:w-52 space-y-10 sm:space-y-12">
+                        <div class="text-center w-64">
                             <p id="surat-tgl-cetak">Jakarta, ...</p>
+                            <div class="h-24 sm:h-28 flex items-end justify-center pb-1">
+                                <!-- Area tanda tangan pengurus & cap/stempel -->
+                            </div>
                             <p class="font-bold underline" id="surat-org-name-ttd">Pengurus Inventaris LDK IMIP</p>
                         </div>
                     </div>
