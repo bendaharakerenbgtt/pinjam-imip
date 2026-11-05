@@ -138,9 +138,15 @@
 
         <!-- Header Katalog -->
         <div class="flex items-center justify-between gap-2 pt-1 pb-1">
-            <h1 class="text-xl sm:text-2xl font-black font-outfit ui-heading tracking-tight">
-                Katalog Inventaris
-            </h1>
+            <div class="flex items-center gap-2 flex-wrap">
+                <h1 class="text-xl sm:text-2xl font-black font-outfit ui-heading tracking-tight">
+                    Katalog Inventaris
+                </h1>
+                <div id="katalog-sync-pill" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-orange-500/10 text-[#FF7300] border border-orange-500/25 transition-all opacity-0 pointer-events-none shadow-xs">
+                    <i id="katalog-sync-icon" class="fa-solid fa-arrows-rotate fa-spin text-[10px]"></i>
+                    <span id="katalog-sync-text">Menyinkronkan...</span>
+                </div>
+            </div>
             <a href="status.html" class="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl ui-pill text-xs font-bold ui-heading hover:text-[#FF7300] flex items-center gap-1.5 shadow-xs transition-all whitespace-nowrap" title="Lacak Pengajuan">
                 <i class="fa-solid fa-clock-rotate-left text-[#FF7300]"></i> <span>Lacak Status</span>
             </a>
@@ -508,13 +514,67 @@
             return (localStorage.getItem(STORAGE_KEY_API) || DEFAULT_API_URL).trim();
         }
 
-        async function refreshKatalogOnline() {
-            const apiUrl = getApiUrl();
-            if (!apiUrl) {
-                renderKatalog();
-                return;
+        function setKatalogSyncStatus(state, customText) {
+            const pill = document.getElementById('katalog-sync-pill');
+            const icon = document.getElementById('katalog-sync-icon');
+            const txt = document.getElementById('katalog-sync-text');
+            if (!pill || !icon || !txt) return;
+
+            if (state === 'loading') {
+                pill.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-orange-500/10 text-[#FF7300] border border-orange-500/25 transition-all opacity-100 shadow-xs";
+                icon.className = "fa-solid fa-arrows-rotate fa-spin text-[10px]";
+                txt.innerText = customText || "Menyinkronkan...";
+            } else if (state === 'success') {
+                pill.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 transition-all opacity-100 shadow-xs";
+                icon.className = "fa-solid fa-circle-check text-[10px]";
+                txt.innerText = customText || "Katalog terupdate";
+                setTimeout(() => {
+                    pill.classList.remove('opacity-100');
+                    pill.classList.add('opacity-0');
+                }, 2000);
+            } else {
+                pill.classList.remove('opacity-100');
+                pill.classList.add('opacity-0');
             }
-            document.getElementById('katalog-loading').classList.remove('hidden');
+        }
+
+        function renderKatalogSkeleton(count = 4) {
+            const grid = document.getElementById('katalog-grid');
+            if (!grid) return;
+            let html = '';
+            for (let i = 0; i < count; i++) {
+                html += `
+                    <div class="ui-card rounded-2xl overflow-hidden flex flex-col justify-between border border-orange-200/40 dark:border-white/5 animate-pulse shadow-xs">
+                        <div class="relative h-28 sm:h-44 w-full bg-slate-200/70 dark:bg-gray-800">
+                            <div class="absolute top-1.5 left-1.5 h-4 w-12 bg-orange-200/70 dark:bg-gray-700 rounded-md"></div>
+                        </div>
+                        <div class="p-2.5 sm:p-3.5 space-y-2 flex-1 flex flex-col justify-between">
+                            <div class="space-y-1.5">
+                                <div class="h-3.5 bg-slate-200/90 dark:bg-gray-700/80 rounded w-3/4"></div>
+                                <div class="h-2.5 bg-slate-200/50 dark:bg-gray-800 rounded w-1/2"></div>
+                            </div>
+                            <div class="pt-2">
+                                <div class="h-7 sm:h-8 bg-orange-100/70 dark:bg-gray-800/80 rounded-xl w-full"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            grid.innerHTML = html;
+        }
+
+        async function refreshKatalogOnline() {
+            // Jika ada cache lokal, tampilkan segera agar instan tanpa blank
+            if (localDB.barang && localDB.barang.length > 0) {
+                renderKatalog();
+            } else {
+                renderKatalogSkeleton(4);
+            }
+
+            const apiUrl = getApiUrl();
+            if (!apiUrl) return;
+
+            setKatalogSyncStatus('loading', 'Menyinkronkan stok...');
             try {
                 const res = await fetch(`${apiUrl}?action=get_katalog`);
                 const json = await res.json();
@@ -524,9 +584,13 @@
                         localDB.peminjaman = json.jadwal_aktif;
                     }
                     saveLocalDB();
+                    setKatalogSyncStatus('success', 'Katalog terupdate');
+                } else {
+                    setKatalogSyncStatus('idle');
                 }
-            } catch(e) {}
-            document.getElementById('katalog-loading').classList.add('hidden');
+            } catch(e) {
+                setKatalogSyncStatus('idle');
+            }
             renderKatalog();
         }
 

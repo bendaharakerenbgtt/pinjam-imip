@@ -256,9 +256,23 @@
             btn.disabled = true;
             btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Mencari...`;
             container.innerHTML = `
-                <div class="text-center py-8">
-                    <i class="fa-solid fa-circle-notch fa-spin text-2xl text-[#FF7300]"></i>
-                    <p class="text-xs ui-muted mt-2">Memeriksa database...</p>
+                <div class="ui-card p-4 sm:p-5 rounded-2xl space-y-4 border border-orange-200/50 dark:border-white/5 animate-pulse shadow-xs">
+                    <div class="flex items-center justify-between">
+                        <div class="h-4 bg-orange-200/60 dark:bg-gray-800 rounded-md w-28"></div>
+                        <div class="h-5 bg-orange-100 dark:bg-gray-800 rounded-full w-24"></div>
+                    </div>
+                    <div class="space-y-2 py-1">
+                        <div class="h-4.5 bg-slate-200 dark:bg-gray-800 rounded w-44"></div>
+                        <div class="h-3 bg-slate-100 dark:bg-gray-800 rounded w-60"></div>
+                    </div>
+                    <div class="p-3.5 rounded-xl bg-orange-50/70 dark:bg-gray-800/40 space-y-2 border border-orange-100/50 dark:border-white/5">
+                        <div class="h-3 bg-orange-200/60 dark:bg-gray-700 rounded w-1/3"></div>
+                        <div class="h-3.5 bg-slate-200/80 dark:bg-gray-700 rounded w-3/4"></div>
+                    </div>
+                    <div class="flex items-center justify-center gap-2 py-1 text-xs text-[#FF7300] font-bold">
+                        <i class="fa-solid fa-arrows-rotate fa-spin text-xs"></i>
+                        <span>Sedang memeriksa database pengajuan...</span>
+                    </div>
                 </div>
             `;
 
