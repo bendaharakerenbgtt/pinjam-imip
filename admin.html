@@ -221,6 +221,9 @@
             #printable-surat .space-y-4 > * + * {
                 margin-top: 0.5rem !important;
             }
+            #printable-surat .section-ketentuan {
+                margin-top: 0.75rem !important;
+            }
             #printable-surat table td,
             #printable-surat table th {
                 padding: 2px 4px !important;
@@ -228,7 +231,8 @@
             }
             #printable-surat ol li {
                 font-size: 11pt !important;
-                line-height: 1.25 !important;
+                line-height: 1.3 !important;
+                margin-bottom: 2px !important;
             }
             #printable-surat .h-24,
             #printable-surat .sm\\:h-28 {
@@ -528,16 +532,16 @@
                         <p class="text-justify leading-relaxed" style="text-indent: 1.25cm;">Pada hari ini, telah disetujui perjanjian peminjaman fasilitas/inventaris organisasi <span id="surat-org-name-body">LDK IMIP</span> oleh pihak peminjam dengan rincian sebagai berikut:</p>
                         
                         <table class="w-full border-collapse">
-                            <tr><td class="w-48 py-0.5 font-bold">Nama Peminjam</td><td class="w-4">:</td><td id="surat-peminjam-nama">-</td></tr>
-                            <tr><td class="py-0.5 font-bold">Nomor WhatsApp</td><td>:</td><td id="surat-peminjam-wa">-</td></tr>
-                            <tr><td class="py-0.5 font-bold">Asal Organisasi</td><td>:</td><td id="surat-peminjam-org">-</td></tr>
-                            <tr><td class="py-0.5 font-bold">Ketua Pelaksana Kegiatan</td><td>:</td><td id="surat-peminjam-pj">-</td></tr>
-                            <tr><td class="py-0.5 font-bold">Tujuan Kegiatan</td><td>:</td><td id="surat-peminjam-tujuan">-</td></tr>
-                            <tr><td class="py-0.5 font-bold">Masa Peminjaman</td><td>:</td><td id="surat-peminjam-periode">-</td></tr>
+                            <tr><td class="w-52 py-0.5">Nama Peminjam</td><td class="w-4">:</td><td id="surat-peminjam-nama">-</td></tr>
+                            <tr><td class="py-0.5">Nomor WhatsApp</td><td>:</td><td id="surat-peminjam-wa">-</td></tr>
+                            <tr><td class="py-0.5">Asal Organisasi</td><td>:</td><td id="surat-peminjam-org">-</td></tr>
+                            <tr><td class="py-0.5">Ketua Pelaksana Kegiatan</td><td>:</td><td id="surat-peminjam-pj">-</td></tr>
+                            <tr><td class="py-0.5">Tujuan Kegiatan</td><td>:</td><td id="surat-peminjam-tujuan">-</td></tr>
+                            <tr><td class="py-0.5">Masa Peminjaman</td><td>:</td><td id="surat-peminjam-periode">-</td></tr>
                         </table>
                     </div>
 
-                    <div class="space-y-1.5">
+                    <div class="space-y-1.5 pt-1">
                         <span class="font-bold block">Daftar Barang yang Diserahkan:</span>
                         <table class="w-full border border-black border-collapse">
                             <thead>
@@ -552,9 +556,9 @@
                         </table>
                     </div>
 
-                    <div class="space-y-1">
+                    <div class="space-y-1.5 pt-2 sm:pt-3 section-ketentuan">
                         <span class="font-bold block">Ketentuan & Syarat Peminjaman:</span>
-                        <ol class="list-decimal pl-5 space-y-0.5 leading-snug text-justify">
+                        <ol class="list-decimal pl-5 space-y-1 sm:space-y-1.5 leading-relaxed text-justify">
                             <li>Peminjam bertanggung jawab menjaga barang selama masa peminjaman.</li>
                             <li>Barang wajib dikembalikan sesuai tanggal yang telah disepakati.</li>
                             <li>Peminjam tidak diperkenankan memindahtangankan barang kepada pihak lain tanpa persetujuan pengelola.</li>
