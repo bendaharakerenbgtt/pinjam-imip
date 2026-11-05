@@ -133,29 +133,119 @@
             font-size: 11pt !important;
         }
 
-        /* Printable Letter Format */
+        /* Printable Letter Format (Strict 1-Page A4 Guarantee) */
         @media print {
             @page {
                 size: A4 portrait;
-                margin: 1.2cm 1.5cm;
+                margin: 0.8cm 1.2cm;
             }
-            body * { visibility: hidden; }
-            #printable-surat, #printable-surat * { visibility: visible; }
-            #printable-surat {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                margin: 0;
+            html, body {
+                width: 100% !important;
+                height: auto !important;
+                min-height: 0 !important;
+                margin: 0 !important;
                 padding: 0 !important;
-                box-shadow: none;
-                border: none;
+                background: #FFFFFF !important;
+                color: #000000 !important;
+                overflow: visible !important;
+            }
+            /* Hilangkan seluruh elemen selain #modal-surat dari tata letak cetak */
+            body > *:not(#modal-surat),
+            header,
+            main,
+            #modal-kembali,
+            #modal-barang,
+            #modal-lightbox,
+            .no-print {
+                display: none !important;
+            }
+            /* Netralkan posisi fixed pada #modal-surat agar TIDAK menduplikasi halaman di Chrome Mobile */
+            #modal-surat {
+                position: static !important;
+                display: block !important;
+                inset: auto !important;
+                width: 100% !important;
+                height: auto !important;
+                min-height: 0 !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                background: transparent !important;
+                overflow: visible !important;
+                z-index: auto !important;
+            }
+            #modal-surat > .ui-card {
+                position: static !important;
+                display: block !important;
+                border: none !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                max-width: 100% !important;
+                max-height: none !important;
+                overflow: visible !important;
+                background: transparent !important;
+            }
+            #surat-scroll-container {
+                position: static !important;
+                display: block !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                background: transparent !important;
+                overflow: visible !important;
+                height: auto !important;
+                max-height: none !important;
+            }
+            #printable-surat {
+                position: static !important;
+                display: block !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                min-width: 0 !important;
+                margin: 0 auto !important;
+                padding: 0 !important;
+                box-shadow: none !important;
+                border: none !important;
                 background: #FFFFFF !important;
                 color: #000000 !important;
                 font-family: 'Times New Roman', Times, serif !important;
-                font-size: 12pt !important;
+                font-size: 11.5pt !important;
+                line-height: 1.28 !important;
+                page-break-after: avoid !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+                break-after: avoid !important;
             }
-            .no-print { display: none !important; }
+            #printable-surat img {
+                max-height: 2.7cm !important;
+            }
+            #printable-surat .space-y-4 > * + * {
+                margin-top: 0.5rem !important;
+            }
+            #printable-surat table td,
+            #printable-surat table th {
+                padding: 2px 4px !important;
+                font-size: 11.5pt !important;
+            }
+            #printable-surat ol li {
+                font-size: 11pt !important;
+                line-height: 1.25 !important;
+            }
+            #printable-surat .h-24,
+            #printable-surat .sm\\:h-28 {
+                height: 2.2cm !important;
+            }
+        }
+
+        /* Saat tombol cetak ditekan, sembunyikan semua secara instan via kelas body */
+        body.printing-single-surat > *:not(#modal-surat) {
+            display: none !important;
+        }
+        body.printing-single-surat #modal-surat {
+            position: static !important;
+            display: block !important;
+            background: transparent !important;
+            padding: 0 !important;
+            margin: 0 !important;
         }
     </style>
 </head>
@@ -2266,7 +2356,13 @@ Jazakumullah Khairan Katsiran.
 
         function cetakSuratPerjanjian() { 
             document.title = getJudulSuratPdf(currentSuratItem);
-            window.print(); 
+            document.body.classList.add('printing-single-surat');
+            setTimeout(() => {
+                window.print(); 
+                setTimeout(() => {
+                    document.body.classList.remove('printing-single-surat');
+                }, 800);
+            }, 60);
         }
 
         function kirimSuratViaWa() {
@@ -2334,6 +2430,7 @@ Jazakumullah Khairan Katsiran.
         });
 
         window.addEventListener('afterprint', () => {
+            document.body.classList.remove('printing-single-surat');
             const modalSurat = document.getElementById('modal-surat');
             if (!modalSurat || modalSurat.classList.contains('hidden')) {
                 document.title = defaultAdminTitle;
