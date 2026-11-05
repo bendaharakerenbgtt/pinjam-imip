@@ -1713,11 +1713,31 @@ Jazakumullah Khairan Katsiran.
 
             // Jika bentrok dengan peminjaman yang sudah DIKUNCI/DISETUJUI -> BLOKIR KERAS!
             if (hardKonflik.length > 0) {
-                const listHard = hardKonflik.map(k => `• ${k.nama_barang} (${k.bentrok_qty} unit) sudah dikunci oleh ${k.bentrok_dengan_nama} [${k.bentrok_dengan_id}] pada ${k.bentrok_periode}`).join('\n');
+                const hardCardsHtml = hardKonflik.map(k => `
+                    <div style="background-color: #FEE2E2; color: #991B1B; border: 1px solid #FCA5A5;" class="p-2.5 rounded-xl text-left text-xs mb-2">
+                        <div class="flex items-center justify-between font-bold text-rose-900 mb-1">
+                            <span>🔒 ${k.nama_barang} (${k.bentrok_qty} unit)</span>
+                            <span class="font-mono text-[10px] bg-rose-200 px-1.5 py-0.5 rounded text-rose-950 font-bold">${k.bentrok_dengan_id}</span>
+                        </div>
+                        <div class="text-[12px] text-slate-800 font-semibold">
+                            Sudah dikunci untuk: <strong class="text-rose-950">${k.bentrok_dengan_nama}</strong>
+                        </div>
+                        <div class="text-[11px] text-rose-800 mt-0.5">
+                            🗓️ Periode: <strong>${k.bentrok_periode}</strong>
+                        </div>
+                    </div>
+                `).join('');
+
                 Swal.fire({
                     icon: 'error',
                     title: 'Bentrok Jadwal Terkunci!',
-                    html: `<p class="text-xs mb-2 text-rose-600 font-bold">Tidak dapat menyetujui pengajuan ini karena stok pada tanggal tersebut sudah dikunci untuk peminjam lain:</p><pre class="text-xs bg-gray-100 dark:bg-gray-800 p-2.5 rounded-xl text-left font-sans whitespace-pre-wrap leading-relaxed">${listHard}</pre><p class="text-xs mt-2 text-slate-700 dark:text-slate-300">Batalkan peminjaman sebelumnya terlebih dahulu jika ingin mengalihkan barang ke peminjam ini.</p>`,
+                    html: `
+                        <p class="text-xs mb-2 text-rose-700 font-bold text-left">Tidak dapat menyetujui pengajuan ini karena stok pada tanggal tersebut sudah dikunci:</p>
+                        <div class="my-2 max-h-48 overflow-y-auto">
+                            ${hardCardsHtml}
+                        </div>
+                        <p class="text-xs mt-2 text-slate-700 text-left">Batalkan peminjaman sebelumnya terlebih dahulu jika ingin mengalihkan barang ke peminjam ini.</p>
+                    `,
                     confirmButtonColor: '#FF7300',
                     confirmButtonText: 'Mengerti'
                 });
@@ -1726,10 +1746,34 @@ Jazakumullah Khairan Katsiran.
 
             // Jika berebut jadwal dengan sesama antrian MENUNGGU VERIFIKASI -> Konfirmasi pilihan admin
             if (antrianKonflik.length > 0) {
-                const listQ = antrianKonflik.map(k => `• ${k.nama_barang} juga diajukan oleh ${k.bentrok_dengan_nama} [${k.bentrok_dengan_id}] pada ${k.bentrok_periode}`).join('\n');
+                const cardsHtml = antrianKonflik.map(k => `
+                    <div style="background-color: #FEF3C7; color: #78350F; border: 1px solid #FCD34D;" class="p-2.5 rounded-xl text-left text-xs mb-2">
+                        <div class="flex items-center justify-between font-bold text-amber-900 mb-1">
+                            <span>📦 ${k.nama_barang}</span>
+                            <span class="font-mono text-[10px] bg-amber-200/80 px-1.5 py-0.5 rounded text-amber-950 font-bold">${k.bentrok_dengan_id}</span>
+                        </div>
+                        <div class="text-[12px] text-slate-800 font-semibold">
+                            Antrian peminjam lain: <strong class="text-amber-950">${k.bentrok_dengan_nama}</strong>
+                        </div>
+                        <div class="text-[11px] text-amber-800 mt-0.5">
+                            🗓️ Periode: <strong>${k.bentrok_periode}</strong>
+                        </div>
+                    </div>
+                `).join('');
+
                 const { isConfirmed: pilihIni } = await Swal.fire({
                     title: '⚠️ Berebut Jadwal Antrian!',
-                    html: `<p class="text-xs mb-2 text-amber-600 font-bold">Ada antrian pengajuan lain yang mengincar barang & tanggal yang sama:</p><pre class="text-xs bg-gray-100 dark:bg-gray-800 p-2.5 rounded-xl text-left font-sans whitespace-pre-wrap leading-relaxed">${listQ}</pre><p class="text-xs mt-2 text-slate-700 dark:text-slate-300">Jika Anda menyetujui pengajuan <strong>${item.nama_peminjam}</strong>, maka stok akan dikunci untuknya dan antrian lain tidak dapat disetujui. Lanjutkan?</p>`,
+                    html: `
+                        <p class="text-xs mb-2 text-amber-800 font-bold text-left">
+                            Ada antrian pengajuan lain yang mengincar barang & tanggal yang sama:
+                        </p>
+                        <div class="my-2 max-h-48 overflow-y-auto">
+                            ${cardsHtml}
+                        </div>
+                        <p class="text-xs mt-2 text-slate-700 text-left leading-relaxed">
+                            Jika Anda menyetujui pengajuan <strong>${item.nama_peminjam}</strong>, stok akan dikunci untuknya dan antrian lain tidak dapat disetujui. Lanjutkan?
+                        </p>
+                    `,
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#FF7300',
@@ -1768,7 +1812,7 @@ Jazakumullah Khairan Katsiran.
                 await Swal.fire({
                     icon: 'error',
                     title: 'Gagal Menyetujui!',
-                    text: resServer.message || 'Stok barang tidak mencukupi di server.',
+                    text: resServer.message || resServer.error || 'Stok barang tidak mencukupi di server.',
                     confirmButtonColor: '#FF7300'
                 });
                 renderDashboard();

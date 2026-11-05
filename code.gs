@@ -901,6 +901,14 @@ function getSettings() {
 // ============================================================
 // HELPER DRIVE & TABLES
 // ============================================================
+function formatCellValue(val) {
+  if (val === null || val === undefined) return "";
+  if (val instanceof Date) {
+    return Utilities.formatDate(val, "Asia/Jakarta", "yyyy-MM-dd HH:mm:ss");
+  }
+  return String(val).trim();
+}
+
 function getTableData(sheetName) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName(sheetName);
