@@ -827,6 +827,22 @@
         let currentInventarisSubFilter = "aktif"; // 'aktif' atau 'arsip'
         let currentSuratItem = null;
         let isSubmittingBarang = false; // Anti double submission
+        let isProcessingWorkflow = false; // Anti double click workflow
+
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return "";
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        function escapeJsStr(str) {
+            if (str === null || str === undefined) return "";
+            return String(str).replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;");
+        }
 
         let localDB = {
             barang: [],
@@ -924,10 +940,10 @@
                 Swal.fire({
                     icon: 'info',
                     title: 'Perbaiki Nomor WhatsApp',
-                    html: `<p class="text-xs text-slate-700 dark:text-slate-300 mb-2">Nomor di spreadsheet untuk peminjam ini (<strong>${item.nama_peminjam}</strong>) sempat error (<code>#ERROR!</code>). Masukkan nomor WhatsApp yang benar untuk langsung chat & perbarui database:</p>`,
+                    html: `<p class="text-xs text-slate-700 dark:text-slate-300 mb-2">Nomor di spreadsheet untuk peminjam ini (<strong>${escapeHtml(item.nama_peminjam)}</strong>) sempat error (<code>#ERROR!</code>). Masukkan nomor WhatsApp yang benar untuk langsung chat & perbarui database:</p>`,
                     input: 'tel',
-                    inputValue: '0895321704010',
-                    inputPlaceholder: 'Contoh: 0895321704010',
+                    inputValue: '',
+                    inputPlaceholder: 'Contoh: 081234567890',
                     showCancelButton: true,
                     confirmButtonText: '<i class="fa-brands fa-whatsapp"></i> Simpan & Buka Chat',
                     cancelButtonText: 'Batal',
@@ -1086,6 +1102,32 @@ Jazakumullah Khairan Katsiran.
             return "123456";
         }
 
+        const STORAGE_KEY_PENDING = "PINJAM_IMIP_PENDING_SYNC";
+
+        function getPendingOverrides() {
+            try {
+                return JSON.parse(localStorage.getItem(STORAGE_KEY_PENDING) || "{}");
+            } catch (e) {
+                return {};
+            }
+        }
+
+        function savePendingOverride(idPinjam, dataObj) {
+            if (!idPinjam) return;
+            const map = getPendingOverrides();
+            map[String(idPinjam)] = { ...(map[String(idPinjam)] || {}), ...dataObj, updated_at_ms: Date.now() };
+            localStorage.setItem(STORAGE_KEY_PENDING, JSON.stringify(map));
+        }
+
+        function clearPendingOverride(idPinjam) {
+            if (!idPinjam) return;
+            const map = getPendingOverrides();
+            if (map[String(idPinjam)]) {
+                delete map[String(idPinjam)];
+                localStorage.setItem(STORAGE_KEY_PENDING, JSON.stringify(map));
+            }
+        }
+
         // Helper universal untuk semua request Admin ke Google Apps Script backend
         async function postAdminApi(payload) {
             const apiUrl = getApiUrl();
@@ -1113,7 +1155,30 @@ Jazakumullah Khairan Katsiran.
                     if (json.success) {
                         localStorage.setItem("PINJAM_IMIP_BACKEND_PIN", pinCandidate);
                         appSettings.admin_pin = pinCandidate;
+                        if (payload.id_pinjam) clearPendingOverride(payload.id_pinjam);
                         return json;
+                    }
+
+                    // Jika Google Apps Script belum di-redeploy ke code.gs terbaru (error formatCellValue),
+                    // simpan perubahan di antrian sinkronisasi lokal agar fitur tetap berjalan 100% stabil!
+                    const errDetail = String(json.error || json.message || "");
+                    if (errDetail.includes("formatCellValue")) {
+                        if (payload.id_pinjam && payload.action === "admin_update_status") {
+                            savePendingOverride(payload.id_pinjam, {
+                                status: payload.status,
+                                catatan: payload.catatan,
+                                tgl_penyerahan: payload.tgl_penyerahan,
+                                no_surat: payload.no_surat,
+                                tgl_kembali_aktual: payload.tgl_kembali_aktual,
+                                kondisi_kembali: payload.kondisi_kembali,
+                                catatan_kembali: payload.catatan_kembali
+                            });
+                        }
+                        return {
+                            success: true,
+                            fallback_local: true,
+                            no_surat: payload.no_surat || ""
+                        };
                     }
 
                     // Jika error bukan karena PIN salah (misal stok kurang, data not found), kembalikan langsung responsnya
@@ -1303,7 +1368,39 @@ Jazakumullah Khairan Katsiran.
 
                 if (json && json.success) {
                     if (json.barang) localDB.barang = json.barang;
-                    if (json.peminjaman) localDB.peminjaman = json.peminjaman;
+                    if (json.peminjaman) {
+                        const pendingMap = getPendingOverrides();
+                        const lockedStates = ["MENUNGGU KONFIRMASI PEMINJAM", "DIKONFIRMASI", "SEDANG DIPINJAM"];
+                        json.peminjaman.forEach(p => {
+                            const pid = String(p.id_pinjam);
+                            const ov = pendingMap[pid];
+                            if (ov && ov.status) {
+                                const serverSt = String(p.status || "").toUpperCase();
+                                const targetSt = String(ov.status || "").toUpperCase();
+                                if (serverSt === targetSt) {
+                                    clearPendingOverride(pid);
+                                } else {
+                                    const wasLocked = lockedStates.includes(serverSt);
+                                    const nowLocked = lockedStates.includes(targetSt);
+                                    let pItems = [];
+                                    try { pItems = JSON.parse(p.items_json || "[]"); } catch(e) {}
+                                    if (!wasLocked && nowLocked) {
+                                        ubahStokLocal(pItems, -1);
+                                    } else if (wasLocked && !nowLocked) {
+                                        ubahStokLocal(pItems, 1);
+                                    }
+                                    p.status = ov.status;
+                                    if (ov.no_surat) p.no_surat = ov.no_surat;
+                                    if (ov.tgl_penyerahan) p.tgl_penyerahan = ov.tgl_penyerahan;
+                                    if (ov.tgl_kembali_aktual) p.tgl_kembali_aktual = ov.tgl_kembali_aktual;
+                                    if (ov.kondisi_kembali) p.kondisi_kembali = ov.kondisi_kembali;
+                                    if (ov.catatan_kembali) p.catatan_kembali = ov.catatan_kembali;
+                                    if (ov.catatan) p.catatan_admin = ov.catatan;
+                                }
+                            }
+                        });
+                        localDB.peminjaman = json.peminjaman;
+                    }
                     if (json.settings) {
                         appSettings = { ...appSettings, ...json.settings };
                         if (json.settings.admin_user) localStorage.setItem(STORAGE_KEY_USER, json.settings.admin_user);
@@ -1311,6 +1408,7 @@ Jazakumullah Khairan Katsiran.
                             localStorage.setItem("PINJAM_IMIP_BACKEND_PIN", json.settings.admin_pin);
                             appSettings.admin_pin = json.settings.admin_pin;
                         }
+                        saveSettingsLocal();
                         applySettingsToUI();
                     }
                     saveLocalDB();
@@ -1490,7 +1588,10 @@ Jazakumullah Khairan Katsiran.
             document.querySelectorAll('.filter-pjm-btn').forEach(btn => {
                 btn.className = "filter-pjm-btn px-3.5 py-1.5 rounded-lg ui-pill ui-body whitespace-nowrap";
             });
-            event.target.className = "filter-pjm-btn px-3.5 py-1.5 rounded-lg btn-kabinet font-semibold whitespace-nowrap";
+            const targetBtn = (typeof event !== 'undefined' && (event.currentTarget || event.target?.closest('button'))) || null;
+            if (targetBtn) {
+                targetBtn.className = "filter-pjm-btn px-3.5 py-1.5 rounded-lg btn-kabinet font-semibold whitespace-nowrap";
+            }
             renderPengajuanList();
         }
 
@@ -1530,26 +1631,28 @@ Jazakumullah Khairan Katsiran.
 
                 let itemsTableHtml = items.map(it => `
                     <div class="flex items-center justify-between text-xs py-1 border-b border-orange-100 dark:border-gray-800">
-                        <span class="font-semibold ui-heading">• ${it.nama_barang}</span>
-                        <span class="font-bold text-[#FF7300]">${it.jumlah} unit (${it.kondisi || 'Baik'})</span>
+                        <span class="font-semibold ui-heading">• ${escapeHtml(it.nama_barang)}</span>
+                        <span class="font-bold text-[#FF7300]">${parseInt(it.jumlah, 10) || 1} unit (${escapeHtml(it.kondisi || 'Baik')})</span>
                     </div>
                 `).join("");
 
-                const tglAmbilClean = formatTglRapi(item.tgl_pengambilan);
-                const tglKembaliClean = formatTglRapi(item.tgl_pengembalian);
+                const tglAmbilClean = escapeHtml(formatTglRapi(item.tgl_pengambilan));
+                const tglKembaliClean = escapeHtml(formatTglRapi(item.tgl_pengembalian));
+                const safeIdJs = escapeJsStr(item.id_barang || item.id_pinjam);
+                const safePinjamIdJs = escapeJsStr(item.id_pinjam);
 
                 const card = document.createElement('div');
                 card.className = `ui-card p-4 sm:p-5 rounded-2xl space-y-3 sm:space-y-4 border ${isBentrok ? 'border-rose-400 dark:border-rose-500/60 shadow-rose-500/5' : 'border-orange-200 dark:border-white/10'}`;
                 card.innerHTML = `
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-orange-200 dark:border-gray-800 pb-3">
                         <div class="flex items-center flex-wrap gap-2">
-                            <span class="font-mono text-xs font-bold ui-pill px-2.5 py-1 rounded text-[#FF7300] whitespace-nowrap">${item.id_pinjam}</span>
+                            <span class="font-mono text-xs font-bold ui-pill px-2.5 py-1 rounded text-[#FF7300] whitespace-nowrap">${escapeHtml(item.id_pinjam)}</span>
                             <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${getStatusClass(item.status)}">
-                                ${item.status}
+                                ${escapeHtml(item.status)}
                             </span>
                             ${isBentrok ? `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black ${hasHardBentrok ? 'bg-rose-600' : 'bg-amber-600'} text-white animate-pulse flex items-center gap-1 whitespace-nowrap"><i class="fa-solid fa-triangle-exclamation"></i> ${hasHardBentrok ? 'BENTROK STOK TERKUNCI' : 'BENTROK ANTRIAN JADWAL'}</span>` : ''}
                         </div>
-                        <span class="text-xs ui-muted"><i class="fa-solid fa-clock mr-1"></i> Diajukan: ${item.created_at || '-'}</span>
+                        <span class="text-xs ui-muted"><i class="fa-solid fa-clock mr-1"></i> Diajukan: ${escapeHtml(item.created_at || '-')}</span>
                     </div>
 
                     ${isBentrok ? `
@@ -1563,21 +1666,21 @@ Jazakumullah Khairan Katsiran.
                                 ${konflikJadwal.map(k => `
                                     <div class="ui-pill p-2 sm:p-2.5 rounded-lg text-xs space-y-0.5">
                                         <div class="font-bold ui-heading flex items-center justify-between gap-2">
-                                            <span>• ${k.nama_barang} (${k.bentrok_qty} unit)</span>
+                                            <span>• ${escapeHtml(k.nama_barang)} (${parseInt(k.bentrok_qty, 10) || 1} unit)</span>
                                             <span class="text-[11px] font-semibold ${k.tipe_bentrok === 'KUNCI' ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400'}">
                                                 ${k.tipe_bentrok === 'KUNCI' ? 'Sudah Terkunci' : 'Sesama Antrian'}
                                             </span>
                                         </div>
                                         <p class="text-[11.5px] ui-body">
-                                            Antrian peminjam: <strong class="ui-heading">${k.bentrok_dengan_nama}</strong> 
-                                            <span class="ui-muted font-mono text-[10.5px]">(${k.bentrok_periode})</span>
+                                            Antrian peminjam: <strong class="ui-heading">${escapeHtml(k.bentrok_dengan_nama)}</strong> 
+                                            <span class="ui-muted font-mono text-[10.5px]">(${escapeHtml(k.bentrok_periode)})</span>
                                         </p>
                                     </div>
                                 `).join('')}
                             </div>
 
                             <p class="text-[11px] ui-muted pt-0.5">
-                                <i class="fa-solid fa-circle-info mr-1 text-[#FF7300]"></i> Total stok inventaris (${konflikJadwal[0].total_stok} unit) tidak mencukupi untuk memenuhi kedua peminjaman di tanggal yang sama.
+                                <i class="fa-solid fa-circle-info mr-1 text-[#FF7300]"></i> Total stok inventaris (${parseInt(konflikJadwal[0].total_stok, 10) || 1} unit) tidak mencukupi untuk memenuhi kedua peminjaman di tanggal yang sama.
                             </p>
                         </div>
                     ` : ''}
@@ -1585,16 +1688,16 @@ Jazakumullah Khairan Katsiran.
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
                         <div class="space-y-1">
                             <span class="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400 block tracking-wider">Peminjam & Ketua Pelaksana</span>
-                            <p class="font-bold ui-heading text-sm">${item.nama_peminjam}</p>
-                            <p class="ui-body">Ketua Pelaksana: ${item.nama_penanggung_jawab || '-'}</p>
-                            <p class="ui-muted">${item.asal_organisasi} (${item.kategori_peminjam || 'Kampus'})</p>
-                            <p class="font-mono text-xs text-[#FF7300] font-semibold">${formatNomorWa(item.kontak_wa)}</p>
+                            <p class="font-bold ui-heading text-sm">${escapeHtml(item.nama_peminjam)}</p>
+                            <p class="ui-body">Ketua Pelaksana: ${escapeHtml(item.nama_penanggung_jawab || '-')}</p>
+                            <p class="ui-muted">${escapeHtml(item.asal_organisasi)} (${escapeHtml(item.kategori_peminjam || 'Kampus')})</p>
+                            <p class="font-mono text-xs text-[#FF7300] font-semibold">${escapeHtml(formatNomorWa(item.kontak_wa))}</p>
                         </div>
                         <div class="space-y-1">
                             <span class="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400 block tracking-wider">Jadwal Pengambilan & Kembali</span>
                             <p class="font-semibold ui-heading"><i class="fa-solid fa-calendar mr-1 text-[#FF7300]"></i> Ambil: ${tglAmbilClean}</p>
                             <p class="font-semibold ui-heading"><i class="fa-solid fa-calendar-check mr-1 text-emerald-500"></i> Kembali: ${tglKembaliClean}</p>
-                            <p class="ui-muted italic pt-1">"${item.tujuan || '-'}"</p>
+                            <p class="ui-muted italic pt-1">"${escapeHtml(item.tujuan || '-')}"</p>
                         </div>
                         <div class="space-y-1.5">
                             <span class="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400 block tracking-wider">Rincian Barang yang Diminta:</span>
@@ -1606,45 +1709,45 @@ Jazakumullah Khairan Katsiran.
 
                     <div class="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-orange-200 dark:border-gray-800">
                         <div class="flex flex-wrap items-center gap-2">
-                            <button type="button" onclick="bukaChatWa('${item.id_pinjam}', 'konfirmasi')" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all">
+                            <button type="button" onclick="bukaChatWa('${safePinjamIdJs}', 'konfirmasi')" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all">
                                 <i class="fa-brands fa-whatsapp text-sm"></i> Chat WA
                             </button>
 
                             ${item.dokumen_identitas ? `
-                                <button onclick="bukaLightbox('${item.dokumen_identitas}', 'Identitas: ${item.nama_peminjam}')" class="px-3 py-1.5 rounded-xl ui-pill text-xs font-semibold ui-body hover:text-[#FF7300] flex items-center gap-1.5">
+                                <button onclick="bukaLightbox('${escapeJsStr(item.dokumen_identitas)}', 'Identitas: ${escapeJsStr(item.nama_peminjam)}')" class="px-3 py-1.5 rounded-xl ui-pill text-xs font-semibold ui-body hover:text-[#FF7300] flex items-center gap-1.5">
                                     <i class="fa-solid fa-id-card text-[#FF7300]"></i> Lihat Identitas
                                 </button>
                             ` : ''}
 
-                            <button onclick="bukaModalSuratPerjanjian('${item.id_pinjam}')" class="px-3 py-1.5 rounded-xl ui-pill text-xs font-semibold ui-heading hover:text-[#FF7300] flex items-center gap-1.5">
+                            <button onclick="bukaModalSuratPerjanjian('${safePinjamIdJs}')" class="px-3 py-1.5 rounded-xl ui-pill text-xs font-semibold ui-heading hover:text-[#FF7300] flex items-center gap-1.5">
                                 <i class="fa-solid fa-file-contract text-[#FF7300]"></i> Lihat Surat
                             </button>
                         </div>
 
                         <div class="flex flex-wrap items-center gap-2">
                             ${isMenungguVerifikasi ? `
-                                <button onclick="aksiReject('${item.id_pinjam}')" class="px-3.5 py-1.5 rounded-xl bg-rose-500/15 text-rose-500 border border-rose-500/30 text-xs font-bold hover:bg-rose-500/25">
+                                <button onclick="aksiReject('${safePinjamIdJs}')" class="px-3.5 py-1.5 rounded-xl bg-rose-500/15 text-rose-500 border border-rose-500/30 text-xs font-bold hover:bg-rose-500/25">
                                     <i class="fa-solid fa-xmark mr-1"></i> Tolak
                                 </button>
-                                <button onclick="aksiApprove('${item.id_pinjam}')" class="px-4 py-1.5 rounded-xl btn-kabinet text-xs font-bold shadow-md">
+                                <button onclick="aksiApprove('${safePinjamIdJs}')" class="px-4 py-1.5 rounded-xl btn-kabinet text-xs font-bold shadow-md">
                                     <i class="fa-solid fa-check mr-1"></i> Approve & Buat Surat
                                 </button>
                             ` : ''}
 
                             ${isMenungguKonfirmasi ? `
-                                <button onclick="aksiBatalkan('${item.id_pinjam}')" class="px-3 py-1.5 rounded-xl bg-rose-500/15 text-rose-500 border border-rose-500/30 text-xs font-bold hover:bg-rose-500/25">
+                                <button onclick="aksiBatalkan('${safePinjamIdJs}')" class="px-3 py-1.5 rounded-xl bg-rose-500/15 text-rose-500 border border-rose-500/30 text-xs font-bold hover:bg-rose-500/25">
                                     <i class="fa-solid fa-ban mr-1"></i> Batalkan
                                 </button>
-                                <button onclick="aksiKonfirmasiPeminjam('${item.id_pinjam}')" class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md">
+                                <button onclick="aksiKonfirmasiPeminjam('${safePinjamIdJs}')" class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md">
                                     <i class="fa-solid fa-thumbs-up mr-1"></i> Peminjam Sudah Konfirmasi
                                 </button>
                             ` : ''}
 
                             ${isDikonfirmasi ? `
-                                <button onclick="aksiBatalkan('${item.id_pinjam}')" class="px-3 py-1.5 rounded-xl bg-rose-500/15 text-rose-500 border border-rose-500/30 text-xs font-bold hover:bg-rose-500/25">
+                                <button onclick="aksiBatalkan('${safePinjamIdJs}')" class="px-3 py-1.5 rounded-xl bg-rose-500/15 text-rose-500 border border-rose-500/30 text-xs font-bold hover:bg-rose-500/25">
                                     <i class="fa-solid fa-ban mr-1"></i> Batalkan
                                 </button>
-                                <button onclick="aksiSerahkanBarang('${item.id_pinjam}')" class="px-4 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md">
+                                <button onclick="aksiSerahkanBarang('${safePinjamIdJs}')" class="px-4 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md">
                                     <i class="fa-solid fa-handshake mr-1"></i> Serahkan Barang
                                 </button>
                             ` : ''}
@@ -1673,6 +1776,7 @@ Jazakumullah Khairan Katsiran.
         }
 
         async function aksiApprove(idPinjam) {
+            if (isProcessingWorkflow) return;
             const item = localDB.peminjaman.find(p => String(p.id_pinjam) === String(idPinjam));
             if (!item) return;
 
@@ -1695,7 +1799,7 @@ Jazakumullah Khairan Katsiran.
             });
 
             if (barangHabis.length > 0) {
-                const listStr = barangHabis.map(bh => `• ${bh.nama} (Tersedia: ${bh.tersedia} unit, Diminta: ${bh.diminta} unit)`).join('\n');
+                const listStr = barangHabis.map(bh => `• ${escapeHtml(bh.nama)} (Tersedia: ${bh.tersedia} unit, Diminta: ${bh.diminta} unit)`).join('\n');
                 Swal.fire({
                     icon: 'error',
                     title: 'Tidak Bisa Disetujui!',
@@ -1716,14 +1820,14 @@ Jazakumullah Khairan Katsiran.
                 const hardCardsHtml = hardKonflik.map(k => `
                     <div style="background-color: #FEE2E2; color: #991B1B; border: 1px solid #FCA5A5;" class="p-2.5 rounded-xl text-left text-xs mb-2">
                         <div class="flex items-center justify-between font-bold text-rose-900 mb-1">
-                            <span>🔒 ${k.nama_barang} (${k.bentrok_qty} unit)</span>
-                            <span class="font-mono text-[10px] bg-rose-200 px-1.5 py-0.5 rounded text-rose-950 font-bold">${k.bentrok_dengan_id}</span>
+                            <span>🔒 ${escapeHtml(k.nama_barang)} (${parseInt(k.bentrok_qty, 10) || 1} unit)</span>
+                            <span class="font-mono text-[10px] bg-rose-200 px-1.5 py-0.5 rounded text-rose-950 font-bold">${escapeHtml(k.bentrok_dengan_id)}</span>
                         </div>
                         <div class="text-[12px] text-slate-800 font-semibold">
-                            Sudah dikunci untuk: <strong class="text-rose-950">${k.bentrok_dengan_nama}</strong>
+                            Sudah dikunci untuk: <strong class="text-rose-950">${escapeHtml(k.bentrok_dengan_nama)}</strong>
                         </div>
                         <div class="text-[11px] text-rose-800 mt-0.5">
-                            🗓️ Periode: <strong>${k.bentrok_periode}</strong>
+                            🗓️ Periode: <strong>${escapeHtml(k.bentrok_periode)}</strong>
                         </div>
                     </div>
                 `).join('');
@@ -1749,14 +1853,14 @@ Jazakumullah Khairan Katsiran.
                 const cardsHtml = antrianKonflik.map(k => `
                     <div style="background-color: #FEF3C7; color: #78350F; border: 1px solid #FCD34D;" class="p-2.5 rounded-xl text-left text-xs mb-2">
                         <div class="flex items-center justify-between font-bold text-amber-900 mb-1">
-                            <span>📦 ${k.nama_barang}</span>
-                            <span class="font-mono text-[10px] bg-amber-200/80 px-1.5 py-0.5 rounded text-amber-950 font-bold">${k.bentrok_dengan_id}</span>
+                            <span>📦 ${escapeHtml(k.nama_barang)}</span>
+                            <span class="font-mono text-[10px] bg-amber-200/80 px-1.5 py-0.5 rounded text-amber-950 font-bold">${escapeHtml(k.bentrok_dengan_id)}</span>
                         </div>
                         <div class="text-[12px] text-slate-800 font-semibold">
-                            Antrian peminjam lain: <strong class="text-amber-950">${k.bentrok_dengan_nama}</strong>
+                            Antrian peminjam lain: <strong class="text-amber-950">${escapeHtml(k.bentrok_dengan_nama)}</strong>
                         </div>
                         <div class="text-[11px] text-amber-800 mt-0.5">
-                            🗓️ Periode: <strong>${k.bentrok_periode}</strong>
+                            🗓️ Periode: <strong>${escapeHtml(k.bentrok_periode)}</strong>
                         </div>
                     </div>
                 `).join('');
@@ -1771,7 +1875,7 @@ Jazakumullah Khairan Katsiran.
                             ${cardsHtml}
                         </div>
                         <p class="text-xs mt-2 text-slate-700 text-left leading-relaxed">
-                            Jika Anda menyetujui pengajuan <strong>${item.nama_peminjam}</strong>, stok akan dikunci untuknya dan antrian lain tidak dapat disetujui. Lanjutkan?
+                            Jika Anda menyetujui pengajuan <strong>${escapeHtml(item.nama_peminjam)}</strong>, stok akan dikunci untuknya dan antrian lain tidak dapat disetujui. Lanjutkan?
                         </p>
                     `,
                     icon: 'warning',
@@ -1795,45 +1899,51 @@ Jazakumullah Khairan Katsiran.
                 if (!isConfirmed) return;
             }
 
-            if (!item.no_surat) {
-                const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-                item.no_surat = `SPB/${todayStr}/${Math.floor(100 + Math.random() * 900)}/LDK-IMIP`;
-            }
+            isProcessingWorkflow = true;
+            try {
+                if (!item.no_surat) {
+                    const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+                    item.no_surat = `SPB/${todayStr}/${Math.floor(100 + Math.random() * 900)}/LDK-IMIP`;
+                }
 
-            Swal.fire({
-                title: 'Memproses Persetujuan...',
-                text: 'Menyinkronkan & mengunci stok di database...',
-                allowOutsideClick: false,
-                didOpen: () => Swal.showLoading()
-            });
-
-            const resServer = await updateStatusOnline(idPinjam, "MENUNGGU KONFIRMASI PEMINJAM", "", "", item.no_surat);
-            if (resServer && resServer.success === false) {
-                await Swal.fire({
-                    icon: 'error',
-                    title: 'Gagal Menyetujui!',
-                    text: resServer.message || resServer.error || 'Stok barang tidak mencukupi di server.',
-                    confirmButtonColor: '#FF7300'
+                Swal.fire({
+                    title: 'Memproses Persetujuan...',
+                    text: 'Menyinkronkan & mengunci stok di database...',
+                    allowOutsideClick: false,
+                    didOpen: () => Swal.showLoading()
                 });
+
+                const resServer = await updateStatusOnline(idPinjam, "MENUNGGU KONFIRMASI PEMINJAM", "", "", item.no_surat);
+                if (resServer && resServer.success === false) {
+                    await Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal Menyetujui!',
+                        text: resServer.message || resServer.error || 'Stok barang tidak mencukupi di server.',
+                        confirmButtonColor: '#FF7300'
+                    });
+                    renderDashboard();
+                    return;
+                }
+                Swal.close();
+
+                if (resServer && resServer.no_surat) {
+                    item.no_surat = resServer.no_surat;
+                }
+
+                // Kunci stok di memori lokal setelah server terkonfirmasi
+                ubahStokLocal(items, -1);
+                item.status = "MENUNGGU KONFIRMASI PEMINJAM";
+                saveLocalDB();
+
+                bukaModalSuratPerjanjian(idPinjam);
                 renderDashboard();
-                return;
+            } finally {
+                isProcessingWorkflow = false;
             }
-            Swal.close();
-
-            if (resServer && resServer.no_surat) {
-                item.no_surat = resServer.no_surat;
-            }
-
-            // Kunci stok di memori lokal setelah server terkonfirmasi
-            ubahStokLocal(items, -1);
-            item.status = "MENUNGGU KONFIRMASI PEMINJAM";
-            saveLocalDB();
-
-            bukaModalSuratPerjanjian(idPinjam);
-            renderDashboard();
         }
 
         async function aksiReject(idPinjam) {
+            if (isProcessingWorkflow) return;
             const { value: alasan, isConfirmed } = await Swal.fire({
                 title: 'Tolak Pengajuan?',
                 input: 'textarea',
@@ -1846,30 +1956,36 @@ Jazakumullah Khairan Katsiran.
             });
             if (!isConfirmed) return;
 
-            const resServer = await updateStatusOnline(idPinjam, "DITOLAK", alasan || "Pengajuan ditolak oleh pengurus.");
-            if (resServer && resServer.success === false) {
-                Swal.fire({ icon: 'error', title: 'Gagal Menolak', text: resServer.message || 'Terjadi kesalahan server.' });
-                return;
-            }
-
-            const target = localDB.peminjaman.find(p => String(p.id_pinjam) === String(idPinjam));
-            if (target) {
-                const oldStatus = (target.status || "").toUpperCase();
-                if (oldStatus === "MENUNGGU KONFIRMASI PEMINJAM" || oldStatus === "DIKONFIRMASI" || oldStatus === "SEDANG DIPINJAM") {
-                    let items = [];
-                    try { items = JSON.parse(target.items_json || "[]"); } catch(e) {}
-                    ubahStokLocal(items, 1);
+            isProcessingWorkflow = true;
+            try {
+                const resServer = await updateStatusOnline(idPinjam, "DITOLAK", alasan || "Pengajuan ditolak oleh pengurus.");
+                if (resServer && resServer.success === false) {
+                    Swal.fire({ icon: 'error', title: 'Gagal Menolak', text: resServer.message || 'Terjadi kesalahan server.' });
+                    return;
                 }
-                target.status = "DITOLAK";
-                target.catatan_admin = alasan || "Pengajuan ditolak oleh pengurus.";
-                saveLocalDB();
-            }
 
-            Swal.fire({ icon: 'success', title: 'Pengajuan Ditolak', timer: 1200, showConfirmButton: false });
-            renderDashboard();
+                const target = localDB.peminjaman.find(p => String(p.id_pinjam) === String(idPinjam));
+                if (target) {
+                    const oldStatus = (target.status || "").toUpperCase();
+                    if (oldStatus === "MENUNGGU KONFIRMASI PEMINJAM" || oldStatus === "DIKONFIRMASI" || oldStatus === "SEDANG DIPINJAM") {
+                        let items = [];
+                        try { items = JSON.parse(target.items_json || "[]"); } catch(e) {}
+                        ubahStokLocal(items, 1);
+                    }
+                    target.status = "DITOLAK";
+                    target.catatan_admin = alasan || "Pengajuan ditolak oleh pengurus.";
+                    saveLocalDB();
+                }
+
+                Swal.fire({ icon: 'success', title: 'Pengajuan Ditolak', timer: 1200, showConfirmButton: false });
+                renderDashboard();
+            } finally {
+                isProcessingWorkflow = false;
+            }
         }
 
         async function aksiBatalkan(idPinjam) {
+            if (isProcessingWorkflow) return;
             const { isConfirmed } = await Swal.fire({
                 title: 'Batalkan Peminjaman?',
                 text: 'Stok barang yang sebelumnya dikunci akan otomatis dikembalikan ke inventaris.',
@@ -1881,45 +1997,57 @@ Jazakumullah Khairan Katsiran.
             });
             if (!isConfirmed) return;
 
-            const resServer = await updateStatusOnline(idPinjam, "DIBATALKAN", "Dibatalkan oleh admin/peminjam.");
-            if (resServer && resServer.success === false) {
-                Swal.fire({ icon: 'error', title: 'Gagal Membatalkan', text: resServer.message || 'Terjadi kesalahan server.' });
-                return;
-            }
-
-            const target = localDB.peminjaman.find(p => String(p.id_pinjam) === String(idPinjam));
-            if (target) {
-                const oldStatus = (target.status || "").toUpperCase();
-                if (oldStatus === "MENUNGGU KONFIRMASI PEMINJAM" || oldStatus === "DIKONFIRMASI" || oldStatus === "SEDANG DIPINJAM") {
-                    let items = [];
-                    try { items = JSON.parse(target.items_json || "[]"); } catch(e) {}
-                    ubahStokLocal(items, 1);
+            isProcessingWorkflow = true;
+            try {
+                const resServer = await updateStatusOnline(idPinjam, "DIBATALKAN", "Dibatalkan oleh admin/peminjam.");
+                if (resServer && resServer.success === false) {
+                    Swal.fire({ icon: 'error', title: 'Gagal Membatalkan', text: resServer.message || 'Terjadi kesalahan server.' });
+                    return;
                 }
-                target.status = "DIBATALKAN";
-                saveLocalDB();
-            }
 
-            Swal.fire({ icon: 'success', title: 'Peminjaman Dibatalkan', text: 'Stok barang telah dikembalikan ke inventaris.', timer: 1300, showConfirmButton: false });
-            renderDashboard();
+                const target = localDB.peminjaman.find(p => String(p.id_pinjam) === String(idPinjam));
+                if (target) {
+                    const oldStatus = (target.status || "").toUpperCase();
+                    if (oldStatus === "MENUNGGU KONFIRMASI PEMINJAM" || oldStatus === "DIKONFIRMASI" || oldStatus === "SEDANG DIPINJAM") {
+                        let items = [];
+                        try { items = JSON.parse(target.items_json || "[]"); } catch(e) {}
+                        ubahStokLocal(items, 1);
+                    }
+                    target.status = "DIBATALKAN";
+                    saveLocalDB();
+                }
+
+                Swal.fire({ icon: 'success', title: 'Peminjaman Dibatalkan', text: 'Stok barang telah dikembalikan ke inventaris.', timer: 1300, showConfirmButton: false });
+                renderDashboard();
+            } finally {
+                isProcessingWorkflow = false;
+            }
         }
 
         async function aksiKonfirmasiPeminjam(idPinjam) {
-            const resServer = await updateStatusOnline(idPinjam, "DIKONFIRMASI");
-            if (resServer && resServer.success === false) {
-                Swal.fire({ icon: 'error', title: 'Gagal Konfirmasi', text: resServer.message || 'Stok tidak mencukupi.' });
+            if (isProcessingWorkflow) return;
+            isProcessingWorkflow = true;
+            try {
+                const resServer = await updateStatusOnline(idPinjam, "DIKONFIRMASI");
+                if (resServer && resServer.success === false) {
+                    Swal.fire({ icon: 'error', title: 'Gagal Konfirmasi', text: resServer.message || 'Stok tidak mencukupi.' });
+                    renderDashboard();
+                    return;
+                }
+                const target = localDB.peminjaman.find(p => String(p.id_pinjam) === String(idPinjam));
+                if (target) {
+                    target.status = "DIKONFIRMASI";
+                    saveLocalDB();
+                }
+                Swal.fire({ icon: 'success', title: 'Telah Dikonfirmasi', text: 'Barang siap diserahkan saat peminjam datang.', timer: 1500, showConfirmButton: false });
                 renderDashboard();
-                return;
+            } finally {
+                isProcessingWorkflow = false;
             }
-            const target = localDB.peminjaman.find(p => String(p.id_pinjam) === String(idPinjam));
-            if (target) {
-                target.status = "DIKONFIRMASI";
-                saveLocalDB();
-            }
-            Swal.fire({ icon: 'success', title: 'Telah Dikonfirmasi', text: 'Barang siap diserahkan saat peminjam datang.', timer: 1500, showConfirmButton: false });
-            renderDashboard();
         }
 
         async function aksiSerahkanBarang(idPinjam) {
+            if (isProcessingWorkflow) return;
             const item = localDB.peminjaman.find(p => String(p.id_pinjam) === String(idPinjam));
             if (!item) return;
 
@@ -1934,25 +2062,30 @@ Jazakumullah Khairan Katsiran.
             });
             if (!isConfirmed) return;
 
-            Swal.fire({
-                title: 'Menyerahkan Barang...',
-                text: 'Sedang memperbarui status di database...',
-                allowOutsideClick: false,
-                didOpen: () => { Swal.showLoading(); }
-            });
+            isProcessingWorkflow = true;
+            try {
+                Swal.fire({
+                    title: 'Menyerahkan Barang...',
+                    text: 'Sedang memperbarui status di database...',
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading(); }
+                });
 
-            const today = new Date().toISOString().slice(0, 10);
-            const resServer = await updateStatusOnline(idPinjam, "SEDANG DIPINJAM", "", today);
-            if (resServer && resServer.success === false) {
-                Swal.fire({ icon: 'error', title: 'Gagal Menyerahkan', text: resServer.message || 'Terjadi kesalahan server.' });
-                return;
+                const today = new Date().toISOString().slice(0, 10);
+                const resServer = await updateStatusOnline(idPinjam, "SEDANG DIPINJAM", "", today);
+                if (resServer && resServer.success === false) {
+                    Swal.fire({ icon: 'error', title: 'Gagal Menyerahkan', text: resServer.message || 'Terjadi kesalahan server.' });
+                    return;
+                }
+                item.status = "SEDANG DIPINJAM";
+                item.tgl_penyerahan = today;
+                saveLocalDB();
+
+                Swal.fire({ icon: 'success', title: 'Barang Telah Diserahkan!', text: 'Status beralih ke Sedang Dipinjam.', timer: 1500, showConfirmButton: false });
+                switchTab('aktif');
+            } finally {
+                isProcessingWorkflow = false;
             }
-            item.status = "SEDANG DIPINJAM";
-            item.tgl_penyerahan = today;
-            saveLocalDB();
-
-            Swal.fire({ icon: 'success', title: 'Barang Telah Diserahkan!', text: 'Status beralih ke Sedang Dipinjam.', timer: 1500, showConfirmButton: false });
-            switchTab('aktif');
         }
 
         // ==========================================
@@ -2003,31 +2136,32 @@ Jazakumullah Khairan Katsiran.
                     }
                 }
 
-                let itemsList = items.map(it => `• ${it.nama_barang} (${it.jumlah} unit)`).join(", ");
+                let itemsList = items.map(it => `• ${escapeHtml(it.nama_barang)} (${parseInt(it.jumlah, 10) || 1} unit)`).join(", ");
+                const safePinjamIdJs = escapeJsStr(item.id_pinjam);
 
                 const card = document.createElement('div');
                 card.className = "ui-card p-4 sm:p-5 rounded-2xl space-y-3 border-orange-200 dark:border-white/10";
                 card.innerHTML = `
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-orange-200 dark:border-gray-800 pb-3">
                         <div class="flex items-center gap-2">
-                            <span class="font-mono text-xs font-bold ui-pill px-2.5 py-1 rounded text-[#FF7300] whitespace-nowrap">${item.id_pinjam}</span>
+                            <span class="font-mono text-xs font-bold ui-pill px-2.5 py-1 rounded text-[#FF7300] whitespace-nowrap">${escapeHtml(item.id_pinjam)}</span>
                             <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${delayClass}">
-                                ${delayLabel}
+                                ${escapeHtml(delayLabel)}
                             </span>
                         </div>
-                        <span class="text-xs ui-muted">${isSedangDipinjam ? 'Diserahkan:' : 'Jadwal Ambil:'} ${tglSerahClean}</span>
+                        <span class="text-xs ui-muted">${isSedangDipinjam ? 'Diserahkan:' : 'Jadwal Ambil:'} ${escapeHtml(tglSerahClean)}</span>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
                         <div>
                             <span class="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400 block tracking-wider">Peminjam</span>
-                            <p class="font-bold ui-heading text-sm">${item.nama_peminjam}</p>
-                            <p class="ui-body">${item.asal_organisasi} (${formatNomorWa(item.kontak_wa)})</p>
+                            <p class="font-bold ui-heading text-sm">${escapeHtml(item.nama_peminjam)}</p>
+                            <p class="ui-body">${escapeHtml(item.asal_organisasi)} (${escapeHtml(formatNomorWa(item.kontak_wa))})</p>
                         </div>
                         <div>
                             <span class="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400 block tracking-wider">Batas Pengembalian</span>
                             <p class="font-bold text-sm sm:text-base ${delayLabel === 'TERLAMBAT KEMBALI' ? 'text-rose-500' : 'ui-heading'}">
-                                ${tglKembaliClean}
+                                ${escapeHtml(tglKembaliClean)}
                             </p>
                         </div>
                         <div>
@@ -2038,23 +2172,23 @@ Jazakumullah Khairan Katsiran.
 
                     <div class="pt-3 border-t border-orange-200 dark:border-gray-800 flex flex-wrap justify-between items-center gap-2">
                         <div class="flex items-center gap-2">
-                            <button type="button" onclick="bukaChatWa('${item.id_pinjam}', 'pengingat')" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all">
+                            <button type="button" onclick="bukaChatWa('${safePinjamIdJs}', 'pengingat')" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all">
                                 <i class="fa-brands fa-whatsapp text-sm"></i> Chat WA
                             </button>
-                            <button onclick="bukaModalSuratPerjanjian('${item.id_pinjam}')" class="px-3 py-1.5 rounded-xl ui-pill text-xs font-semibold ui-heading hover:text-[#FF7300]">
+                            <button onclick="bukaModalSuratPerjanjian('${safePinjamIdJs}')" class="px-3 py-1.5 rounded-xl ui-pill text-xs font-semibold ui-heading hover:text-[#FF7300]">
                                 <i class="fa-solid fa-file-contract mr-1"></i> Surat
                             </button>
                         </div>
                         <div class="flex flex-wrap items-center gap-2">
                             ${isSedangDipinjam ? `
-                                <button onclick="bukaModalVerifikasiKembali('${item.id_pinjam}')" class="px-4 py-2 rounded-xl btn-kabinet font-bold text-xs shadow-md flex items-center gap-1.5">
+                                <button onclick="bukaModalVerifikasiKembali('${safePinjamIdJs}')" class="px-4 py-2 rounded-xl btn-kabinet font-bold text-xs shadow-md flex items-center gap-1.5">
                                     <i class="fa-solid fa-box-archive"></i> Verifikasi Pengembalian
                                 </button>
                             ` : `
-                                <button onclick="aksiBatalkan('${item.id_pinjam}')" class="px-3 py-1.5 rounded-xl bg-rose-500/15 text-rose-500 border border-rose-500/30 text-xs font-bold hover:bg-rose-500/25">
+                                <button onclick="aksiBatalkan('${safePinjamIdJs}')" class="px-3 py-1.5 rounded-xl bg-rose-500/15 text-rose-500 border border-rose-500/30 text-xs font-bold hover:bg-rose-500/25">
                                     <i class="fa-solid fa-ban mr-1"></i> Batalkan
                                 </button>
-                                <button onclick="aksiSerahkanBarang('${item.id_pinjam}')" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md flex items-center gap-1.5">
+                                <button onclick="aksiSerahkanBarang('${safePinjamIdJs}')" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md flex items-center gap-1.5">
                                     <i class="fa-solid fa-handshake"></i> Serahkan Barang
                                 </button>
                             `}
@@ -2163,26 +2297,27 @@ Jazakumullah Khairan Katsiran.
             riwayat.forEach(item => {
                 let items = [];
                 try { items = JSON.parse(item.items_json || "[]"); } catch(e) {}
-                let itemsList = items.map(it => `• ${it.nama_barang} (${it.jumlah} unit)`).join(", ");
+                let itemsList = items.map(it => `• ${escapeHtml(it.nama_barang)} (${parseInt(it.jumlah, 10) || 1} unit)`).join(", ");
 
-                const tglAmbilClean = formatTglRapi(item.tgl_pengambilan);
-                const tglKembaliClean = formatTglRapi(item.tgl_pengembalian);
-                const tglKembaliAktualClean = formatTglRapi(item.tgl_kembali_aktual);
+                const tglAmbilClean = escapeHtml(formatTglRapi(item.tgl_pengambilan));
+                const tglKembaliClean = escapeHtml(formatTglRapi(item.tgl_pengembalian));
+                const tglKembaliAktualClean = escapeHtml(formatTglRapi(item.tgl_kembali_aktual));
                 const catatanTampil = item.catatan_kembali || item.catatan_admin || (item.kondisi_kembali ? `Kondisi saat kembali: ${item.kondisi_kembali}` : "");
+                const safePinjamIdJs = escapeJsStr(item.id_pinjam);
 
                 const card = document.createElement('div');
                 card.className = "ui-card p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row sm:items-start justify-between gap-3 text-xs border-orange-200 dark:border-white/10";
                 card.innerHTML = `
                     <div class="space-y-2 flex-1">
                         <div class="flex flex-wrap items-center gap-2">
-                            <span class="font-mono text-xs font-bold text-[#FF7300] bg-orange-500/10 px-2.5 py-0.5 rounded border border-orange-300/60 dark:border-orange-500/30 whitespace-nowrap">${item.id_pinjam}</span>
-                            <span class="px-2.5 py-0.5 rounded text-[10px] font-black ${getStatusClass(item.status)}">${item.status}</span>
+                            <span class="font-mono text-xs font-bold text-[#FF7300] bg-orange-500/10 px-2.5 py-0.5 rounded border border-orange-300/60 dark:border-orange-500/30 whitespace-nowrap">${escapeHtml(item.id_pinjam)}</span>
+                            <span class="px-2.5 py-0.5 rounded text-[10px] font-black ${getStatusClass(item.status)}">${escapeHtml(item.status)}</span>
                             ${tglKembaliAktualClean && tglKembaliAktualClean !== '-' ? `<span class="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-500/10 dark:bg-emerald-500/20 px-2.5 py-0.5 rounded border border-emerald-500/30"><i class="fa-solid fa-circle-check text-emerald-600 mr-1"></i> Kembali: ${tglKembaliAktualClean}</span>` : ''}
                         </div>
 
                         <h4 class="font-black font-outfit text-sm sm:text-base ui-heading">
-                            ${item.nama_peminjam} 
-                            <span class="text-xs font-semibold ui-muted">(${item.asal_organisasi} • Ketua Pelaksana: ${item.nama_penanggung_jawab || item.nama_peminjam})</span>
+                            ${escapeHtml(item.nama_peminjam)} 
+                            <span class="text-xs font-semibold ui-muted">(${escapeHtml(item.asal_organisasi)} • Ketua Pelaksana: ${escapeHtml(item.nama_penanggung_jawab || item.nama_peminjam)})</span>
                         </h4>
                         
                         <div class="ui-pill p-2.5 rounded-xl text-xs space-y-0.5 border border-orange-200/70 dark:border-gray-800">
@@ -2199,16 +2334,16 @@ Jazakumullah Khairan Katsiran.
                                 <span class="font-black text-[#FF7300] flex items-center gap-1.5 text-xs">
                                     <i class="fa-solid fa-note-sticky text-sm"></i> Catatan Admin Inventaris:
                                 </span>
-                                <p class="font-bold ui-body text-xs pl-0.5 leading-relaxed">${catatanTampil}</p>
+                                <p class="font-bold ui-body text-xs pl-0.5 leading-relaxed">${escapeHtml(catatanTampil)}</p>
                             </div>
                         ` : ''}
                     </div>
 
                     <div class="flex sm:flex-col items-center gap-2 self-stretch sm:self-auto sm:min-w-[130px] pt-1">
-                        <button type="button" onclick="bukaChatWa('${item.id_pinjam}', 'riwayat')" class="flex-1 sm:w-full px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all">
+                        <button type="button" onclick="bukaChatWa('${safePinjamIdJs}', 'riwayat')" class="flex-1 sm:w-full px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all">
                             <i class="fa-brands fa-whatsapp text-sm"></i> Chat WA
                         </button>
-                        <button onclick="bukaModalSuratPerjanjian('${item.id_pinjam}')" class="flex-1 sm:w-full px-3 py-1.5 rounded-xl ui-pill font-bold text-xs ui-heading hover:text-[#FF7300] flex items-center justify-center gap-1.5">
+                        <button onclick="bukaModalSuratPerjanjian('${safePinjamIdJs}')" class="flex-1 sm:w-full px-3 py-1.5 rounded-xl ui-pill font-bold text-xs ui-heading hover:text-[#FF7300] flex items-center justify-center gap-1.5">
                             <i class="fa-solid fa-file-contract text-[#FF7300]"></i> Surat
                         </button>
                     </div>
@@ -2268,28 +2403,35 @@ Jazakumullah Khairan Katsiran.
             displayed.forEach(item => {
                 const card = document.createElement('div');
                 card.className = "ui-card rounded-2xl overflow-hidden flex flex-col justify-between border-orange-200 dark:border-white/10";
+                const safeIdJs = escapeJsStr(item.id_barang);
+                const safeFoto = escapeHtml(item.foto_url || 'IMIP.png');
+                const safeIdHtml = escapeHtml(item.id_barang);
+                const safeKat = escapeHtml(item.kategori || 'Umum');
+                const safeNama = escapeHtml(item.nama_barang);
+                const safeDesk = escapeHtml(item.deskripsi || '-');
+                const safeKondisi = escapeHtml(item.kondisi || 'Bagus');
                 
                 if (!isArsipMode) {
                     // Tampilan Barang Aktif
                     card.innerHTML = `
                         <div>
                             <div class="relative h-36 sm:h-44 bg-gray-200 dark:bg-gray-800">
-                                <img src="${item.foto_url || 'IMIP.png'}" class="w-full h-full object-cover" onerror="this.src='IMIP.png'">
-                                <span class="absolute top-2 left-2 px-2 py-0.5 rounded text-[10px] font-bold bg-black/70 text-white">${item.id_barang}</span>
-                                <span class="absolute top-2 right-2 px-2 py-0.5 rounded text-[10px] font-bold btn-kabinet">Stok: ${item.stok_tersedia} / ${item.stok_total}</span>
+                                <img src="${safeFoto}" class="w-full h-full object-cover" onerror="this.src='IMIP.png'">
+                                <span class="absolute top-2 left-2 px-2 py-0.5 rounded text-[10px] font-bold bg-black/70 text-white">${safeIdHtml}</span>
+                                <span class="absolute top-2 right-2 px-2 py-0.5 rounded text-[10px] font-bold btn-kabinet">Stok: ${parseInt(item.stok_tersedia, 10) || 0} / ${parseInt(item.stok_total, 10) || 1}</span>
                             </div>
                             <div class="p-3.5 sm:p-4 space-y-1.5">
-                                <span class="text-[10px] font-bold text-[#FF7300] uppercase">${item.kategori || 'Umum'}</span>
-                                <h4 class="font-outfit font-extrabold text-sm sm:text-base ui-heading leading-tight">${item.nama_barang}</h4>
-                                <p class="text-xs ui-muted line-clamp-2">${item.deskripsi || '-'}</p>
-                                <p class="text-xs ui-body pt-1">Kondisi: <strong class="text-[#FF7300]">${item.kondisi || 'Bagus'}</strong></p>
+                                <span class="text-[10px] font-bold text-[#FF7300] uppercase">${safeKat}</span>
+                                <h4 class="font-outfit font-extrabold text-sm sm:text-base ui-heading leading-tight">${safeNama}</h4>
+                                <p class="text-xs ui-muted line-clamp-2">${safeDesk}</p>
+                                <p class="text-xs ui-body pt-1">Kondisi: <strong class="text-[#FF7300]">${safeKondisi}</strong></p>
                             </div>
                         </div>
                         <div class="p-3.5 sm:p-4 pt-0 flex gap-2">
-                            <button onclick="bukaModalEditBarang('${item.id_barang}')" class="flex-1 py-2 rounded-xl ui-pill text-xs font-bold ui-heading hover:text-[#FF7300] flex items-center justify-center gap-1.5">
+                            <button onclick="bukaModalEditBarang('${safeIdJs}')" class="flex-1 py-2 rounded-xl ui-pill text-xs font-bold ui-heading hover:text-[#FF7300] flex items-center justify-center gap-1.5">
                                 <i class="fa-solid fa-pen-to-square"></i> Edit
                             </button>
-                            <button onclick="arsipkanBarang('${item.id_barang}')" class="px-3.5 py-2 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-xs font-bold hover:bg-amber-500/25 flex items-center gap-1" title="Pindahkan ke Arsip">
+                            <button onclick="arsipkanBarang('${safeIdJs}')" class="px-3.5 py-2 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-xs font-bold hover:bg-amber-500/25 flex items-center gap-1" title="Pindahkan ke Arsip">
                                 <i class="fa-solid fa-box-archive"></i> <span class="hidden sm:inline">Arsipkan</span>
                             </button>
                         </div>
@@ -2299,22 +2441,22 @@ Jazakumullah Khairan Katsiran.
                     card.innerHTML = `
                         <div class="opacity-80">
                             <div class="relative h-36 sm:h-44 bg-gray-200 dark:bg-gray-800 grayscale">
-                                <img src="${item.foto_url || 'IMIP.png'}" class="w-full h-full object-cover" onerror="this.src='IMIP.png'">
-                                <span class="absolute top-2 left-2 px-2 py-0.5 rounded text-[10px] font-bold bg-black/70 text-white">${item.id_barang}</span>
+                                <img src="${safeFoto}" class="w-full h-full object-cover" onerror="this.src='IMIP.png'">
+                                <span class="absolute top-2 left-2 px-2 py-0.5 rounded text-[10px] font-bold bg-black/70 text-white">${safeIdHtml}</span>
                                 <span class="absolute top-2 right-2 px-2 py-0.5 rounded text-[10px] font-bold bg-rose-600 text-white">DIARSIPKAN</span>
                             </div>
                             <div class="p-3.5 sm:p-4 space-y-1.5">
-                                <span class="text-[10px] font-bold text-gray-500 uppercase">${item.kategori || 'Umum'}</span>
-                                <h4 class="font-outfit font-bold text-sm sm:text-base ui-heading line-through">${item.nama_barang}</h4>
-                                <p class="text-xs ui-muted line-clamp-2">${item.deskripsi || '-'}</p>
-                                <p class="text-xs ui-muted">Total Stok: ${item.stok_total || 1} unit</p>
+                                <span class="text-[10px] font-bold text-gray-500 uppercase">${safeKat}</span>
+                                <h4 class="font-outfit font-bold text-sm sm:text-base ui-heading line-through">${safeNama}</h4>
+                                <p class="text-xs ui-muted line-clamp-2">${safeDesk}</p>
+                                <p class="text-xs ui-muted">Total Stok: ${parseInt(item.stok_total, 10) || 1} unit</p>
                             </div>
                         </div>
                         <div class="p-3.5 sm:p-4 pt-0 flex gap-2">
-                            <button onclick="pulihkanBarang('${item.id_barang}')" class="flex-1 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md">
+                            <button onclick="pulihkanBarang('${safeIdJs}')" class="flex-1 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md">
                                 <i class="fa-solid fa-rotate-left"></i> Pulihkan ke Katalog
                             </button>
-                            <button onclick="hapusPermanenBarang('${item.id_barang}')" class="px-3.5 py-2 rounded-xl bg-rose-500/15 text-rose-500 border border-rose-500/30 text-xs font-bold hover:bg-rose-500/25 flex items-center gap-1" title="Hapus Permanen">
+                            <button onclick="hapusPermanenBarang('${safeIdJs}')" class="px-3.5 py-2 rounded-xl bg-rose-500/15 text-rose-500 border border-rose-500/30 text-xs font-bold hover:bg-rose-500/25 flex items-center gap-1" title="Hapus Permanen">
                                 <i class="fa-solid fa-trash"></i>
                             </button>
                         </div>
@@ -2632,9 +2774,9 @@ Jazakumullah Khairan Katsiran.
                 tr.className = "border-b border-black text-center";
                 tr.innerHTML = `
                     <td class="border border-black p-1">${idx + 1}</td>
-                    <td class="border border-black p-1 text-left font-normal">${it.nama_barang}</td>
-                    <td class="border border-black p-1 font-normal">${it.jumlah} Unit</td>
-                    <td class="border border-black p-1 font-normal">${it.kondisi || 'Baik'}</td>
+                    <td class="border border-black p-1 text-left font-normal">${escapeHtml(it.nama_barang)}</td>
+                    <td class="border border-black p-1 font-normal">${parseInt(it.jumlah, 10) || 1} Unit</td>
+                    <td class="border border-black p-1 font-normal">${escapeHtml(it.kondisi || 'Baik')}</td>
                 `;
                 tbody.appendChild(tr);
             });

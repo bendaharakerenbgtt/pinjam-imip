@@ -227,6 +227,32 @@
             return (localStorage.getItem(STORAGE_KEY_API) || DEFAULT_API_URL).trim();
         }
 
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return "";
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        function getAdminWaClean() {
+            try {
+                const savedSet = localStorage.getItem("PINJAM_IMIP_SETTINGS");
+                if (savedSet) {
+                    const parsed = JSON.parse(savedSet);
+                    if (parsed && parsed.no_wa_admin) {
+                        let d = String(parsed.no_wa_admin).replace(/[^0-9]/g, "");
+                        if (d.startsWith("0")) d = "62" + d.slice(1);
+                        else if (d.startsWith("8")) d = "62" + d;
+                        if (d.length >= 10) return d;
+                    }
+                }
+            } catch (e) {}
+            return "6285770976399";
+        }
+
         function formatTglRapi(dateStr) {
             if (!dateStr) return "-";
             return String(dateStr).replace(/(\s+|T)\d{2}:\d{2}:\d{2}.*$/i, "").trim() || String(dateStr);
@@ -252,6 +278,18 @@
             const btn = document.getElementById('btn-cari');
 
             if (!query) return;
+
+            const isGenericPrefix = /^(pjm|pjm-|202\d)$/i.test(query);
+            if (query.length < 3 || isGenericPrefix) {
+                container.innerHTML = `
+                    <div class="ui-card p-6 rounded-2xl text-center space-y-2 border-orange-200">
+                        <i class="fa-solid fa-circle-info text-3xl text-[#FF7300]"></i>
+                        <h3 class="font-bold text-sm ui-heading">Kata Kunci Terlalu Singkat / Umum</h3>
+                        <p class="text-xs ui-muted">Masukkan minimal 3 huruf nama lengkap, nomor WhatsApp lengkap (min. 8 digit), atau ID Peminjaman lengkap (misal: PJM-20261104-1234).</p>
+                    </div>
+                `;
+                return;
+            }
 
             btn.disabled = true;
             btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Mencari...`;
@@ -289,6 +327,12 @@
 
                     const res = await fetch(`${apiUrl}?action=check_status&query=${encodeURIComponent(qPrimary)}`);
                     const json = await res.json();
+                    if (json.public_settings) {
+                        try {
+                            const existing = JSON.parse(localStorage.getItem("PINJAM_IMIP_SETTINGS") || "{}");
+                            localStorage.setItem("PINJAM_IMIP_SETTINGS", JSON.stringify({ ...existing, ...json.public_settings }));
+                        } catch(e) {}
+                    }
                     if (json.success && json.hasil && json.hasil.length > 0) {
                         hasil = json.hasil;
                     } else if (qPrimary !== query) {
@@ -300,6 +344,20 @@
                 } catch(err) {}
             }
 
+            // Filter & sanitasi hasil dari server agar tetap mematuhi aturan ketat (jika code.gs di server belum di-redeploy)
+            if (hasil.length > 0) {
+                const cleanQ = query.replace(/[^0-9]/g, "");
+                const strippedQ = cleanQ.replace(/^(?:62|0)/, "");
+                hasil = hasil.filter(p => {
+                    const nama = String(p.nama_peminjam || "").toLowerCase().trim();
+                    const id = String(p.id_pinjam || "").toLowerCase().trim();
+                    const matchId = (id === query) || (query.length === 4 && id.endsWith("-" + query));
+                    const matchNama = !/^(pjm|pjm-|202\d|\d+)$/i.test(query) && query.length >= 3 && nama.includes(query);
+                    const matchWa = strippedQ.length >= 8;
+                    return matchId || matchNama || matchWa;
+                });
+            }
+
             // Fallback search di data lokal
             if (hasil.length === 0) {
                 const cleanQ = query.replace(/[^0-9]/g, "");
@@ -307,12 +365,14 @@
                 hasil = localDB.peminjaman.filter(p => {
                     const wa = (p.kontak_wa || "").toString().replace(/[^0-9]/g, "");
                     const strippedWa = wa.replace(/^(?:62|0)/, "");
-                    const nama = (p.nama_peminjam || "").toLowerCase();
-                    const id = (p.id_pinjam || "").toLowerCase();
+                    const nama = (p.nama_peminjam || "").toLowerCase().trim();
+                    const id = (p.id_pinjam || "").toLowerCase().trim();
 
-                    const matchWa = (strippedQ.length >= 4 && (strippedWa.includes(strippedQ) || strippedQ.includes(strippedWa)));
-                    const matchNama = nama.includes(query) && query.length >= 3;
-                    const matchId = id === query || (query.length >= 4 && id.includes(query));
+                    const matchWa = strippedQ.length >= 8 && strippedWa.length >= 8 && (
+                        strippedWa === strippedQ || strippedWa.endsWith(strippedQ) || strippedQ.endsWith(strippedWa)
+                    );
+                    const matchId = (id === query) || (query.length === 4 && id.endsWith("-" + query));
+                    const matchNama = !/^(pjm|pjm-|202\d|\d+)$/i.test(query) && query.length >= 3 && nama.includes(query);
                     return matchWa || matchNama || matchId;
                 }).map(p => {
                     let items = [];
@@ -348,13 +408,15 @@
                     <div class="ui-card p-6 rounded-2xl text-center space-y-2 border-orange-200">
                         <i class="fa-solid fa-circle-exclamation text-3xl text-amber-500"></i>
                         <h3 class="font-bold text-sm ui-heading">Pengajuan Tidak Ditemukan</h3>
-                        <p class="text-xs ui-muted">Pastikan nomor WhatsApp atau nama peminjam sudah sesuai saat pengisian formulir.</p>
+                        <p class="text-xs ui-muted">Pastikan nomor WhatsApp lengkap (min. 8 digit), nama peminjam, atau kode unik ID sesuai saat pengisian formulir.</p>
                     </div>
                 `;
                 return;
             }
 
             container.innerHTML = "";
+            const adminWaClean = getAdminWaClean();
+
             hasil.forEach(item => {
                 const statusMeta = getStatusMeta(item.status);
 
@@ -362,8 +424,8 @@
                 if (Array.isArray(item.items) && item.items.length > 0) {
                     itemsListHtml = item.items.map(it => `
                         <div class="flex items-center justify-between text-xs py-1 border-b border-orange-200/60 dark:border-gray-800">
-                            <span class="ui-heading font-semibold">• ${it.nama_barang}</span>
-                            <span class="font-bold text-[#FF7300]">${it.jumlah} unit</span>
+                            <span class="ui-heading font-semibold">• ${escapeHtml(it.nama_barang)}</span>
+                            <span class="font-bold text-[#FF7300]">${escapeHtml(it.jumlah)} unit</span>
                         </div>
                     `).join("");
                 } else {
@@ -371,8 +433,8 @@
                 }
 
                 // Format tanggal rapi tanpa :00:00:00
-                const tglAmbilClean = formatTglRapi(item.tgl_pengambilan);
-                const tglKembaliClean = formatTglRapi(item.tgl_pengembalian);
+                const tglAmbilClean = escapeHtml(formatTglRapi(item.tgl_pengambilan));
+                const tglKembaliClean = escapeHtml(formatTglRapi(item.tgl_pengembalian));
 
                 // Sanitasi nomor kontak WA (cegah tulisan #ERROR! dari formula spreadsheet lama)
                 let rawKontak = String(item.kontak_wa_masked || item.kontak_wa || "").trim().replace(/^'/, "");
@@ -388,7 +450,7 @@
                 }
 
                 const waPesan = `Assalamu'alaikum Admin Inventaris LDK IMIP, saya ingin menanyakan perkembangan pengajuan peminjaman *${item.id_pinjam}* atas nama *${item.nama_peminjam}* (${item.asal_organisasi}). Jazakumullah khairan.`;
-                const waLinkAdmin = `https://wa.me/6285770976399?text=${encodeURIComponent(waPesan)}`;
+                const waLinkAdmin = `https://wa.me/${adminWaClean}?text=${encodeURIComponent(waPesan)}`;
 
                 const card = document.createElement('div');
                 card.className = "ui-card p-4 sm:p-5 rounded-2xl space-y-3.5 border-orange-200 dark:border-white/10 shadow-sm";
@@ -397,19 +459,19 @@
                     <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-2.5 border-b border-orange-200/70 dark:border-gray-800 pb-3">
                         <div class="space-y-1">
                             <span class="inline-block font-mono text-[11px] font-bold px-2.5 py-0.5 rounded bg-orange-500/10 text-[#FF7300] border border-orange-500/20">
-                                ${item.id_pinjam}
+                                ${escapeHtml(item.id_pinjam)}
                             </span>
                             <h3 class="font-outfit font-extrabold text-base sm:text-lg ui-heading tracking-tight leading-snug">
-                                ${item.nama_peminjam}
+                                ${escapeHtml(item.nama_peminjam)}
                             </h3>
                             <p class="text-xs ui-muted flex items-center gap-1.5 flex-wrap">
-                                <span><i class="fa-solid fa-building-user text-[11px] mr-1"></i>${item.asal_organisasi || 'Umum'}</span>
+                                <span><i class="fa-solid fa-building-user text-[11px] mr-1"></i>${escapeHtml(item.asal_organisasi || 'Umum')}</span>
                                 <span class="opacity-40">•</span>
-                                <span><i class="fa-solid fa-phone text-[11px] mr-1"></i>Kontak: <strong class="ui-body font-mono font-semibold">${cleanMaskedWa}</strong></span>
+                                <span><i class="fa-solid fa-phone text-[11px] mr-1"></i>Kontak: <strong class="ui-body font-mono font-semibold">${escapeHtml(cleanMaskedWa)}</strong></span>
                             </p>
                         </div>
                         <span class="self-start sm:self-auto px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap shadow-xs ${statusMeta.badgeClass}">
-                            ${statusMeta.label}
+                            ${escapeHtml(statusMeta.label)}
                         </span>
                     </div>
 
@@ -438,7 +500,7 @@
                                 Keperluan
                             </span>
                             <span class="font-semibold ui-body text-xs italic block">
-                                "${item.tujuan || '-'}"
+                                "${escapeHtml(item.tujuan || '-')}"
                             </span>
                         </div>
                     </div>
@@ -450,14 +512,14 @@
                             <span>Informasi Status:</span>
                         </div>
                         <p class="font-semibold ui-heading text-xs leading-relaxed">
-                            ${statusMeta.desc}
+                            ${escapeHtml(statusMeta.desc)}
                         </p>
                         ${item.catatan_publik ? `
                             <div class="mt-2 pt-2 border-t border-orange-200/60 dark:border-white/10">
                                 <span class="font-bold text-[#FF7300] flex items-center gap-1 text-xs">
                                     <i class="fa-solid fa-note-sticky"></i> Catatan Khusus Admin:
                                 </span>
-                                <p class="font-semibold ui-body text-xs mt-0.5">${item.catatan_publik}</p>
+                                <p class="font-semibold ui-body text-xs mt-0.5">${escapeHtml(item.catatan_publik)}</p>
                             </div>
                         ` : ''}
                     </div>

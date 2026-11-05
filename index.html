@@ -514,6 +514,21 @@
             return (localStorage.getItem(STORAGE_KEY_API) || DEFAULT_API_URL).trim();
         }
 
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return "";
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        function escapeJsStr(str) {
+            if (str === null || str === undefined) return "";
+            return String(str).replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;");
+        }
+
         function setKatalogSyncStatus(state, customText) {
             const pill = document.getElementById('katalog-sync-pill');
             const icon = document.getElementById('katalog-sync-icon');
@@ -583,6 +598,22 @@
                     if (Array.isArray(json.jadwal_aktif)) {
                         localDB.peminjaman = json.jadwal_aktif;
                     }
+                    if (json.public_settings) {
+                        try {
+                            const existing = JSON.parse(localStorage.getItem("PINJAM_IMIP_SETTINGS") || "{}");
+                            localStorage.setItem("PINJAM_IMIP_SETTINGS", JSON.stringify({ ...existing, ...json.public_settings }));
+                        } catch(e) {}
+                    }
+                    // Sinkronkan batas stok barang di keranjang dengan stok terbaru server
+                    cart.forEach(c => {
+                        const freshB = localDB.barang.find(b => String(b.id_barang) === String(c.id_barang));
+                        if (freshB) {
+                            const av = parseInt(freshB.stok_tersedia, 10) || 0;
+                            c.max_stok = av;
+                            if (av > 0 && c.jumlah > av) c.jumlah = av;
+                        }
+                    });
+                    saveCart();
                     saveLocalDB();
                     setKatalogSyncStatus('success', 'Katalog terupdate');
                 } else {
@@ -625,10 +656,11 @@
 
             uniqueCats.forEach(cat => {
                 const isSelected = currentCategory === cat;
-                const safeCat = cat.replace(/'/g, "\\'");
+                const safeCat = escapeJsStr(cat);
+                const safeCatHtml = escapeHtml(cat);
                 html += `
-                    <button onclick="setCategoryFilter('${safeCat}')" class="cat-pill px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl whitespace-nowrap text-xs font-bold transition-all ${isSelected ? 'btn-kabinet shadow-sm' : 'ui-pill ui-body hover:text-[#FF7300]'}" data-cat="${cat}">
-                        ${cat} (${catCount[cat]})
+                    <button onclick="setCategoryFilter('${safeCat}')" class="cat-pill px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl whitespace-nowrap text-xs font-bold transition-all ${isSelected ? 'btn-kabinet shadow-sm' : 'ui-pill ui-body hover:text-[#FF7300]'}" data-cat="${safeCatHtml}">
+                        ${safeCatHtml} (${catCount[cat]})
                     </button>
                 `;
             });
@@ -680,12 +712,19 @@
                     statusBadgeClass = "bg-[#FF7300] text-white";
                 }
 
+                const safeIdJs = escapeJsStr(item.id_barang);
+                const safeNama = escapeHtml(item.nama_barang);
+                const safeKat = escapeHtml(item.kategori || 'Inventaris');
+                const safeDesk = escapeHtml(item.deskripsi || 'Perlengkapan inventaris IMIP');
+                const safeKondisi = escapeHtml(item.kondisi || 'Bagus');
+                const safeFoto = escapeHtml(item.foto_url || 'IMIP.png');
+
                 const card = document.createElement('div');
                 card.className = "ui-card rounded-2xl overflow-hidden flex flex-col justify-between hover:border-orange-400 transition-all duration-300 shadow-xs";
                 card.innerHTML = `
-                    <div class="cursor-pointer flex-1 flex flex-col" onclick="bukaModalDetail('${item.id_barang}')">
+                    <div class="cursor-pointer flex-1 flex flex-col" onclick="bukaModalDetail('${safeIdJs}')">
                         <div class="relative h-28 sm:h-44 w-full bg-gray-200 dark:bg-gray-800 overflow-hidden">
-                            <img src="${item.foto_url || 'IMIP.png'}" alt="${item.nama_barang}" 
+                            <img src="${safeFoto}" alt="${safeNama}" 
                                  class="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                                  onerror="this.src='IMIP.png'">
                             <span class="absolute top-1.5 left-1.5 px-2 py-0.5 rounded-md text-[9px] sm:text-[10px] font-extrabold uppercase backdrop-blur-md ${statusBadgeClass} shadow-xs">
@@ -695,28 +734,28 @@
 
                         <div class="p-2.5 sm:p-3.5 space-y-1 flex-1 flex flex-col justify-between">
                             <div>
-                                <span class="text-[9px] sm:text-[10px] font-bold text-[#FF7300] uppercase tracking-wide block truncate">${item.kategori || 'Inventaris'}</span>
-                                <h3 class="font-outfit font-extrabold text-xs sm:text-base ui-heading leading-snug line-clamp-2 min-h-[2rem] sm:min-h-[2.5rem]" title="${item.nama_barang}">
-                                    ${item.nama_barang}
+                                <span class="text-[9px] sm:text-[10px] font-bold text-[#FF7300] uppercase tracking-wide block truncate">${safeKat}</span>
+                                <h3 class="font-outfit font-extrabold text-xs sm:text-base ui-heading leading-snug line-clamp-2 min-h-[2rem] sm:min-h-[2.5rem]" title="${safeNama}">
+                                    ${safeNama}
                                 </h3>
                                 <p class="text-[10.5px] sm:text-xs ui-muted leading-relaxed line-clamp-1 mt-0.5">
-                                    ${item.deskripsi || 'Perlengkapan inventaris IMIP'}
+                                    ${safeDesk}
                                 </p>
                             </div>
 
                             <div class="pt-1.5 border-t border-orange-100 dark:border-gray-800/80 flex items-center justify-between text-[10px] sm:text-xs">
                                 <span class="font-semibold text-emerald-600 dark:text-emerald-400 truncate">
-                                    <i class="fa-solid fa-circle-check text-[9px] mr-0.5"></i>${item.kondisi || 'Bagus'}
+                                    <i class="fa-solid fa-circle-check text-[9px] mr-0.5"></i>${safeKondisi}
                                 </span>
                                 <span class="ui-muted font-medium whitespace-nowrap">
-                                    Tot: ${item.stok_total || 1}
+                                    Tot: ${parseInt(item.stok_total, 10) || 1}
                                 </span>
                             </div>
                         </div>
                     </div>
 
                     <div class="p-2.5 sm:p-3.5 pt-0">
-                        <button onclick="tambahKeKeranjang('${item.id_barang}')" ${tersedia <= 0 ? 'disabled' : ''} 
+                        <button onclick="tambahKeKeranjang('${safeIdJs}')" ${tersedia <= 0 ? 'disabled' : ''} 
                                 class="w-full py-1.5 sm:py-2.5 rounded-xl font-bold text-[11px] sm:text-xs transition-all flex items-center justify-center gap-1.5 ${tersedia > 0 ? 'btn-kabinet shadow-sm' : 'bg-gray-300 dark:bg-gray-800 text-gray-500 cursor-not-allowed'}">
                             <i class="fa-solid fa-cart-plus text-[11px]"></i>
                             <span>${tersedia > 0 ? '+ Keranjang' : 'Habis'}</span>
@@ -842,15 +881,18 @@
             actionContainer.classList.remove('hidden');
 
             cart.forEach((it, idx) => {
+                const safeFoto = escapeHtml(it.foto_url || 'IMIP.png');
+                const safeNama = escapeHtml(it.nama_barang);
+                const safeKat = escapeHtml(it.kategori || 'Umum');
                 const el = document.createElement('div');
                 el.className = "ui-pill p-3 sm:p-3.5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3";
                 el.innerHTML = `
                     <div class="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
-                        <img src="${it.foto_url || 'IMIP.png'}" class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl object-cover flex-shrink-0 bg-gray-200 dark:bg-gray-800 border border-orange-200 dark:border-gray-700">
+                        <img src="${safeFoto}" class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl object-cover flex-shrink-0 bg-gray-200 dark:bg-gray-800 border border-orange-200 dark:border-gray-700" onerror="this.src='IMIP.png'">
                         <div class="min-w-0 flex-1">
-                            <h4 class="font-bold text-xs sm:text-sm ui-heading leading-tight truncate" title="${it.nama_barang}">${it.nama_barang}</h4>
-                            <p class="text-[11px] text-[#FF7300] font-semibold truncate">${it.kategori || 'Umum'}</p>
-                            <p class="text-[10px] ui-muted">Maksimal: ${it.max_stok} unit</p>
+                            <h4 class="font-bold text-xs sm:text-sm ui-heading leading-tight truncate" title="${safeNama}">${safeNama}</h4>
+                            <p class="text-[11px] text-[#FF7300] font-semibold truncate">${safeKat}</p>
+                            <p class="text-[10px] ui-muted">Maksimal: ${parseInt(it.max_stok, 10) || 1} unit</p>
                         </div>
                     </div>
 
@@ -859,7 +901,7 @@
                             <button onclick="ubahJumlahItemKeranjang(${idx}, -1)" class="w-7 h-7 rounded-md bg-white dark:bg-gray-700 text-xs font-bold ui-heading hover:bg-[#FF7300] hover:text-white transition-all flex items-center justify-center shadow-xs">
                                 <i class="fa-solid fa-minus"></i>
                             </button>
-                            <span class="w-7 text-center font-bold text-xs sm:text-sm ui-heading">${it.jumlah}</span>
+                            <span class="w-7 text-center font-bold text-xs sm:text-sm ui-heading">${parseInt(it.jumlah, 10) || 1}</span>
                             <button onclick="ubahJumlahItemKeranjang(${idx}, 1)" class="w-7 h-7 rounded-md bg-white dark:bg-gray-700 text-xs font-bold ui-heading hover:bg-[#FF7300] hover:text-white transition-all flex items-center justify-center shadow-xs">
                                 <i class="fa-solid fa-plus"></i>
                             </button>
@@ -935,8 +977,8 @@
                 const row = document.createElement('div');
                 row.className = "flex items-center justify-between text-xs ui-body border-b border-orange-200/50 dark:border-gray-800 pb-1";
                 row.innerHTML = `
-                    <span class="font-semibold ui-heading">• ${it.nama_barang}</span>
-                    <span class="font-bold text-[#FF7300]">${it.jumlah} unit</span>
+                    <span class="font-semibold ui-heading">• ${escapeHtml(it.nama_barang)}</span>
+                    <span class="font-bold text-[#FF7300]">${parseInt(it.jumlah, 10) || 1} unit</span>
                 `;
                 summaryEl.appendChild(row);
             });
@@ -1095,6 +1137,7 @@
                 try {
                     const res = await fetch(apiUrl, {
                         method: "POST",
+                        headers: { "Content-Type": "text/plain;charset=utf-8" },
                         body: JSON.stringify(payload)
                     });
                     const resJson = await res.json();

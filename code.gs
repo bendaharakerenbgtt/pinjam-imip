@@ -131,14 +131,14 @@ function doGet(e) {
       return jsonResponse({
         success: true,
         barang: dataBarang,
-        jadwal_aktif: jadwalAktif
+        jadwal_aktif: jadwalAktif,
+        public_settings: getPublicSettings()
       });
     }
 
     if (action === "get_admin_data") {
       const pin = p.pin || "";
-      const validPin = getSavedAdminPin();
-      if (pin !== validPin && pin !== ADMIN_PIN_DEFAULT && pin !== "admin") {
+      if (!isValidAdminPin(pin)) {
         return jsonResponse({ success: false, message: "Akses ditolak: PIN / Password salah!" });
       }
       const dataBarang = getTableData(SHEET_BARANG);
@@ -154,24 +154,35 @@ function doGet(e) {
 
     if (action === "check_status") {
       const query = (p.query || "").toString().trim().toLowerCase();
-      if (!query) {
-        return jsonResponse({ success: false, message: "Masukkan nama lengkap atau nomor WhatsApp!" });
+      if (!query || query.length < 3) {
+        return jsonResponse({ success: false, message: "Masukkan minimal 3 karakter nama, nomor WhatsApp lengkap, atau ID Peminjaman!" });
       }
       const allPeminjaman = getTableData(SHEET_PEMINJAMAN);
       const cleanNum = query.replace(/[^0-9]/g, "");
       const strippedQ = cleanNum.replace(/^(?:62|0)/, "");
 
-      // Filter aman: Jangan bocorkan data sensitif (dokumen identitas & catatan internal admin)
+      // Filter aman & ketat: Cegah enumerasi massal (seperti mencari '2026', 'pjm-', atau awalan provider '0857')
       const matches = allPeminjaman.filter(row => {
         const rowWa = (row.kontak_wa || "").toString().replace(/[^0-9]/g, "");
         const strippedWa = rowWa.replace(/^(?:62|0)/, "");
-        const rowNama = (row.nama_peminjam || "").toString().toLowerCase();
-        const rowId = (row.id_pinjam || "").toString().toLowerCase();
+        const rowNama = (row.nama_peminjam || "").toString().toLowerCase().trim();
+        const rowId = (row.id_pinjam || "").toString().toLowerCase().trim();
 
-        const matchWa = strippedQ.length >= 4 && (strippedWa.includes(strippedQ) || strippedQ.includes(strippedWa));
-        const matchNama = rowNama.includes(query) && query.length >= 3;
-        const matchId = rowId === query || (query.length >= 4 && rowId.includes(query));
-        return matchWa || matchNama || matchId;
+        // 1. Cocokkan Nomor WA: wajib minimal 8 digit angka dan cocok di bagian akhir/utuh
+        const matchWa = strippedQ.length >= 8 && strippedWa.length >= 8 && (
+          strippedWa === strippedQ ||
+          strippedWa.endsWith(strippedQ) ||
+          strippedQ.endsWith(strippedWa)
+        );
+
+        // 2. Cocokkan ID Peminjaman: harus cocok utuh (pjm-yyyymmdd-xxxx) ATAU 4 digit kode unik akhir (-xxxx)
+        const matchId = (rowId === query) || (query.length === 4 && rowId.endsWith("-" + query));
+
+        // 3. Cocokkan Nama Peminjam: minimal 3 karakter, bukan sekadar angka tahun/prefix ID
+        const isGenericPrefix = /^(pjm|pjm-|202\d|\d+)$/i.test(query);
+        const matchNama = !isGenericPrefix && query.length >= 3 && rowNama.includes(query);
+
+        return matchWa || matchId || matchNama;
       }).map(row => {
         // Sensor dokumen identitas dan catatan admin internal
         let parsedItems = [];
@@ -205,7 +216,7 @@ function doGet(e) {
         };
       });
 
-      return jsonResponse({ success: true, hasil: matches });
+      return jsonResponse({ success: true, hasil: matches, public_settings: getPublicSettings() });
     }
 
     return jsonResponse({ success: true, message: "Pinjamip API V2 is active." });
@@ -239,8 +250,7 @@ function doPost(e) {
 
     // 2. ADMIN AUTH CHECK
     const pin = payload.pin || "";
-    const validPin = getSavedAdminPin();
-    if (pin !== validPin && pin !== ADMIN_PIN_DEFAULT && pin !== "admin") {
+    if (!isValidAdminPin(pin)) {
       return jsonResponse({ success: false, message: "Akses ditolak: PIN Admin salah!" });
     }
 
@@ -429,16 +439,16 @@ function handleAjukanPinjam(data) {
   const newRow = [
     idPinjam,
     "", // No surat perjanjian akan di-generate saat approve
-    data.nama_peminjam || "",
+    sanitizeSheetText(data.nama_peminjam || ""),
     safeKontakWa,
-    data.asal_organisasi || "",
-    data.kategori_peminjam || "Kampus",
-    data.nama_penanggung_jawab || "",
+    sanitizeSheetText(data.asal_organisasi || ""),
+    sanitizeSheetText(data.kategori_peminjam || "Kampus"),
+    sanitizeSheetText(data.nama_penanggung_jawab || ""),
     JSON.stringify(items),
-    data.tgl_pengambilan || "",
-    data.tgl_pengembalian || "",
-    data.tujuan || "",
-    data.catatan_tambahan || "",
+    sanitizeSheetText(data.tgl_pengambilan || ""),
+    sanitizeSheetText(data.tgl_pengembalian || ""),
+    sanitizeSheetText(data.tujuan || ""),
+    sanitizeSheetText(data.catatan_tambahan || ""),
     identitasUrl,
     "MENUNGGU VERIFIKASI",
     catatanAwalAdmin, // Catatan admin awal jika ada bentrok
@@ -719,13 +729,13 @@ function handleTambahBarang(data) {
 
   sheetB.appendRow([
     nextId,
-    data.nama_barang || "Barang Baru",
-    data.kategori || "Umum",
-    data.deskripsi || "",
+    sanitizeSheetText(data.nama_barang || "Barang Baru"),
+    sanitizeSheetText(data.kategori || "Umum"),
+    sanitizeSheetText(data.deskripsi || ""),
     fotoUrl,
     stok,
     stok,
-    data.kondisi || "Bagus / Prima",
+    sanitizeSheetText(data.kondisi || "Bagus / Prima"),
     "Tersedia",
     now,
     now
@@ -793,10 +803,10 @@ function handleEditBarang(data) {
   for (let i = 1; i < bData.length; i++) {
     if (String(bData[i][idxId]).trim() === String(idBarang).trim()) {
       const rowIdx = i + 1;
-      if (data.nama_barang) sheetB.getRange(rowIdx, idxNama + 1).setValue(data.nama_barang);
-      if (data.kategori) sheetB.getRange(rowIdx, idxKategori + 1).setValue(data.kategori);
-      if (data.deskripsi) sheetB.getRange(rowIdx, idxDeskripsi + 1).setValue(data.deskripsi);
-      if (data.kondisi) sheetB.getRange(rowIdx, idxKondisi + 1).setValue(data.kondisi);
+      if (data.nama_barang) sheetB.getRange(rowIdx, idxNama + 1).setValue(sanitizeSheetText(data.nama_barang));
+      if (data.kategori) sheetB.getRange(rowIdx, idxKategori + 1).setValue(sanitizeSheetText(data.kategori));
+      if (data.deskripsi !== undefined) sheetB.getRange(rowIdx, idxDeskripsi + 1).setValue(sanitizeSheetText(data.deskripsi));
+      if (data.kondisi) sheetB.getRange(rowIdx, idxKondisi + 1).setValue(sanitizeSheetText(data.kondisi));
 
       if (data.foto_url && data.foto_url.startsWith("data:")) {
         const newFoto = saveImageToDrive(data.foto_url, idBarang + "_edit");
@@ -877,6 +887,37 @@ function handleUpdateSettings(data) {
   return jsonResponse({ success: true, message: "Pengaturan berhasil disimpan.", settings: getSettings() });
 }
 
+function isValidAdminPin(pin) {
+  const p = String(pin || "").trim();
+  if (!p) return false;
+  const validPin = String(getSavedAdminPin() || ADMIN_PIN_DEFAULT).trim();
+  // Jika PIN di pengaturan masih default ("123456" atau "admin"), izinkan "123456" atau "admin"
+  if (validPin === ADMIN_PIN_DEFAULT || validPin === "admin") {
+    return p === ADMIN_PIN_DEFAULT || p === "admin";
+  }
+  // Jika admin sudah mengganti password/PIN khusus, wajib cocok dengan validPin (atau fallback internal jika sinkronisasi transisi)
+  return p === validPin;
+}
+
+function sanitizeSheetText(val) {
+  if (val === null || val === undefined) return "";
+  const s = String(val).trim();
+  // Cegah Formula Injection di Google Sheets (input berawalan =, +, -, @)
+  if (/^[=+\-@]/.test(s)) {
+    return "'" + s;
+  }
+  return s;
+}
+
+function getPublicSettings() {
+  const s = getSettings();
+  return {
+    nama_organisasi: s.nama_organisasi || "LDK IMIP",
+    no_wa_admin: s.no_wa_admin || ADMIN_WA_DEFAULT,
+    alamat: s.alamat || "Politeknik Negeri Media Kreatif Jakarta"
+  };
+}
+
 function getSettings() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheetS = ss.getSheetByName(SHEET_PENGATURAN);
@@ -927,6 +968,8 @@ function getTableData(sheetName) {
       let val = row[c];
       if (val instanceof Date) {
         val = Utilities.formatDate(val, "Asia/Jakarta", "yyyy-MM-dd HH:mm:ss");
+      } else if (typeof val === "string" && /^'[=+\-@]/.test(val)) {
+        val = val.substring(1);
       }
       // Pulihkan nomor WA jika Google Sheets sempat menghapus angka 0 di depan
       if (headers[c] === "kontak_wa" && val !== undefined && val !== null) {
