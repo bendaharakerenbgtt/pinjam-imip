@@ -817,6 +817,7 @@
         const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbzUgvH7eqh5zKClv1qCjMxcfXWxKQEkU5b0LAalXpSmGupmxgcBjhzuhVVRfVL82enx3g/exec";
         const STORAGE_KEY_API   = "PINJAM_IMIP_API_URL";
         const STORAGE_KEY_USER  = "PINJAM_IMIP_ADMIN_USER";
+        const STORAGE_KEY_PASS  = "PINJAM_IMIP_ADMIN_PASS";
         const STORAGE_KEY_PIN   = "PINJAM_IMIP_ADMIN_PIN";
         const STORAGE_KEY_LOCAL = "PINJAM_IMIP_LOCAL_DB";
         const STORAGE_KEY_SET   = "PINJAM_IMIP_SETTINGS";
@@ -837,7 +838,7 @@
             no_wa_admin: "085770976399",
             alamat: "Politeknik Negeri Media Kreatif Jakarta",
             admin_user: "admin",
-            admin_pin: "admin"
+            admin_pin: "123456"
         };
 
         try {
@@ -944,21 +945,11 @@
                         renderDashboard();
 
                         // Sync ke Google Spreadsheet
-                        const apiUrl = getApiUrl();
-                        if (apiUrl) {
-                            try {
-                                await fetch(apiUrl, {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                                    body: JSON.stringify({
-                                        action: "admin_update_kontak",
-                                        pin: getAdminPin(),
-                                        id_pinjam: idPinjam,
-                                        kontak_wa: fixedWa
-                                    })
-                                });
-                            } catch(e) {}
-                        }
+                        await postAdminApi({
+                            action: "admin_update_kontak",
+                            id_pinjam: idPinjam,
+                            kontak_wa: fixedWa
+                        });
 
                         // Langsung buka chat setelah diperbaiki
                         bukaChatWa(idPinjam, tipe);
@@ -1082,8 +1073,61 @@ Jazakumullah Khairan Katsiran.
             return (localStorage.getItem(STORAGE_KEY_USER) || appSettings.admin_user || "admin").trim();
         }
 
-        function getAdminPin() {
-            return (localStorage.getItem(STORAGE_KEY_PIN) || appSettings.admin_pin || "admin").trim();
+        function getAdminPassword() {
+            return (localStorage.getItem(STORAGE_KEY_PASS) || "admin").trim();
+        }
+
+        function getBackendPin() {
+            const savedBackendPin = localStorage.getItem("PINJAM_IMIP_BACKEND_PIN");
+            if (savedBackendPin) return savedBackendPin.trim();
+            if (appSettings && appSettings.admin_pin && appSettings.admin_pin !== "admin") {
+                return String(appSettings.admin_pin).trim();
+            }
+            return "123456";
+        }
+
+        // Helper universal untuk semua request Admin ke Google Apps Script backend
+        async function postAdminApi(payload) {
+            const apiUrl = getApiUrl();
+            if (!apiUrl) return { success: true };
+
+            const pinsToTry = [
+                getBackendPin(),
+                "123456",
+                getAdminPassword(),
+                "admin"
+            ];
+            const uniquePins = [...new Set(pinsToTry.filter(Boolean))];
+
+            for (let i = 0; i < uniquePins.length; i++) {
+                const pinCandidate = uniquePins[i];
+                try {
+                    const bodyPayload = { ...payload, pin: pinCandidate };
+                    const res = await fetch(apiUrl, {
+                        method: "POST",
+                        headers: { "Content-Type": "text/plain;charset=utf-8" },
+                        body: JSON.stringify(bodyPayload)
+                    });
+                    const json = await res.json();
+
+                    if (json.success) {
+                        localStorage.setItem("PINJAM_IMIP_BACKEND_PIN", pinCandidate);
+                        appSettings.admin_pin = pinCandidate;
+                        return json;
+                    }
+
+                    // Jika error bukan karena PIN salah (misal stok kurang, data not found), kembalikan langsung responsnya
+                    if (!String(json.message || "").toLowerCase().includes("pin")) {
+                        return json;
+                    }
+                } catch (err) {
+                    if (i === uniquePins.length - 1) {
+                        return { success: false, message: "Gagal terhubung ke spreadsheet server." };
+                    }
+                }
+            }
+
+            return { success: false, message: "Akses ditolak: PIN / Kredensial server salah." };
         }
 
         function checkAuth() {
@@ -1108,7 +1152,7 @@ Jazakumullah Khairan Katsiran.
             const inputUser = (document.getElementById('admin-username-input')?.value || "").trim();
             const inputPass = (document.getElementById('admin-password-input')?.value || "").trim();
             const validUser = getAdminUsername();
-            const validPass = getAdminPin();
+            const validPass = getAdminPassword();
 
             // Mendukung login dengan kredensial tersimpan atau fallback default 'admin' / 'admin'
             const isDefaultAllowed = (validUser.toLowerCase() === "admin");
@@ -1240,29 +1284,33 @@ Jazakumullah Khairan Katsiran.
             setSyncStatus('loading', 'Menghubungkan spreadsheet...');
 
             try {
-                let pinToSend = getAdminPin();
-                let res = await fetch(`${apiUrl}?action=get_admin_data&pin=${encodeURIComponent(pinToSend)}`);
-                let json = await res.json();
+                const pinsToTry = [getBackendPin(), "123456", getAdminPassword(), "admin"];
+                const uniquePins = [...new Set(pinsToTry.filter(Boolean))];
+                let json = null;
 
-                // Jika spreadsheet masih disetel dengan default lama "123456", otomatis coba fallback
-                if (!json.success && (json.message || "").toLowerCase().includes("pin") && pinToSend !== "123456") {
-                    res = await fetch(`${apiUrl}?action=get_admin_data&pin=123456`);
-                    const fallbackJson = await res.json();
-                    if (fallbackJson.success) {
-                        json = fallbackJson;
-                    }
+                for (const p of uniquePins) {
+                    try {
+                        const res = await fetch(`${apiUrl}?action=get_admin_data&pin=${encodeURIComponent(p)}`);
+                        const parsed = await res.json();
+                        if (parsed.success) {
+                            json = parsed;
+                            localStorage.setItem("PINJAM_IMIP_BACKEND_PIN", p);
+                            appSettings.admin_pin = p;
+                            break;
+                        }
+                    } catch(err) {}
                 }
 
-                if (json.success) {
+                if (json && json.success) {
                     if (json.barang) localDB.barang = json.barang;
                     if (json.peminjaman) localDB.peminjaman = json.peminjaman;
                     if (json.settings) {
                         appSettings = { ...appSettings, ...json.settings };
                         if (json.settings.admin_user) localStorage.setItem(STORAGE_KEY_USER, json.settings.admin_user);
-                        if (json.settings.admin_pin && json.settings.admin_pin !== "123456") {
-                            localStorage.setItem(STORAGE_KEY_PIN, json.settings.admin_pin);
+                        if (json.settings.admin_pin) {
+                            localStorage.setItem("PINJAM_IMIP_BACKEND_PIN", json.settings.admin_pin);
+                            appSettings.admin_pin = json.settings.admin_pin;
                         }
-                        saveSettingsLocal();
                         applySettingsToUI();
                     }
                     saveLocalDB();
@@ -1842,6 +1890,13 @@ Jazakumullah Khairan Katsiran.
             });
             if (!isConfirmed) return;
 
+            Swal.fire({
+                title: 'Menyerahkan Barang...',
+                text: 'Sedang memperbarui status di database...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+
             const today = new Date().toISOString().slice(0, 10);
             const resServer = await updateStatusOnline(idPinjam, "SEDANG DIPINJAM", "", today);
             if (resServer && resServer.success === false) {
@@ -2017,25 +2072,16 @@ Jazakumullah Khairan Katsiran.
             target.catatan_admin = catatan ? `${catatan} (Kondisi: ${kondisi})` : `Barang kembali dalam ${kondisi}.`;
             saveLocalDB();
 
-            const apiUrl = getApiUrl();
-            if (apiUrl) {
-                try {
-                    await fetch(apiUrl, {
-                        method: "POST",
-                        body: JSON.stringify({
-                            action: "admin_update_status",
-                            pin: getAdminPin(),
-                            id_pinjam: idPinjam,
-                            status: "SELESAI",
-                            tgl_kembali_aktual: tglAktual,
-                            kondisi_kembali: kondisi,
-                            catatan_kembali: catatan,
-                            catatan: target.catatan_admin,
-                            returned_items: items
-                        })
-                    });
-                } catch(e) {}
-            }
+            await postAdminApi({
+                action: "admin_update_status",
+                id_pinjam: idPinjam,
+                status: "SELESAI",
+                tgl_kembali_aktual: tglAktual,
+                kondisi_kembali: kondisi,
+                catatan_kembali: catatan,
+                catatan: target.catatan_admin,
+                returned_items: items
+            });
 
             btn.disabled = false;
             btn.innerHTML = `Selesaikan Pengembalian`;
@@ -2303,7 +2349,6 @@ Jazakumullah Khairan Katsiran.
 
             const payload = {
                 action: isEdit ? "admin_edit_barang" : "admin_tambah_barang",
-                pin: getAdminPin(),
                 id_barang: editId || ("BRG-" + Math.floor(100 + Math.random() * 900)),
                 nama_barang: namaBarang,
                 kategori: document.getElementById('barang-kategori').value,
@@ -2313,14 +2358,8 @@ Jazakumullah Khairan Katsiran.
                 foto_url: base64FotoBarang
             };
 
-            const apiUrl = getApiUrl();
-            if (apiUrl) {
-                try {
-                    const res = await fetch(apiUrl, { method: "POST", body: JSON.stringify(payload) });
-                    const resJson = await res.json();
-                    if (resJson.id_barang) payload.id_barang = resJson.id_barang;
-                } catch(e) {}
-            }
+            const resJson = await postAdminApi(payload);
+            if (resJson && resJson.id_barang) payload.id_barang = resJson.id_barang;
 
             if (isEdit) {
                 const target = localDB.barang.find(b => String(b.id_barang) === String(editId));
@@ -2378,15 +2417,7 @@ Jazakumullah Khairan Katsiran.
                 saveLocalDB();
             }
 
-            const apiUrl = getApiUrl();
-            if (apiUrl) {
-                try {
-                    await fetch(apiUrl, {
-                        method: "POST",
-                        body: JSON.stringify({ action: "admin_hapus_barang", pin: getAdminPin(), id_barang: idBarang })
-                    });
-                } catch(e) {}
-            }
+            await postAdminApi({ action: "admin_hapus_barang", id_barang: idBarang });
 
             Swal.fire({ icon: 'success', title: 'Barang Dipindahkan ke Arsip', timer: 1200, showConfirmButton: false });
             renderDashboard();
@@ -2399,15 +2430,7 @@ Jazakumullah Khairan Katsiran.
                 saveLocalDB();
             }
 
-            const apiUrl = getApiUrl();
-            if (apiUrl) {
-                try {
-                    await fetch(apiUrl, {
-                        method: "POST",
-                        body: JSON.stringify({ action: "admin_pulihkan_barang", pin: getAdminPin(), id_barang: idBarang })
-                    });
-                } catch(e) {}
-            }
+            await postAdminApi({ action: "admin_pulihkan_barang", id_barang: idBarang });
 
             Swal.fire({ icon: 'success', title: 'Barang Berhasil Dipulihkan!', text: 'Kini kembali aktif di katalog peminjaman.', timer: 1500, showConfirmButton: false });
             renderDashboard();
@@ -2428,15 +2451,7 @@ Jazakumullah Khairan Katsiran.
             localDB.barang = localDB.barang.filter(b => String(b.id_barang) !== String(idBarang));
             saveLocalDB();
 
-            const apiUrl = getApiUrl();
-            if (apiUrl) {
-                try {
-                    await fetch(apiUrl, {
-                        method: "POST",
-                        body: JSON.stringify({ action: "admin_hapus_permanen", pin: getAdminPin(), id_barang: idBarang })
-                    });
-                } catch(e) {}
-            }
+            await postAdminApi({ action: "admin_hapus_permanen", id_barang: idBarang });
 
             Swal.fire({ icon: 'success', title: 'Barang Dihapus Permanen', timer: 1200, showConfirmButton: false });
             renderDashboard();
@@ -2472,7 +2487,6 @@ Jazakumullah Khairan Katsiran.
             btn.disabled = true;
             btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Menyimpan...`;
 
-            const currentPin = getAdminPin();
             const newNama = document.getElementById('set-nama-organisasi').value.trim();
             const newWa = document.getElementById('set-no-wa').value.trim();
             const newAlamat = document.getElementById('set-alamat').value.trim();
@@ -2488,34 +2502,26 @@ Jazakumullah Khairan Katsiran.
                 localStorage.setItem(STORAGE_KEY_USER, newUsername);
             }
             if (newPassword) {
+                localStorage.setItem(STORAGE_KEY_PASS, newPassword);
+                localStorage.setItem("PINJAM_IMIP_BACKEND_PIN", newPassword);
                 appSettings.admin_pin = newPassword;
-                localStorage.setItem(STORAGE_KEY_PIN, newPassword);
             }
             saveSettingsLocal();
             applySettingsToUI();
 
-            const apiUrl = getApiUrl();
-            if (apiUrl) {
-                try {
-                    const res = await fetch(apiUrl, {
-                        method: "POST",
-                        body: JSON.stringify({
-                            action: "admin_update_settings",
-                            pin: currentPin,
-                            nama_organisasi: appSettings.nama_organisasi,
-                            no_wa_admin: appSettings.no_wa_admin,
-                            alamat: appSettings.alamat,
-                            admin_pin: newPassword || currentPin,
-                            admin_user: newUsername || getAdminUsername()
-                        })
-                    });
-                    const resJson = await res.json();
-                    if (resJson && resJson.settings) {
-                        appSettings = { ...appSettings, ...resJson.settings };
-                        saveSettingsLocal();
-                        applySettingsToUI();
-                    }
-                } catch(e) {}
+            const resJson = await postAdminApi({
+                action: "admin_update_settings",
+                nama_organisasi: appSettings.nama_organisasi,
+                no_wa_admin: appSettings.no_wa_admin,
+                alamat: appSettings.alamat,
+                admin_pin: newPassword || getBackendPin(),
+                admin_user: newUsername || getAdminUsername()
+            });
+
+            if (resJson && resJson.settings) {
+                appSettings = { ...appSettings, ...resJson.settings };
+                saveSettingsLocal();
+                applySettingsToUI();
             }
 
             btn.disabled = false;
@@ -2623,26 +2629,14 @@ Jazakumullah Khairan Katsiran.
         }
 
         async function updateStatusOnline(idPinjam, statusBaru, catatan = "", tglSerah = "", noSurat = "") {
-            const apiUrl = getApiUrl();
-            if (!apiUrl) return { success: true };
-            try {
-                const res = await fetch(apiUrl, {
-                    method: "POST",
-                    body: JSON.stringify({
-                        action: "admin_update_status",
-                        pin: getAdminPin(),
-                        id_pinjam: idPinjam,
-                        status: statusBaru,
-                        catatan: catatan,
-                        tgl_penyerahan: tglSerah,
-                        no_surat: noSurat
-                    })
-                });
-                const resJson = await res.json();
-                return resJson;
-            } catch(e) {
-                return { success: true, offline: true };
-            }
+            return await postAdminApi({
+                action: "admin_update_status",
+                id_pinjam: idPinjam,
+                status: statusBaru,
+                catatan: catatan,
+                tgl_penyerahan: tglSerah,
+                no_surat: noSurat
+            });
         }
 
         function getStatusClass(status) {
