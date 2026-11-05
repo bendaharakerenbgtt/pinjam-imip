@@ -124,6 +124,7 @@
         #printable-surat li,
         #printable-surat span {
             font-size: 12pt !important;
+            font-weight: normal !important;
         }
         #printable-surat h2 {
             font-size: 13pt !important;
@@ -228,11 +229,12 @@
             #printable-surat table th {
                 padding: 2px 4px !important;
                 font-size: 11.5pt !important;
+                font-weight: normal !important;
             }
-            #printable-surat ol li {
-                font-size: 11pt !important;
-                line-height: 1.3 !important;
-                margin-bottom: 2px !important;
+            #printable-surat ol li,
+            #printable-surat span,
+            #printable-surat p {
+                font-weight: normal !important;
             }
             #printable-surat .h-24,
             #printable-surat .sm\\:h-28 {
@@ -557,14 +559,14 @@
                     </div>
 
                     <div class="space-y-1.5 pt-1">
-                        <span class="font-bold block">Daftar Barang yang Diserahkan:</span>
+                        <span class="block">Daftar Barang yang Diserahkan:</span>
                         <table class="w-full border border-black border-collapse">
                             <thead>
-                                <tr class="bg-gray-100 border-b border-black text-center font-bold">
-                                    <th class="border border-black p-1.5 w-10">No</th>
-                                    <th class="border border-black p-1.5 text-left">Nama Barang</th>
-                                    <th class="border border-black p-1.5 w-24">Jumlah</th>
-                                    <th class="border border-black p-1.5 w-32">Kondisi Awal</th>
+                                <tr class="bg-gray-100 border-b border-black text-center font-normal">
+                                    <th class="border border-black p-1.5 w-10 font-normal">No</th>
+                                    <th class="border border-black p-1.5 text-left font-normal">Nama Barang</th>
+                                    <th class="border border-black p-1.5 w-24 font-normal">Jumlah</th>
+                                    <th class="border border-black p-1.5 w-32 font-normal">Kondisi Awal</th>
                                 </tr>
                             </thead>
                             <tbody id="surat-items-table"></tbody>
@@ -572,8 +574,8 @@
                     </div>
 
                     <div class="space-y-1.5 pt-2 sm:pt-3 section-ketentuan">
-                        <span class="font-bold block">Ketentuan & Syarat Peminjaman:</span>
-                        <ol class="list-decimal pl-5 space-y-1 sm:space-y-1.5 leading-relaxed text-justify">
+                        <span class="block">Ketentuan & Syarat Peminjaman:</span>
+                        <ol class="list-decimal pl-5 space-y-1 sm:space-y-1.5 leading-relaxed text-justify font-normal">
                             <li>Peminjam bertanggung jawab menjaga barang selama masa peminjaman.</li>
                             <li>Barang wajib dikembalikan sesuai tanggal yang telah disepakati.</li>
                             <li>Peminjam tidak diperkenankan memindahtangankan barang kepada pihak lain tanpa persetujuan pengelola.</li>
@@ -2443,9 +2445,9 @@ Jazakumullah Khairan Katsiran.
                 tr.className = "border-b border-black text-center";
                 tr.innerHTML = `
                     <td class="border border-black p-1">${idx + 1}</td>
-                    <td class="border border-black p-1 text-left font-bold">${it.nama_barang}</td>
-                    <td class="border border-black p-1 font-bold">${it.jumlah} Unit</td>
-                    <td class="border border-black p-1">${it.kondisi || 'Baik'}</td>
+                    <td class="border border-black p-1 text-left font-normal">${it.nama_barang}</td>
+                    <td class="border border-black p-1 font-normal">${it.jumlah} Unit</td>
+                    <td class="border border-black p-1 font-normal">${it.kondisi || 'Baik'}</td>
                 `;
                 tbody.appendChild(tr);
             });
