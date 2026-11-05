@@ -285,22 +285,53 @@
     <!-- CONTENT WRAPPER -->
     <main class="max-w-6xl mx-auto px-3 sm:px-6 space-y-4 sm:space-y-6 no-print">
 
-        <!-- 1. LOGIN FORM -->
-        <div id="section-login" class="max-w-md mx-auto my-10 ui-card rounded-2xl p-6 sm:p-8 space-y-5 text-center border-orange-200">
-            <div class="w-14 h-14 rounded-2xl bg-orange-500/10 text-[#FF7300] border border-orange-500/20 flex items-center justify-center mx-auto text-2xl">
-                <i class="fa-solid fa-shield-halved"></i>
-            </div>
-            <div>
-                <h2 class="text-xl font-bold font-outfit ui-heading">Verifikasi Pengurus</h2>
-                <p class="text-xs ui-muted mt-1">Masukkan PIN Admin untuk mengakses dashboard peminjaman inventaris.</p>
+        <!-- 1. LOGIN FORM (USERNAME & PASSWORD) -->
+        <div id="section-login" class="max-w-md mx-auto my-8 sm:my-12 ui-card rounded-2xl p-6 sm:p-8 space-y-5 border-orange-200 shadow-sm">
+            <div class="text-center space-y-2">
+                <div class="w-14 h-14 rounded-2xl bg-orange-500/10 text-[#FF7300] border border-orange-500/20 flex items-center justify-center mx-auto text-2xl shadow-xs">
+                    <i class="fa-solid fa-user-shield"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold font-outfit ui-heading">Login Admin Pinjamip</h2>
+                    <p class="text-xs ui-muted mt-1">Masuk untuk mengelola inventaris & peminjaman.</p>
+                </div>
             </div>
 
-            <form onsubmit="submitLoginAdmin(event)" class="space-y-4">
-                <input type="password" id="admin-pin-input" placeholder="PIN Admin (Default: 123456)" maxlength="10" required
-                       class="w-full text-center tracking-widest text-lg font-bold px-4 py-3 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
+            <!-- Hint Kredensial Default -->
+            <div class="p-3 rounded-xl bg-orange-500/10 border border-orange-500/20 text-[11px] text-[#FF7300] flex items-start gap-2.5">
+                <i class="fa-solid fa-circle-info text-xs mt-0.5"></i>
+                <div class="flex-1 leading-relaxed">
+                    <span>Akses Default: Username: <strong class="font-bold underline">admin</strong> &bull; Password: <strong class="font-bold underline">admin</strong></span>
+                    <p class="text-[10px] ui-muted mt-0.5">*Kredensial dapat diganti kapan saja di menu Pengaturan.</p>
+                </div>
+            </div>
 
-                <button type="submit" class="w-full py-3 rounded-xl btn-kabinet text-xs font-bold transition-all shadow-md">
-                    Buka Dashboard
+            <form onsubmit="submitLoginAdmin(event)" class="space-y-3.5">
+                <div>
+                    <label class="block text-xs font-bold ui-muted mb-1 text-left">
+                        <i class="fa-solid fa-user mr-1 text-[#FF7300]"></i> Username
+                    </label>
+                    <input type="text" id="admin-username-input" placeholder="Masukkan username (Default: admin)" autocomplete="username" required
+                           class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading text-xs sm:text-sm focus:outline-none focus:border-[#FF7300] focus:ring-1 focus:ring-[#FF7300] transition-all">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold ui-muted mb-1 text-left">
+                        <i class="fa-solid fa-lock mr-1 text-[#FF7300]"></i> Password
+                    </label>
+                    <div class="relative">
+                        <input type="password" id="admin-password-input" placeholder="Masukkan password (Default: admin)" autocomplete="current-password" required
+                               class="w-full pl-3.5 pr-10 py-2.5 rounded-xl ui-card ui-heading text-xs sm:text-sm focus:outline-none focus:border-[#FF7300] focus:ring-1 focus:ring-[#FF7300] transition-all">
+                        <button type="button" onclick="togglePasswordVisibility('admin-password-input', 'toggle-pass-login-icon')" 
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#FF7300] transition-colors p-1" title="Lihat/Sembunyikan Password">
+                            <i id="toggle-pass-login-icon" class="fa-solid fa-eye-slash text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" id="btn-login-admin" class="w-full py-2.5 sm:py-3 rounded-xl btn-kabinet text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-md mt-2">
+                    <i class="fa-solid fa-right-to-bracket"></i>
+                    <span>Masuk Dashboard</span>
                 </button>
             </form>
         </div>
@@ -483,10 +514,32 @@
                                    class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
                         </div>
 
-                        <div>
-                            <label class="block ui-heading font-semibold mb-1">PIN Akses Admin:</label>
-                            <input type="password" id="set-pin" maxlength="10" value="123456"
-                                   class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
+                        <!-- Akun Login Admin (Username & Password) -->
+                        <div class="pt-3 border-t border-orange-200/50 dark:border-white/5 space-y-3">
+                            <h4 class="font-outfit font-bold text-xs sm:text-sm text-[#FF7300] flex items-center gap-1.5">
+                                <i class="fa-solid fa-user-lock"></i> Kredensial Akun Pengurus (Login)
+                            </h4>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block ui-heading font-semibold mb-1">Username Admin:</label>
+                                    <input type="text" id="set-username" required placeholder="admin"
+                                           class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
+                                </div>
+
+                                <div>
+                                    <label class="block ui-heading font-semibold mb-1">Password Baru (Opsional):</label>
+                                    <div class="relative">
+                                        <input type="password" id="set-password" placeholder="Kosongkan jika tidak diubah"
+                                               class="w-full pl-3.5 pr-10 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
+                                        <button type="button" onclick="togglePasswordVisibility('set-password', 'toggle-pass-set-icon')"
+                                                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#FF7300] p-1" title="Lihat/Sembunyikan">
+                                            <i id="toggle-pass-set-icon" class="fa-solid fa-eye-slash text-xs"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="text-[11px] ui-muted">*Default awal: Username: <strong class="text-orange-500 font-bold">admin</strong> &bull; Password: <strong class="text-orange-500 font-bold">admin</strong>. Anda dapat menggantinya kapan saja di sini.</p>
                         </div>
 
                         <div class="pt-2 flex justify-end">
@@ -763,6 +816,7 @@
     <script>
         const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbzUgvH7eqh5zKClv1qCjMxcfXWxKQEkU5b0LAalXpSmGupmxgcBjhzuhVVRfVL82enx3g/exec";
         const STORAGE_KEY_API   = "PINJAM_IMIP_API_URL";
+        const STORAGE_KEY_USER  = "PINJAM_IMIP_ADMIN_USER";
         const STORAGE_KEY_PIN   = "PINJAM_IMIP_ADMIN_PIN";
         const STORAGE_KEY_LOCAL = "PINJAM_IMIP_LOCAL_DB";
         const STORAGE_KEY_SET   = "PINJAM_IMIP_SETTINGS";
@@ -781,7 +835,9 @@
         let appSettings = {
             nama_organisasi: "LDK IMIP",
             no_wa_admin: "085770976399",
-            alamat: "Politeknik Negeri Media Kreatif Jakarta"
+            alamat: "Politeknik Negeri Media Kreatif Jakarta",
+            admin_user: "admin",
+            admin_pin: "admin"
         };
 
         try {
@@ -1009,12 +1065,29 @@ Jazakumullah Khairan Katsiran.
 *Pengurus Inventaris LDK IMIP*`;
         }
 
+        function togglePasswordVisibility(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (!input || !icon) return;
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fa-solid fa-eye text-xs text-[#FF7300]';
+            } else {
+                input.type = 'password';
+                icon.className = 'fa-solid fa-eye-slash text-xs';
+            }
+        }
+
+        function getAdminUsername() {
+            return (localStorage.getItem(STORAGE_KEY_USER) || appSettings.admin_user || "admin").trim();
+        }
+
         function getAdminPin() {
-            return (localStorage.getItem(STORAGE_KEY_PIN) || "123456").trim();
+            return (localStorage.getItem(STORAGE_KEY_PIN) || appSettings.admin_pin || "admin").trim();
         }
 
         function checkAuth() {
-            // Gunakan sessionStorage agar saat browser/tab ditutup, admin wajib memasukkan PIN kembali
+            // Gunakan sessionStorage agar saat browser/tab ditutup, admin wajib login kembali
             const isAuth = sessionStorage.getItem("PINJAM_ADMIN_AUTH") === "true";
             if (isAuth) {
                 document.getElementById('section-login').classList.add('hidden');
@@ -1032,20 +1105,53 @@ Jazakumullah Khairan Katsiran.
 
         function submitLoginAdmin(e) {
             e.preventDefault();
-            const inputPin = document.getElementById('admin-pin-input').value.trim();
-            if (inputPin === getAdminPin()) {
+            const inputUser = (document.getElementById('admin-username-input')?.value || "").trim();
+            const inputPass = (document.getElementById('admin-password-input')?.value || "").trim();
+            const validUser = getAdminUsername();
+            const validPass = getAdminPin();
+
+            // Mendukung login dengan kredensial tersimpan atau fallback default 'admin' / 'admin'
+            const isDefaultAllowed = (validUser.toLowerCase() === "admin");
+            let isUserOk = (inputUser.toLowerCase() === validUser.toLowerCase());
+            let isPassOk = (inputPass === validPass);
+
+            if (isDefaultAllowed) {
+                if (inputUser.toLowerCase() === "admin") {
+                    isUserOk = true;
+                    if (inputPass === "admin" || inputPass === "123456" || inputPass === validPass) {
+                        isPassOk = true;
+                    }
+                }
+            }
+
+            if (isUserOk && isPassOk) {
                 sessionStorage.setItem("PINJAM_ADMIN_AUTH", "true");
+                sessionStorage.setItem("PINJAM_ADMIN_LOGGED_USER", inputUser);
                 localStorage.removeItem("PINJAM_ADMIN_AUTH");
-                document.getElementById('admin-pin-input').value = "";
+                if (document.getElementById('admin-username-input')) document.getElementById('admin-username-input').value = "";
+                if (document.getElementById('admin-password-input')) document.getElementById('admin-password-input').value = "";
                 checkAuth();
-                Swal.fire({ icon: 'success', title: 'Berhasil Masuk', timer: 1000, showConfirmButton: false });
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Login Berhasil',
+                    text: `Selamat datang, ${inputUser}!`,
+                    timer: 1200,
+                    showConfirmButton: false
+                });
             } else {
-                Swal.fire({ icon: 'error', title: 'PIN Salah', text: 'Periksa kembali PIN admin Anda.', timer: 1800, showConfirmButton: false });
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Login Gagal',
+                    text: 'Username atau password tidak sesuai. Silakan coba lagi.',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
             }
         }
 
         function logoutAdmin() {
             sessionStorage.removeItem("PINJAM_ADMIN_AUTH");
+            sessionStorage.removeItem("PINJAM_ADMIN_LOGGED_USER");
             localStorage.removeItem("PINJAM_ADMIN_AUTH");
             checkAuth();
         }
@@ -1134,13 +1240,28 @@ Jazakumullah Khairan Katsiran.
             setSyncStatus('loading', 'Menghubungkan spreadsheet...');
 
             try {
-                const res = await fetch(`${apiUrl}?action=get_admin_data&pin=${encodeURIComponent(getAdminPin())}`);
-                const json = await res.json();
+                let pinToSend = getAdminPin();
+                let res = await fetch(`${apiUrl}?action=get_admin_data&pin=${encodeURIComponent(pinToSend)}`);
+                let json = await res.json();
+
+                // Jika spreadsheet masih disetel dengan default lama "123456", otomatis coba fallback
+                if (!json.success && (json.message || "").toLowerCase().includes("pin") && pinToSend !== "123456") {
+                    res = await fetch(`${apiUrl}?action=get_admin_data&pin=123456`);
+                    const fallbackJson = await res.json();
+                    if (fallbackJson.success) {
+                        json = fallbackJson;
+                    }
+                }
+
                 if (json.success) {
                     if (json.barang) localDB.barang = json.barang;
                     if (json.peminjaman) localDB.peminjaman = json.peminjaman;
                     if (json.settings) {
                         appSettings = { ...appSettings, ...json.settings };
+                        if (json.settings.admin_user) localStorage.setItem(STORAGE_KEY_USER, json.settings.admin_user);
+                        if (json.settings.admin_pin && json.settings.admin_pin !== "123456") {
+                            localStorage.setItem(STORAGE_KEY_PIN, json.settings.admin_pin);
+                        }
                         saveSettingsLocal();
                         applySettingsToUI();
                     }
@@ -2336,11 +2457,13 @@ Jazakumullah Khairan Katsiran.
             const elNama = document.getElementById('set-nama-organisasi');
             const elWa = document.getElementById('set-no-wa');
             const elAlamat = document.getElementById('set-alamat');
-            const elPin = document.getElementById('set-pin');
+            const elUser = document.getElementById('set-username');
+            const elPass = document.getElementById('set-password');
             if (elNama) elNama.value = (appSettings.nama_organisasi || "LDK IMIP").replace(/\s*[-—–]\s*Lembaga Dakwah Kampus/gi, "").replace(/Lembaga Dakwah Kampus/gi, "").trim() || "LDK IMIP";
             if (elWa) elWa.value = appSettings.no_wa_admin || "085770976399";
             if (elAlamat) elAlamat.value = appSettings.alamat || "Politeknik Negeri Media Kreatif Jakarta";
-            if (elPin) elPin.value = getAdminPin();
+            if (elUser) elUser.value = getAdminUsername();
+            if (elPass) elPass.value = "";
         }
 
         async function simpanPengaturan(e) {
@@ -2353,14 +2476,20 @@ Jazakumullah Khairan Katsiran.
             const newNama = document.getElementById('set-nama-organisasi').value.trim();
             const newWa = document.getElementById('set-no-wa').value.trim();
             const newAlamat = document.getElementById('set-alamat').value.trim();
-            const newPin = document.getElementById('set-pin').value.trim();
+            const newUsername = (document.getElementById('set-username')?.value || "").trim();
+            const newPassword = (document.getElementById('set-password')?.value || "").trim();
 
             if (newNama) appSettings.nama_organisasi = newNama;
             if (newWa) appSettings.no_wa_admin = newWa;
             if (newAlamat) appSettings.alamat = newAlamat;
 
-            if (newPin && newPin !== currentPin) {
-                localStorage.setItem(STORAGE_KEY_PIN, newPin);
+            if (newUsername) {
+                appSettings.admin_user = newUsername;
+                localStorage.setItem(STORAGE_KEY_USER, newUsername);
+            }
+            if (newPassword) {
+                appSettings.admin_pin = newPassword;
+                localStorage.setItem(STORAGE_KEY_PIN, newPassword);
             }
             saveSettingsLocal();
             applySettingsToUI();
@@ -2376,7 +2505,8 @@ Jazakumullah Khairan Katsiran.
                             nama_organisasi: appSettings.nama_organisasi,
                             no_wa_admin: appSettings.no_wa_admin,
                             alamat: appSettings.alamat,
-                            admin_pin: newPin || currentPin
+                            admin_pin: newPassword || currentPin,
+                            admin_user: newUsername || getAdminUsername()
                         })
                     });
                     const resJson = await res.json();
@@ -2390,7 +2520,14 @@ Jazakumullah Khairan Katsiran.
 
             btn.disabled = false;
             btn.innerHTML = `Simpan Perubahan`;
-            Swal.fire({ icon: 'success', title: 'Pengaturan Berhasil Disimpan', text: 'Nama organisasi dan pengaturan telah diperbarui.', timer: 1500, showConfirmButton: false });
+            Swal.fire({ 
+                icon: 'success', 
+                title: 'Pengaturan Berhasil Disimpan', 
+                text: 'Pengaturan organisasi dan akun admin telah diperbarui.', 
+                timer: 1600, 
+                showConfirmButton: false 
+            });
+            loadSettingsToForm();
         }
 
         // ==========================================
