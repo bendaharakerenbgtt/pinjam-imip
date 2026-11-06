@@ -162,12 +162,15 @@
             </a>
 
             <!-- Navigation Links & Theme Toggle -->
-            <div class="flex items-center gap-1.5 sm:gap-2.5">
-                <a href="index.html" class="px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl ui-pill text-xs font-bold ui-heading hover:text-[#FF7300] flex items-center gap-1.5 transition-all">
+            <div class="flex items-center gap-1.5 sm:gap-2">
+                <a href="index.html" class="px-2 py-1.5 sm:px-3 sm:py-2 rounded-xl ui-pill text-xs font-bold ui-heading hover:text-[#FF7300] flex items-center gap-1.5 transition-all" title="Katalog Inventaris">
                     <i class="fa-solid fa-boxes-stacked text-[#FF7300]"></i> <span class="hidden sm:inline">Katalog</span>
                 </a>
-                <a href="status.html" class="px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl ui-pill text-xs font-bold ui-heading hover:text-[#FF7300] flex items-center gap-1.5 transition-all">
-                    <i class="fa-solid fa-clock-rotate-left text-[#FF7300]"></i> <span class="hidden sm:inline">Lacak Status</span>
+                <a href="status.html" class="px-2 py-1.5 sm:px-3 sm:py-2 rounded-xl ui-pill text-xs font-bold ui-heading hover:text-[#FF7300] flex items-center gap-1.5 transition-all" title="Lacak Pengajuan">
+                    <i class="fa-solid fa-clock-rotate-left text-[#FF7300]"></i> <span class="hidden sm:inline">Status</span>
+                </a>
+                <a href="admin.html" class="px-2 py-1.5 sm:px-3 sm:py-2 rounded-xl ui-pill text-xs font-bold ui-heading hover:text-[#FF7300] flex items-center gap-1.5 transition-all" title="Dashboard Admin">
+                    <i class="fa-solid fa-gauge-high text-[#FF7300]"></i> <span class="hidden sm:inline">Dashboard</span>
                 </a>
                 <button onclick="toggleTheme()" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl ui-pill flex items-center justify-center ui-body hover:text-[#FF7300] transition-all" title="Ubah Mode Tampilan">
                     <i id="theme-icon" class="fa-solid fa-moon text-xs sm:text-sm"></i>
@@ -618,6 +621,9 @@
                 </a>
                 <a href="status.html" class="px-5 py-2.5 rounded-xl bg-black/25 hover:bg-black/35 text-white font-bold text-xs sm:text-sm border border-white/30 transition-all flex items-center gap-2 backdrop-blur-xs">
                     <i class="fa-solid fa-clock-rotate-left"></i> Lacak Pengajuan Saya
+                </a>
+                <a href="admin.html" class="px-5 py-2.5 rounded-xl bg-black/25 hover:bg-black/35 text-white font-bold text-xs sm:text-sm border border-white/30 transition-all flex items-center gap-2 backdrop-blur-xs">
+                    <i class="fa-solid fa-gauge-high"></i> Dashboard Admin
                 </a>
             </div>
         </div>
