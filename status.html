@@ -398,6 +398,7 @@
                         tgl_pengambilan: p.tgl_pengambilan,
                         tgl_pengembalian: p.tgl_pengembalian,
                         tujuan: p.tujuan,
+                        tempat_kegiatan: p.tempat_kegiatan || "-",
                         items: items,
                         status: p.status,
                         catatan_publik: p.catatan_admin || "",
@@ -491,8 +492,8 @@
                         </div>
                     </div>
 
-                    <!-- Jadwal & Keperluan (Kontras Tinggi & Tegas) -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                    <!-- Jadwal & Lokasi & Keperluan (Kontras Tinggi & Tegas) -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
                         <div class="ui-pill p-2.5 rounded-xl space-y-1">
                             <span class="block text-[10px] uppercase font-bold ui-muted tracking-wider">
                                 Periode Peminjaman
@@ -503,9 +504,17 @@
                         </div>
                         <div class="ui-pill p-2.5 rounded-xl space-y-1">
                             <span class="block text-[10px] uppercase font-bold ui-muted tracking-wider">
+                                Tempat Kegiatan
+                            </span>
+                            <span class="font-bold text-[#FF7300] text-xs flex items-center gap-1.5">
+                                <i class="fa-solid fa-location-dot text-rose-500"></i> ${escapeHtml(item.tempat_kegiatan || '-')}
+                            </span>
+                        </div>
+                        <div class="ui-pill p-2.5 rounded-xl space-y-1">
+                            <span class="block text-[10px] uppercase font-bold ui-muted tracking-wider">
                                 Keperluan
                             </span>
-                            <span class="font-semibold ui-body text-xs italic block">
+                            <span class="font-semibold ui-body text-xs italic block truncate" title="${escapeHtml(item.tujuan || '-')}">
                                 "${escapeHtml(item.tujuan || '-')}"
                             </span>
                         </div>

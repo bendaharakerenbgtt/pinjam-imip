@@ -40,7 +40,7 @@ const HEADERS_BARANG = [
 const HEADERS_PEMINJAMAN = [
   "id_pinjam", "no_surat", "nama_peminjam", "kontak_wa", 
   "asal_organisasi", "kategori_peminjam", "nama_penanggung_jawab",
-  "items_json", "tgl_pengambilan", "tgl_pengembalian", "tujuan", 
+  "items_json", "tgl_pengambilan", "tgl_pengembalian", "tujuan", "tempat_kegiatan", 
   "catatan_tambahan", "dokumen_identitas", "status", 
   "catatan_admin", "tgl_penyerahan", "tgl_kembali_aktual", 
   "kondisi_kembali", "catatan_kembali", "created_at", "updated_at"
@@ -209,6 +209,7 @@ function doGet(e) {
           tgl_pengambilan: row.tgl_pengambilan,
           tgl_pengembalian: row.tgl_pengembalian,
           tujuan: row.tujuan,
+          tempat_kegiatan: row.tempat_kegiatan || "-",
           items: parsedItems,
           status: row.status,
           catatan_publik: row.catatan_admin || "",
@@ -446,31 +447,44 @@ function handleAjukanPinjam(data) {
   }
   const safeKontakWa = cleanWaDigits ? ("'" + cleanWaDigits) : "";
 
-  // Status awal PRD: MENUNGGU VERIFIKASI (stok belum dikunci)
-  const newRow = [
-    idPinjam,
-    "", // No surat perjanjian akan di-generate saat approve
-    sanitizeSheetText(data.nama_peminjam || ""),
-    safeKontakWa,
-    sanitizeSheetText(data.asal_organisasi || ""),
-    sanitizeSheetText(data.kategori_peminjam || "Kampus"),
-    sanitizeSheetText(data.nama_penanggung_jawab || ""),
-    JSON.stringify(items),
-    sanitizeSheetText(data.tgl_pengambilan || ""),
-    sanitizeSheetText(data.tgl_pengembalian || ""),
-    sanitizeSheetText(data.tujuan || ""),
-    sanitizeSheetText(data.catatan_tambahan || ""),
-    identitasUrl,
-    "MENUNGGU VERIFIKASI",
-    catatanAwalAdmin, // Catatan admin awal jika ada bentrok
-    "", // Tgl penyerahan
-    "", // Tgl kembali aktual
-    "", // Kondisi kembali
-    "", // Catatan kembali
-    now,
-    now
-  ];
+  // Pastikan kolom tempat_kegiatan ada di header sheet jika belum ada
+  const curHeaders = sheetP.getRange(1, 1, 1, Math.max(sheetP.getLastColumn(), 1)).getValues()[0].map(h => String(h).trim().toLowerCase());
+  if (curHeaders.indexOf("tempat_kegiatan") === -1 && curHeaders.length > 0 && curHeaders[0] !== "") {
+    const idxTujuan = curHeaders.indexOf("tujuan");
+    if (idxTujuan !== -1) {
+      sheetP.insertColumnAfter(idxTujuan + 1);
+      sheetP.getRange(1, idxTujuan + 2).setValue("tempat_kegiatan").setFontWeight("bold");
+    } else {
+      sheetP.getRange(1, curHeaders.length + 1).setValue("tempat_kegiatan").setFontWeight("bold");
+    }
+  }
 
+  const finalHeaders = sheetP.getRange(1, 1, 1, sheetP.getLastColumn()).getValues()[0].map(h => String(h).trim().toLowerCase());
+  const rowDataMap = {
+    id_pinjam: idPinjam,
+    no_surat: "",
+    nama_peminjam: sanitizeSheetText(data.nama_peminjam || ""),
+    kontak_wa: safeKontakWa,
+    asal_organisasi: sanitizeSheetText(data.asal_organisasi || ""),
+    kategori_peminjam: sanitizeSheetText(data.kategori_peminjam || "Kampus"),
+    nama_penanggung_jawab: sanitizeSheetText(data.nama_penanggung_jawab || ""),
+    items_json: JSON.stringify(items),
+    tgl_pengambilan: sanitizeSheetText(data.tgl_pengambilan || ""),
+    tgl_pengembalian: sanitizeSheetText(data.tgl_pengembalian || ""),
+    tujuan: sanitizeSheetText(data.tujuan || ""),
+    tempat_kegiatan: sanitizeSheetText(data.tempat_kegiatan || ""),
+    catatan_tambahan: sanitizeSheetText(data.catatan_tambahan || ""),
+    dokumen_identitas: identitasUrl,
+    status: "MENUNGGU VERIFIKASI",
+    catatan_admin: catatanAwalAdmin,
+    tgl_penyerahan: "",
+    tgl_kembali_aktual: "",
+    kondisi_kembali: "",
+    catatan_kembali: "",
+    created_at: now,
+    updated_at: now
+  };
+  const newRow = finalHeaders.map(h => rowDataMap[h] !== undefined ? rowDataMap[h] : "");
   sheetP.appendRow(newRow);
 
   return jsonResponse({

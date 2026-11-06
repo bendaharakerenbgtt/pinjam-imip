@@ -623,6 +623,7 @@
                             <tr><td class="py-0.5">Asal Organisasi</td><td>:</td><td id="surat-peminjam-org">-</td></tr>
                             <tr><td class="py-0.5">Ketua Pelaksana Kegiatan</td><td>:</td><td id="surat-peminjam-pj">-</td></tr>
                             <tr><td class="py-0.5">Tujuan Kegiatan</td><td>:</td><td id="surat-peminjam-tujuan">-</td></tr>
+                            <tr><td class="py-0.5">Tempat Kegiatan</td><td>:</td><td id="surat-peminjam-tempat">-</td></tr>
                             <tr><td class="py-0.5">Masa Peminjaman</td><td>:</td><td id="surat-peminjam-periode">-</td></tr>
                         </table>
                     </div>
@@ -1095,6 +1096,7 @@ Alhamdulillah, pengajuan peminjaman barang Anda telah *DISETUJUI SECARA ADMINIST
 • Nama Peminjam : *${item.nama_peminjam}*
 • Asal Lembaga/UKM : *${orgPeminjam}*
 • Ketua Pelaksana : *${ketuaPelaksana}*
+• Tempat Kegiatan : *${item.tempat_kegiatan || '-'}*
 
 📦 *DAFTAR BARANG YANG DIPINJAM:*
 ${itemsListFormatted}
@@ -1735,7 +1737,8 @@ Jazakumullah Khairan Katsiran.
                             <span class="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400 block tracking-wider">Jadwal Pengambilan & Kembali</span>
                             <p class="font-semibold ui-heading"><i class="fa-solid fa-calendar mr-1 text-[#FF7300]"></i> Ambil: ${tglAmbilClean}</p>
                             <p class="font-semibold ui-heading"><i class="fa-solid fa-calendar-check mr-1 text-emerald-500"></i> Kembali: ${tglKembaliClean}</p>
-                            <p class="ui-muted italic pt-1">"${escapeHtml(item.tujuan || '-')}"</p>
+                            <p class="font-bold text-[#FF7300] text-xs pt-0.5"><i class="fa-solid fa-location-dot mr-1 text-rose-500"></i> Tempat: ${escapeHtml(item.tempat_kegiatan || '-')}</p>
+                            <p class="ui-muted italic text-[11px] pt-0.5">"${escapeHtml(item.tujuan || '-')}"</p>
                         </div>
                         <div class="space-y-1.5">
                             <span class="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400 block tracking-wider">Rincian Barang yang Diminta:</span>
@@ -2210,7 +2213,7 @@ Jazakumullah Khairan Katsiran.
                         <span class="text-xs ui-muted">${isSedangDipinjam ? 'Diserahkan:' : 'Jadwal Ambil:'} ${escapeHtml(tglSerahClean)}</span>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
                         <div>
                             <span class="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400 block tracking-wider">Peminjam</span>
                             <p class="font-bold ui-heading text-sm">${escapeHtml(item.nama_peminjam)}</p>
@@ -2221,6 +2224,11 @@ Jazakumullah Khairan Katsiran.
                             <p class="font-bold text-sm sm:text-base ${delayLabel === 'TERLAMBAT KEMBALI' ? 'text-rose-500' : 'ui-heading'}">
                                 ${escapeHtml(tglKembaliClean)}
                             </p>
+                        </div>
+                        <div>
+                            <span class="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400 block tracking-wider">Tempat Kegiatan</span>
+                            <p class="font-bold text-[#FF7300] text-xs"><i class="fa-solid fa-location-dot mr-1 text-rose-500"></i> ${escapeHtml(item.tempat_kegiatan || '-')}</p>
+                            <p class="ui-muted italic text-[11px] truncate">"${escapeHtml(item.tujuan || '-')}"</p>
                         </div>
                         <div>
                             <span class="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400 block tracking-wider">Barang Dipinjam</span>
@@ -2337,7 +2345,7 @@ Jazakumullah Khairan Katsiran.
             const riwayat = localDB.peminjaman.filter(p => {
                 const s = (p.status || "").toUpperCase();
                 const isHist = s === "SELESAI" || s === "DITOLAK" || s === "DIBATALKAN";
-                const match = (p.nama_peminjam || "").toLowerCase().includes(search) || (p.asal_organisasi || "").toLowerCase().includes(search);
+                const match = (p.nama_peminjam || "").toLowerCase().includes(search) || (p.asal_organisasi || "").toLowerCase().includes(search) || (p.tempat_kegiatan || "").toLowerCase().includes(search);
                 return isHist && match;
             });
 
@@ -2383,9 +2391,15 @@ Jazakumullah Khairan Katsiran.
                             <p class="font-black ui-heading text-xs">${itemsList || 'Perlengkapan'}</p>
                         </div>
 
-                        <p class="text-xs font-bold ui-body">
-                            <i class="fa-solid fa-calendar mr-1.5 text-[#FF7300]"></i> Periode: <strong class="ui-heading">${tglAmbilClean} s.d ${tglKembaliClean}</strong>
-                        </p>
+                        <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+                            <p class="font-bold ui-body">
+                                <i class="fa-solid fa-calendar mr-1.5 text-[#FF7300]"></i> Periode: <strong class="ui-heading">${tglAmbilClean} s.d ${tglKembaliClean}</strong>
+                            </p>
+                            <p class="font-bold ui-body">
+                                <i class="fa-solid fa-location-dot mr-1 text-rose-500"></i> Tempat: <strong class="ui-heading text-[#FF7300]">${escapeHtml(item.tempat_kegiatan || '-')}</strong>
+                            </p>
+                        </div>
+                        ${item.tujuan ? `<p class="ui-muted italic text-xs">"${escapeHtml(item.tujuan)}"` + (item.tempat_kegiatan ? ` (${escapeHtml(item.tempat_kegiatan)})` : '') + `</p>` : ''}
 
                         ${catatanTampil ? `
                             <div class="p-3 rounded-xl border-l-4 border-l-[#FF7300] border border-orange-300/80 dark:border-orange-500/30 text-xs shadow-xs space-y-1 bg-[#FFF7ED] dark:bg-orange-950/40">
@@ -2812,6 +2826,8 @@ Jazakumullah Khairan Katsiran.
             document.getElementById('surat-peminjam-org').innerText = `${item.asal_organisasi} (${item.kategori_peminjam || 'Kampus'})`;
             document.getElementById('surat-peminjam-pj').innerText = item.nama_penanggung_jawab || item.nama_peminjam;
             document.getElementById('surat-peminjam-tujuan').innerText = item.tujuan || '-';
+            const elSuratTempat = document.getElementById('surat-peminjam-tempat');
+            if (elSuratTempat) elSuratTempat.innerText = item.tempat_kegiatan || '-';
 
             const tglAmbilClean = formatTglRapi(item.tgl_pengambilan);
             const tglKembaliClean = formatTglRapi(item.tgl_pengembalian);
