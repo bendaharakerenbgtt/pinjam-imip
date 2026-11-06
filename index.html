@@ -140,12 +140,8 @@
 
         <!-- Header Katalog -->
         <div class="flex items-center justify-between gap-2 pt-1 pb-1">
-            <h1 class="text-xl sm:text-2xl font-black font-outfit ui-heading tracking-tight flex items-center gap-2">
-                <span>Katalog Inventaris</span>
-                <span id="katalog-sync-pill" class="hidden text-xs text-[#FF7300] font-normal" title="Menyinkronkan stok...">
-                    <i id="katalog-sync-icon" class="fa-solid fa-arrows-rotate fa-spin"></i>
-                    <span id="katalog-sync-text" class="hidden sm:inline text-[11px] font-semibold text-orange-600 dark:text-orange-400"></span>
-                </span>
+            <h1 class="text-xl sm:text-2xl font-black font-outfit ui-heading tracking-tight whitespace-nowrap">
+                Katalog Inventaris
             </h1>
             <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 <a href="panduan.html" class="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl ui-pill text-xs font-bold ui-heading hover:text-[#FF7300] flex items-center gap-1.5 shadow-xs transition-all whitespace-nowrap" title="Panduan Alur Peminjaman">
@@ -162,7 +158,10 @@
             <div class="relative">
                 <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-orange-500/70 text-sm"></i>
                 <input type="text" id="katalog-search" oninput="renderKatalog()" placeholder="Cari nama barang (Proyektor, Mic, Speaker)..." 
-                       class="w-full pl-9 pr-4 py-2 sm:py-2.5 rounded-xl ui-card text-xs sm:text-sm ui-heading placeholder:text-gray-400 focus:outline-none focus:border-[#FF7300] focus:ring-1 focus:ring-[#FF7300] transition-all">
+                       class="w-full pl-9 pr-9 py-2 sm:py-2.5 rounded-xl ui-card text-xs sm:text-sm ui-heading placeholder:text-gray-400 focus:outline-none focus:border-[#FF7300] focus:ring-1 focus:ring-[#FF7300] transition-all">
+                <div id="katalog-sync-indicator" class="hidden absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-[#FF7300] pointer-events-none" title="Menyinkronkan stok...">
+                    <i id="katalog-sync-icon" class="fa-solid fa-arrows-rotate fa-spin"></i>
+                </div>
             </div>
 
             <!-- Dynamic Category Pills (Only Shows Existing Categories) -->
@@ -543,24 +542,21 @@
             return String(str).replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;");
         }
 
-        function setKatalogSyncStatus(state, customText) {
-            const pill = document.getElementById('katalog-sync-pill');
+        function setKatalogSyncStatus(state) {
+            const ind = document.getElementById('katalog-sync-indicator');
             const icon = document.getElementById('katalog-sync-icon');
-            const txt = document.getElementById('katalog-sync-text');
-            if (!pill || !icon || !txt) return;
+            if (!ind || !icon) return;
 
             if (state === 'loading') {
-                pill.classList.remove('hidden');
+                ind.classList.remove('hidden');
                 icon.className = "fa-solid fa-arrows-rotate fa-spin text-xs text-[#FF7300]";
-                txt.innerText = customText || "Menyinkronkan...";
             } else if (state === 'success') {
                 icon.className = "fa-solid fa-circle-check text-xs text-emerald-500";
-                txt.innerText = customText || "Terupdate";
                 setTimeout(() => {
-                    pill.classList.add('hidden');
-                }, 1200);
+                    ind.classList.add('hidden');
+                }, 1000);
             } else {
-                pill.classList.add('hidden');
+                ind.classList.add('hidden');
             }
         }
 
