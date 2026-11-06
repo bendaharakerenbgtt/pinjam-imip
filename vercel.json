@@ -4,6 +4,7 @@
   "trailingSlash": false,
   "rewrites": [
     { "source": "/status", "destination": "/status.html" },
+    { "source": "/panduan", "destination": "/panduan.html" },
     { "source": "/admin", "destination": "/admin.html" }
   ],
   "headers": [

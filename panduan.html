@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panduan Peminjaman Inventaris — Pinjamip LDK IMIP</title>
+    
+    <!-- PWA & Favicon -->
+    <link rel="icon" type="image/png" href="IMIP.png">
+    <meta name="theme-color" content="#FF7300">
+    <meta name="description" content="Panduan langkah demi langkah peminjaman fasilitas dan inventaris organisasi UKM LDK IMIP Politeknik Negeri Media Kreatif.">
+
+    <!-- Fonts: Plus Jakarta Sans & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Icons FontAwesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    
+    <!-- Tailwind CSS Browser Compiler & SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style type="text/tailwindcss">
+        @custom-variant dark (&:where(.dark-mode, .dark, .dark-mode *, .dark *));
+    </style>
+    <style>
+        :root {
+            --bg-main: #FAF5EF;              /* Warm Cream */
+            --bg-card: #FFFFFF;              /* Crisp White */
+            --border-card: rgba(254, 215, 170, 0.85); /* Warm Orange-Peach */
+            --border-muted: #FED7AA;
+            
+            --text-heading: #0F172A;         /* Slate 900 */
+            --text-body: #1E293B;            /* Slate 800 */
+            --text-muted: #64748B;           /* Slate 500 */
+
+            --accent: #FF7300;               /* Official Cabinet Orange */
+            --accent-hover: #EA580C;
+            --bg-pill: #FFF7ED;
+            --shadow-card: 0 8px 24px -6px rgba(255, 115, 0, 0.10);
+        }
+
+        html.dark-mode {
+            --bg-main: #080C14;
+            --bg-card: #111827;
+            --border-card: rgba(255, 255, 255, 0.1);
+            --border-muted: rgba(255, 255, 255, 0.08);
+            
+            --text-heading: #F8FAFC;
+            --text-body: #E2E8F0;
+            --text-muted: #94A3B8;
+
+            --accent: #FF7300;
+            --accent-hover: #FFA500;
+            --bg-pill: rgba(30, 41, 59, 0.7);
+            --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+        }
+
+        body, input, button, select, textarea {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-body);
+            min-height: 100vh;
+            transition: background-color 0.25s ease, color 0.25s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        h1, h2, h3, h4, .font-outfit {
+            font-family: 'Outfit', sans-serif !important;
+        }
+
+        i.fa-solid, i.fa-regular, i.fa-brands, .fa, .fa-solid, .fa-brands, [class*="fa-"] {
+            font-family: var(--fa-style-family, "Font Awesome 6 Free") !important;
+        }
+
+        .ui-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            box-shadow: var(--shadow-card);
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+        }
+
+        .ui-heading { color: var(--text-heading) !important; }
+        .ui-body { color: var(--text-body) !important; }
+        .ui-muted { color: var(--text-muted) !important; }
+        .ui-pill { background: var(--bg-pill); border: 1px solid var(--border-muted); }
+
+        .btn-kabinet {
+            background-color: #FF7300;
+            color: #FFFFFF;
+            transition: all 0.2s ease;
+        }
+        .btn-kabinet:hover {
+            background-color: #EA580C;
+            box-shadow: 0 6px 20px -2px rgba(255, 115, 0, 0.4);
+        }
+
+        /* Animasi Khas Pinjamip */
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-6px); }
+        }
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.8; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+        }
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-15px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes bounceShort {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+        }
+
+        .animate-float {
+            animation: floatSlow 4s ease-in-out infinite;
+        }
+        .animate-pulse-glow {
+            animation: pulseGlow 2.5s ease-in-out infinite;
+        }
+        .animate-bounce-short {
+            animation: bounceShort 2s ease-in-out infinite;
+        }
+
+        /* Garis Timeline Penghubung */
+        .timeline-connector {
+            position: absolute;
+            left: 28px;
+            top: 48px;
+            bottom: -24px;
+            width: 3px;
+            background: linear-gradient(to bottom, #FF7300, #FED7AA 80%, transparent);
+            z-index: 0;
+        }
+        html.dark-mode .timeline-connector {
+            background: linear-gradient(to bottom, #FF7300, rgba(255, 115, 0, 0.2) 80%, transparent);
+        }
+
+        /* Custom scroll */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="selection:bg-orange-500 selection:text-white min-h-screen flex flex-col justify-between">
+
+    <!-- TOP NAVBAR -->
+    <header class="sticky top-2 z-40 w-full px-2.5 sm:px-6 mb-2">
+        <div class="max-w-6xl mx-auto ui-card rounded-2xl px-3 py-2 sm:px-4 sm:py-2.5 flex items-center justify-between transition-all">
+            <!-- Brand Pinjamip -->
+            <a href="index.html" class="flex items-center gap-2 sm:gap-3 group">
+                <img src="IMIP.png" alt="IMIP Logo" class="h-7 sm:h-8 w-auto object-contain drop-shadow transition-transform group-hover:scale-105" onerror="this.src='icons/icon-192.png'">
+                <div class="flex flex-col">
+                    <span class="font-outfit font-extrabold text-lg sm:text-xl tracking-tight bg-gradient-to-r from-[#FF7300] to-[#FFA500] bg-clip-text text-transparent">Pinjamip</span>
+                    <span class="text-[9.5px] font-bold text-orange-600 dark:text-orange-400 -mt-1 tracking-wider uppercase">Panduan Alur</span>
+                </div>
+            </a>
+
+            <!-- Navigation Links & Theme Toggle -->
+            <div class="flex items-center gap-1.5 sm:gap-2.5">
+                <a href="index.html" class="px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl ui-pill text-xs font-bold ui-heading hover:text-[#FF7300] flex items-center gap-1.5 transition-all">
+                    <i class="fa-solid fa-boxes-stacked text-[#FF7300]"></i> <span class="hidden sm:inline">Katalog</span>
+                </a>
+                <a href="status.html" class="px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl ui-pill text-xs font-bold ui-heading hover:text-[#FF7300] flex items-center gap-1.5 transition-all">
+                    <i class="fa-solid fa-clock-rotate-left text-[#FF7300]"></i> <span class="hidden sm:inline">Lacak Status</span>
+                </a>
+                <button onclick="toggleTheme()" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl ui-pill flex items-center justify-center ui-body hover:text-[#FF7300] transition-all" title="Ubah Mode Tampilan">
+                    <i id="theme-icon" class="fa-solid fa-moon text-xs sm:text-sm"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="max-w-4xl mx-auto w-full px-3 sm:px-6 pt-2 pb-8 space-y-6 flex-1">
+
+        <!-- HERO SECTION -->
+        <div class="ui-card rounded-3xl p-5 sm:p-8 text-center relative overflow-hidden border-orange-300 dark:border-white/10 shadow-lg">
+            <div class="absolute -right-16 -top-16 w-48 h-48 bg-orange-500/10 rounded-full blur-2xl pointer-events-none"></div>
+            <div class="absolute -left-16 -bottom-16 w-48 h-48 bg-amber-500/10 rounded-full blur-2xl pointer-events-none"></div>
+
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-orange-500/10 text-[#FF7300] border border-orange-500/20 mb-3 animate-pulse-glow">
+                <i class="fa-solid fa-compass"></i>
+                <span>Panduan Resmi Peminjam</span>
+            </div>
+
+            <h1 class="text-2xl sm:text-4xl font-black font-outfit ui-heading tracking-tight max-w-2xl mx-auto leading-tight">
+                Alur Peminjaman Inventaris Mudah, Cepat & Tertib
+            </h1>
+            <p class="text-xs sm:text-sm ui-muted max-w-xl mx-auto mt-2.5 leading-relaxed">
+                Pahami 5 langkah sederhana dari pemilihan barang di katalog hingga pengembalian barang ke sekretariat UKM LDK IMIP.
+            </p>
+
+            <!-- Quick Step Shortcuts -->
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-5 max-w-2xl mx-auto">
+                <a href="#langkah-1" class="p-2 sm:p-2.5 rounded-xl ui-pill hover:border-[#FF7300] transition-all text-center group">
+                    <div class="w-7 h-7 mx-auto rounded-lg bg-orange-500/10 text-[#FF7300] flex items-center justify-center font-bold text-xs mb-1 group-hover:bg-[#FF7300] group-hover:text-white transition-all">1</div>
+                    <p class="text-[11px] font-bold ui-heading truncate">Pilih Barang</p>
+                </a>
+                <a href="#langkah-2" class="p-2 sm:p-2.5 rounded-xl ui-pill hover:border-[#FF7300] transition-all text-center group">
+                    <div class="w-7 h-7 mx-auto rounded-lg bg-orange-500/10 text-[#FF7300] flex items-center justify-center font-bold text-xs mb-1 group-hover:bg-[#FF7300] group-hover:text-white transition-all">2</div>
+                    <p class="text-[11px] font-bold ui-heading truncate">Form H-3</p>
+                </a>
+                <a href="#langkah-3" class="p-2 sm:p-2.5 rounded-xl ui-pill hover:border-[#FF7300] transition-all text-center group">
+                    <div class="w-7 h-7 mx-auto rounded-lg bg-orange-500/10 text-[#FF7300] flex items-center justify-center font-bold text-xs mb-1 group-hover:bg-[#FF7300] group-hover:text-white transition-all">3</div>
+                    <p class="text-[11px] font-bold ui-heading truncate">Chat WA</p>
+                </a>
+                <a href="#langkah-4" class="p-2 sm:p-2.5 rounded-xl ui-pill hover:border-[#FF7300] transition-all text-center group">
+                    <div class="w-7 h-7 mx-auto rounded-lg bg-orange-500/10 text-[#FF7300] flex items-center justify-center font-bold text-xs mb-1 group-hover:bg-[#FF7300] group-hover:text-white transition-all">4</div>
+                    <p class="text-[11px] font-bold ui-heading truncate">Serah Terima</p>
+                </a>
+                <a href="#langkah-5" class="p-2 sm:p-2.5 rounded-xl ui-pill hover:border-[#FF7300] transition-all text-center group col-span-2 sm:col-span-1">
+                    <div class="w-7 h-7 mx-auto rounded-lg bg-orange-500/10 text-[#FF7300] flex items-center justify-center font-bold text-xs mb-1 group-hover:bg-[#FF7300] group-hover:text-white transition-all">5</div>
+                    <p class="text-[11px] font-bold ui-heading truncate">Pengembalian</p>
+                </a>
+            </div>
+        </div>
+
+        <!-- TIMELINE STEP BY STEP SECTION -->
+        <div class="space-y-4">
+            <div class="flex items-center justify-between">
+                <h2 class="text-lg sm:text-xl font-bold font-outfit ui-heading flex items-center gap-2">
+                    <i class="fa-solid fa-list-check text-[#FF7300]"></i> 5 Langkah Peminjaman
+                </h2>
+                <span class="text-xs font-semibold text-orange-600 dark:text-orange-400 bg-orange-500/10 px-2.5 py-1 rounded-full">
+                    Wajib Ikuti Urutan
+                </span>
+            </div>
+
+            <!-- STEP 1: PILIH BARANG -->
+            <div id="langkah-1" class="ui-card rounded-2xl p-4 sm:p-6 relative border-orange-200 dark:border-white/10 scroll-mt-20">
+                <div class="flex flex-col sm:flex-row gap-4 items-start">
+                    <!-- Icon Step -->
+                    <div class="w-12 h-12 rounded-2xl bg-orange-500/15 border border-orange-500/30 text-[#FF7300] flex items-center justify-center font-black text-lg shrink-0 shadow-sm animate-bounce-short">
+                        1
+                    </div>
+                    <!-- Body Step -->
+                    <div class="flex-1 space-y-3 w-full">
+                        <div class="flex items-center justify-between flex-wrap gap-2">
+                            <h3 class="font-outfit font-black text-base sm:text-lg ui-heading flex items-center gap-2">
+                                <span>Pilih Perlengkapan di Katalog & Masukkan ke Keranjang</span>
+                            </h3>
+                            <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                                <i class="fa-solid fa-layer-group mr-1"></i> Multi-Item
+                            </span>
+                        </div>
+                        <p class="text-xs sm:text-sm ui-body leading-relaxed">
+                            Buka halaman <strong>Katalog Inventaris</strong>, telusuri perlengkapan (seperti Speaker, Proyektor, Mic Wireless, Kabel Roll, dll), cek ketersediaan stok, dan klik tombol <strong>"+ Pinjam"</strong> untuk memasukkan barang ke keranjang peminjaman.
+                        </p>
+                        
+                        <!-- Visual Illustration / Mockup Step 1 -->
+                        <div class="p-3.5 rounded-xl bg-orange-500/5 border border-orange-500/20 space-y-2">
+                            <div class="text-[11px] font-bold text-[#FF7300] flex items-center gap-1.5">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> Fitur Keranjang Sekaligus:
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs ui-muted">
+                                <div class="flex items-center gap-2 p-2 rounded-lg ui-pill">
+                                    <i class="fa-solid fa-check text-emerald-500 text-sm"></i>
+                                    <span>Bisa pinjam beberapa barang berbeda dalam 1 formulir</span>
+                                </div>
+                                <div class="flex items-center gap-2 p-2 rounded-lg ui-pill">
+                                    <i class="fa-solid fa-check text-emerald-500 text-sm"></i>
+                                    <span>Jumlah unit dapat diatur sesuai kebutuhan acara</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 2: ISI FORMULIR (ATURAN H-3) -->
+            <div id="langkah-2" class="ui-card rounded-2xl p-4 sm:p-6 relative border-orange-300 dark:border-white/10 scroll-mt-20 shadow-md">
+                <div class="flex flex-col sm:flex-row gap-4 items-start">
+                    <!-- Icon Step -->
+                    <div class="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 flex items-center justify-center font-black text-lg shrink-0 shadow-sm">
+                        2
+                    </div>
+                    <!-- Body Step -->
+                    <div class="flex-1 space-y-3 w-full">
+                        <div class="flex items-center justify-between flex-wrap gap-2">
+                            <h3 class="font-outfit font-black text-base sm:text-lg ui-heading flex items-center gap-2">
+                                <span>Isi Formulir Lengkap & Patuhi Aturan Jeda H-3</span>
+                            </h3>
+                            <span class="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30">
+                                <i class="fa-solid fa-clock mr-1"></i> Wajib Minimal H-3
+                            </span>
+                        </div>
+                        <p class="text-xs sm:text-sm ui-body leading-relaxed">
+                            Buka keranjang dan klik <strong>"Lanjut ke Formulir Pengajuan"</strong>. Lengkapi data peminjam secara valid:
+                        </p>
+                        
+                        <!-- Checklist Rincian Form -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs ui-body">
+                            <div class="p-2.5 rounded-xl ui-pill flex items-start gap-2">
+                                <i class="fa-solid fa-user text-[#FF7300] mt-0.5"></i>
+                                <div>
+                                    <strong class="block ui-heading">Identitas Peminjam</strong>
+                                    <span class="ui-muted text-[11px]">Nama lengkap, Asal Organisasi/UKM, & Ketua Pelaksana.</span>
+                                </div>
+                            </div>
+                            <div class="p-2.5 rounded-xl ui-pill flex items-start gap-2">
+                                <i class="fa-brands fa-whatsapp text-emerald-500 text-sm mt-0.5"></i>
+                                <div>
+                                    <strong class="block ui-heading">Nomor WhatsApp Aktif</strong>
+                                    <span class="ui-muted text-[11px]">Admin akan menghubungi via nomor ini untuk konfirmasi.</span>
+                                </div>
+                            </div>
+                            <div class="p-2.5 rounded-xl ui-pill flex items-start gap-2 sm:col-span-2 border-orange-400/30">
+                                <i class="fa-solid fa-calendar-day text-[#FF7300] mt-0.5"></i>
+                                <div>
+                                    <strong class="block text-[#FF7300]">Aturan Tanggal Pengambilan (H-3):</strong>
+                                    <span class="ui-body text-[11.5px] leading-relaxed">
+                                        Tanggal pengambilan <strong>wajib berjarak minimal 3 hari ke depan</strong> dari tanggal Anda mengajukan. Sistem otomatis membatasi kalender agar inventaris dapat dicek, disiapkan, dan tidak bentrok dengan antrian lain.
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Info Callout -->
+                        <div class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-800 dark:text-amber-300 flex items-start gap-2">
+                            <i class="fa-solid fa-circle-exclamation mt-0.5 shrink-0 text-amber-500"></i>
+                            <span><em>Tips:</em> Simpan <strong>Kode Peminjaman (misal: PJM-20261102-1234)</strong> yang muncul setelah pengajuan berhasil untuk melacak status secara mandiri.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 3: KONFIRMASI WHATSAPP -->
+            <div id="langkah-3" class="ui-card rounded-2xl p-4 sm:p-6 relative border-orange-200 dark:border-white/10 scroll-mt-20">
+                <div class="flex flex-col sm:flex-row gap-4 items-start">
+                    <!-- Icon Step -->
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-black text-lg shrink-0 shadow-sm animate-pulse-glow">
+                        3
+                    </div>
+                    <!-- Body Step -->
+                    <div class="flex-1 space-y-3 w-full">
+                        <div class="flex items-center justify-between flex-wrap gap-2">
+                            <h3 class="font-outfit font-black text-base sm:text-lg ui-heading flex items-center gap-2">
+                                <span>Verifikasi Admin & Konfirmasi Balasan WhatsApp</span>
+                            </h3>
+                            <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                <i class="fa-brands fa-whatsapp mr-1"></i> Respon Cepat
+                            </span>
+                        </div>
+                        <p class="text-xs sm:text-sm ui-body leading-relaxed">
+                            Pengurus Inventaris LDK IMIP akan memverifikasi ketersediaan dan kondisi barang. Setelah disetujui secara administratif, Admin akan mengirimkan pesan otomatis ke WhatsApp Anda.
+                        </p>
+
+                        <!-- Simulasi Chat WA Mockup -->
+                        <div class="p-3.5 sm:p-4 rounded-2xl bg-slate-900 text-white font-mono text-[11px] sm:text-xs space-y-2 border border-slate-700 shadow-inner">
+                            <div class="flex items-center justify-between text-[10px] text-gray-400 border-b border-gray-700 pb-1.5 font-sans">
+                                <span><i class="fa-brands fa-whatsapp text-emerald-400 mr-1"></i> Pesan dari Pengurus Inventaris</span>
+                                <span>Centang Dua Hijau</span>
+                            </div>
+                            <p class="text-emerald-400 font-bold">*KONFIRMASI PERSETUJUAN PEMINJAMAN INVENTARIS*</p>
+                            <p class="text-gray-300">Alhamdulillah, pengajuan peminjaman barang Anda telah *DISETUJUI SECARA ADMINISTRATIF*...</p>
+                            <p class="text-orange-300">🗓️ Jadwal: Pengambilan [Tgl] s.d. Pengembalian [Tgl]</p>
+                            <p class="text-emerald-300 bg-emerald-950/60 p-2 rounded-lg border border-emerald-800/80 font-sans">
+                                👉 <strong>Tugas Anda:</strong> Cukup balas pesan WhatsApp admin tersebut (contoh: <em>"Baik kak, data sudah sesuai dan disetujui"</em>) agar status barang terkunci resmi untuk Anda.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 4: SERAH TERIMA & TANDA TANGAN SURAT -->
+            <div id="langkah-4" class="ui-card rounded-2xl p-4 sm:p-6 relative border-orange-200 dark:border-white/10 scroll-mt-20">
+                <div class="flex flex-col sm:flex-row gap-4 items-start">
+                    <!-- Icon Step -->
+                    <div class="w-12 h-12 rounded-2xl bg-blue-500/15 border border-blue-500/30 text-blue-600 dark:text-blue-400 flex items-center justify-center font-black text-lg shrink-0 shadow-sm">
+                        4
+                    </div>
+                    <!-- Body Step -->
+                    <div class="flex-1 space-y-3 w-full">
+                        <div class="flex items-center justify-between flex-wrap gap-2">
+                            <h3 class="font-outfit font-black text-base sm:text-lg ui-heading flex items-center gap-2">
+                                <span>Serah Terima Barang & Tanda Tangan Surat Perjanjian</span>
+                            </h3>
+                            <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                                <i class="fa-solid fa-file-contract mr-1"></i> Surat Resmi IMIP
+                            </span>
+                        </div>
+                        <p class="text-xs sm:text-sm ui-body leading-relaxed">
+                            Pada tanggal pengambilan yang disepakati, peminjam atau penanggung jawab datang ke Sekretariat LDK IMIP:
+                        </p>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+                            <div class="p-3 rounded-xl ui-pill text-center space-y-1">
+                                <div class="w-8 h-8 rounded-full bg-orange-500/10 text-[#FF7300] flex items-center justify-center mx-auto text-xs font-bold">1</div>
+                                <strong class="block text-xs ui-heading">Cek Fisik Barang</strong>
+                                <p class="text-[11px] ui-muted leading-tight">Periksa kelengkapan kabel, baut, remote, atau tas bersama pengurus.</p>
+                            </div>
+                            <div class="p-3 rounded-xl ui-pill text-center space-y-1">
+                                <div class="w-8 h-8 rounded-full bg-orange-500/10 text-[#FF7300] flex items-center justify-center mx-auto text-xs font-bold">2</div>
+                                <strong class="block text-xs ui-heading">Tanda Tangan Surat</strong>
+                                <p class="text-[11px] ui-muted leading-tight">Menandatangani Surat Perjanjian Peminjaman Inventaris resmi.</p>
+                            </div>
+                            <div class="p-3 rounded-xl ui-pill text-center space-y-1">
+                                <div class="w-8 h-8 rounded-full bg-orange-500/10 text-[#FF7300] flex items-center justify-center mx-auto text-xs font-bold">3</div>
+                                <strong class="block text-xs ui-heading">Status Aktif</strong>
+                                <p class="text-[11px] ui-muted leading-tight">Admin mengaktifkan status "Sedang Dipinjam" di sistem inventaris.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 5: PENGEMBALIAN & SELESAI -->
+            <div id="langkah-5" class="ui-card rounded-2xl p-4 sm:p-6 relative border-emerald-300 dark:border-white/10 scroll-mt-20 shadow-md">
+                <div class="flex flex-col sm:flex-row gap-4 items-start">
+                    <!-- Icon Step -->
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-black text-lg shrink-0 shadow-sm">
+                        5
+                    </div>
+                    <!-- Body Step -->
+                    <div class="flex-1 space-y-3 w-full">
+                        <div class="flex items-center justify-between flex-wrap gap-2">
+                            <h3 class="font-outfit font-black text-base sm:text-lg ui-heading flex items-center gap-2">
+                                <span>Pengembalian Tepat Waktu & Peminjaman Selesai</span>
+                            </h3>
+                            <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                <i class="fa-solid fa-circle-check mr-1"></i> Tuntas & Berkah
+                            </span>
+                        </div>
+                        <p class="text-xs sm:text-sm ui-body leading-relaxed">
+                            Setelah kegiatan Anda selesai, kembalikan barang tepat waktu sebelum batas tanggal pengembalian:
+                        </p>
+                        
+                        <div class="space-y-2 text-xs ui-body">
+                            <div class="flex items-start gap-2 p-2.5 rounded-xl ui-pill">
+                                <i class="fa-solid fa-sparkles text-amber-500 mt-0.5"></i>
+                                <span><strong>Kondisi Bersih & Rapi:</strong> Gulung kabel dengan rapi dan pastikan tidak ada aksesoris yang tertinggal.</span>
+                            </div>
+                            <div class="flex items-start gap-2 p-2.5 rounded-xl ui-pill">
+                                <i class="fa-solid fa-envelope-circle-check text-emerald-500 mt-0.5"></i>
+                                <span><strong>Verifikasi Akhir Admin:</strong> Pengurus mengecek kondisi fisik barang. Jika sesuai, status diubah menjadi <strong>SELESAI</strong> dan riwayat peminjaman tercatat aman.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- INTERACTIVE STATUS SIMULATOR (LIVE VISUAL DEMO) -->
+        <div class="ui-card rounded-2xl p-5 sm:p-6 space-y-4 border-orange-200 dark:border-white/10">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+                <div>
+                    <h3 class="font-outfit font-bold text-base sm:text-lg ui-heading flex items-center gap-2">
+                        <i class="fa-solid fa-play text-[#FF7300]"></i> Simulasi Alur Status Peminjaman
+                    </h3>
+                    <p class="text-xs ui-muted">Klik tombol langkah di bawah ini untuk melihat bagaimana status pengajuan Anda berubah di sistem.</p>
+                </div>
+                <button onclick="resetSimulator()" class="px-3 py-1.5 rounded-xl ui-pill text-xs font-bold text-rose-500 hover:bg-rose-500/10 transition-all flex items-center gap-1">
+                    <i class="fa-solid fa-rotate-right"></i> Reset
+                </button>
+            </div>
+
+            <!-- Simulation Interactive Stepper -->
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-2" id="sim-buttons">
+                <button onclick="setSimStep(1)" id="sim-btn-1" class="p-2.5 rounded-xl text-center text-xs font-bold transition-all border border-[#FF7300] bg-orange-500/15 text-[#FF7300]">
+                    1. Menunggu Verifikasi
+                </button>
+                <button onclick="setSimStep(2)" id="sim-btn-2" class="p-2.5 rounded-xl text-center text-xs font-bold transition-all ui-pill ui-muted hover:text-[#FF7300]">
+                    2. Konfirmasi WA
+                </button>
+                <button onclick="setSimStep(3)" id="sim-btn-3" class="p-2.5 rounded-xl text-center text-xs font-bold transition-all ui-pill ui-muted hover:text-[#FF7300]">
+                    3. Dikonfirmasi
+                </button>
+                <button onclick="setSimStep(4)" id="sim-btn-4" class="p-2.5 rounded-xl text-center text-xs font-bold transition-all ui-pill ui-muted hover:text-[#FF7300]">
+                    4. Sedang Dipinjam
+                </button>
+                <button onclick="setSimStep(5)" id="sim-btn-5" class="p-2.5 rounded-xl text-center text-xs font-bold transition-all ui-pill ui-muted hover:text-[#FF7300] col-span-2 sm:col-span-1">
+                    5. Selesai
+                </button>
+            </div>
+
+            <!-- Simulation Display Card -->
+            <div id="sim-display-card" class="p-4 sm:p-5 rounded-2xl bg-orange-500/10 border border-orange-500/20 space-y-2 transition-all">
+                <div class="flex items-center justify-between flex-wrap gap-2">
+                    <span id="sim-badge" class="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                        MENUNGGU VERIFIKASI
+                    </span>
+                    <span id="sim-step-indicator" class="text-xs font-bold text-[#FF7300]">Langkah 1 dari 5</span>
+                </div>
+                <h4 id="sim-title" class="text-sm sm:text-base font-bold font-outfit ui-heading">Formulir Baru Masuk ke Sistem</h4>
+                <p id="sim-desc" class="text-xs sm:text-sm ui-body leading-relaxed">
+                    Pengajuan Anda telah berhasil dicatat. Pengurus inventaris menerima notifikasi dan sedang memeriksa ketersediaan stok fisik serta mengecek apakah ada bentrok jadwal dengan pengajuan lain.
+                </p>
+                <div id="sim-action" class="pt-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                    <i class="fa-solid fa-circle-info"></i> <span>Aksi Peminjam: Cukup tunggu konfirmasi pesan WhatsApp dari admin.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4 KETENTUAN PENTING & SOP INVENTARIS -->
+        <div class="space-y-3">
+            <h3 class="text-base sm:text-lg font-bold font-outfit ui-heading flex items-center gap-2">
+                <i class="fa-solid fa-shield-halved text-[#FF7300]"></i> 4 Ketentuan Penting (SOP)
+            </h3>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="ui-card p-4 rounded-2xl border-orange-200 dark:border-white/10 space-y-1.5">
+                    <div class="flex items-center gap-2 text-rose-500 font-bold text-xs sm:text-sm">
+                        <i class="fa-solid fa-calendar-xmark text-base"></i>
+                        <h4>1. Jeda Waktu Pengajuan H-3</h4>
+                    </div>
+                    <p class="text-xs ui-muted leading-relaxed">
+                        Pengajuan mendadak kurang dari 3 hari berisiko tidak dapat dilayani karena butuh waktu persiapan fisik barang dan surat resmi.
+                    </p>
+                </div>
+
+                <div class="ui-card p-4 rounded-2xl border-orange-200 dark:border-white/10 space-y-1.5">
+                    <div class="flex items-center gap-2 text-amber-500 font-bold text-xs sm:text-sm">
+                        <i class="fa-solid fa-hand-holding-heart text-base"></i>
+                        <h4>2. Tanggung Jawab & Kebersihan</h4>
+                    </div>
+                    <p class="text-xs ui-muted leading-relaxed">
+                        Peminjam bertanggung jawab penuh atas barang yang dipinjam. Kerusakan akibat kelalaian wajib diganti sesuai kesepakatan.
+                    </p>
+                </div>
+
+                <div class="ui-card p-4 rounded-2xl border-orange-200 dark:border-white/10 space-y-1.5">
+                    <div class="flex items-center gap-2 text-blue-500 font-bold text-xs sm:text-sm">
+                        <i class="fa-solid fa-ban text-base"></i>
+                        <h4>3. Larangan Pindah Tangan</h4>
+                    </div>
+                    <p class="text-xs ui-muted leading-relaxed">
+                        Barang tidak boleh dipinjamkan kembali ke pihak ketiga tanpa izin dan sepengetahuan tertulis dari Admin Inventaris LDK IMIP.
+                    </p>
+                </div>
+
+                <div class="ui-card p-4 rounded-2xl border-orange-200 dark:border-white/10 space-y-1.5">
+                    <div class="flex items-center gap-2 text-emerald-500 font-bold text-xs sm:text-sm">
+                        <i class="fa-solid fa-hand-holding-dollar text-base"></i>
+                        <h4>4. Kontribusi Bersifat Sukarela</h4>
+                    </div>
+                    <p class="text-xs ui-muted leading-relaxed">
+                        Peminjaman inventaris tidak dipungut biaya sewa wajib. Jika ingin memberikan infak/kontribusi sukarela untuk perawatan fasilitas, sangat dipersilakan.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- FAQ ACCORDION (PERTANYAAN UMUM) -->
+        <div class="ui-card rounded-2xl p-5 sm:p-6 space-y-4 border-orange-200 dark:border-white/10">
+            <h3 class="font-outfit font-bold text-base sm:text-lg ui-heading flex items-center gap-2">
+                <i class="fa-solid fa-circle-question text-[#FF7300]"></i> Pertanyaan yang Sering Diajukan (FAQ)
+            </h3>
+
+            <div class="space-y-2.5" id="faq-container">
+                <!-- FAQ Item 1 -->
+                <div class="ui-card rounded-xl border-orange-100 dark:border-gray-800 overflow-hidden">
+                    <button onclick="toggleFaq(1)" class="w-full p-3.5 text-left flex items-center justify-between gap-3 text-xs sm:text-sm font-bold ui-heading">
+                        <span>Berapa lama proses verifikasi pengajuan oleh admin?</span>
+                        <i id="faq-icon-1" class="fa-solid fa-chevron-down text-xs text-[#FF7300] transition-transform"></i>
+                    </button>
+                    <div id="faq-ans-1" class="px-3.5 pb-3.5 text-xs ui-muted leading-relaxed hidden border-t border-orange-100 dark:border-gray-800 pt-2">
+                        Admin biasanya memverifikasi pengajuan dalam waktu 1x24 jam kerja. Pastikan nomor WhatsApp Anda aktif karena admin akan langsung mengirimkan pesan konfirmasi ketersediaan barang.
+                    </div>
+                </div>
+
+                <!-- FAQ Item 2 -->
+                <div class="ui-card rounded-xl border-orange-100 dark:border-gray-800 overflow-hidden">
+                    <button onclick="toggleFaq(2)" class="w-full p-3.5 text-left flex items-center justify-between gap-3 text-xs sm:text-sm font-bold ui-heading">
+                        <span>Bagaimana jika ada kebutuhan mendesak kurang dari H-3?</span>
+                        <i id="faq-icon-2" class="fa-solid fa-chevron-down text-xs text-[#FF7300] transition-transform"></i>
+                    </button>
+                    <div id="faq-ans-2" class="px-3.5 pb-3.5 text-xs ui-muted leading-relaxed hidden border-t border-orange-100 dark:border-gray-800 pt-2">
+                        Aturan H-3 diterapkan untuk menjaga kesiapan fisik dan baterai barang. Namun jika ada kondisi darurat (emergency kampus/dakwah), silakan hubungi Pengurus Inventaris secara langsung via WhatsApp untuk pertimbangan khusus.
+                    </div>
+                </div>
+
+                <!-- FAQ Item 3 -->
+                <div class="ui-card rounded-xl border-orange-100 dark:border-gray-800 overflow-hidden">
+                    <button onclick="toggleFaq(3)" class="w-full p-3.5 text-left flex items-center justify-between gap-3 text-xs sm:text-sm font-bold ui-heading">
+                        <span>Bagaimana cara mengecek status peminjaman saya?</span>
+                        <i id="faq-icon-3" class="fa-solid fa-chevron-down text-xs text-[#FF7300] transition-transform"></i>
+                    </button>
+                    <div id="faq-ans-3" class="px-3.5 pb-3.5 text-xs ui-muted leading-relaxed hidden border-t border-orange-100 dark:border-gray-800 pt-2">
+                        Anda dapat membuka menu <strong>Lacak Status</strong> di bagian atas atau bawah web, lalu ketikkan Nomor WhatsApp atau Kode Peminjaman (PJM-xxxx) untuk melihat status secara langsung secara real-time.
+                    </div>
+                </div>
+
+                <!-- FAQ Item 4 -->
+                <div class="ui-card rounded-xl border-orange-100 dark:border-gray-800 overflow-hidden">
+                    <button onclick="toggleFaq(4)" class="w-full p-3.5 text-left flex items-center justify-between gap-3 text-xs sm:text-sm font-bold ui-heading">
+                        <span>Apakah boleh memperpanjang masa peminjaman?</span>
+                        <i id="faq-icon-4" class="fa-solid fa-chevron-down text-xs text-[#FF7300] transition-transform"></i>
+                    </button>
+                    <div id="faq-ans-4" class="px-3.5 pb-3.5 text-xs ui-muted leading-relaxed hidden border-t border-orange-100 dark:border-gray-800 pt-2">
+                        Perpanjangan hanya dapat dilakukan jika barang tersebut belum dipesan/dibooking oleh peminjam lain pada tanggal berikutnya, dan harus disetujui terlebih dahulu oleh Admin Inventaris sebelum masa pinjam awal berakhir.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CALL TO ACTION BANNER -->
+        <div class="ui-card rounded-3xl p-6 sm:p-8 text-center bg-gradient-to-br from-orange-500 to-[#EA580C] text-white shadow-xl space-y-3">
+            <h3 class="text-xl sm:text-2xl font-black font-outfit">Sudah Paham Alurnya?</h3>
+            <p class="text-xs sm:text-sm text-orange-100 max-w-md mx-auto leading-relaxed">
+                Segera cari dan pilih perlengkapan inventaris yang Anda perlukan untuk kegiatan Anda sekarang!
+            </p>
+            <div class="flex items-center justify-center gap-2.5 pt-2 flex-wrap">
+                <a href="index.html" class="px-5 py-2.5 rounded-xl bg-white text-[#FF7300] font-black text-xs sm:text-sm shadow-md hover:bg-orange-50 transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-cart-plus"></i> Buka Katalog Inventaris
+                </a>
+                <a href="status.html" class="px-5 py-2.5 rounded-xl bg-orange-700/60 hover:bg-orange-700/80 text-white font-bold text-xs sm:text-sm border border-white/20 transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-clock-rotate-left"></i> Lacak Pengajuan Saya
+                </a>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer id="main-footer" class="w-full max-w-6xl mx-auto px-4 py-5 mt-auto border-t border-orange-200/60 dark:border-gray-800 text-center text-xs ui-muted flex flex-col sm:flex-row items-center justify-between gap-3 transition-all">
+        <p>© 2026 Pinjamip — LDK IMIP Politeknik Negeri Media Kreatif</p>
+        <div class="flex items-center gap-4">
+            <a href="index.html" class="hover:text-[#FF7300] font-medium transition-all">
+                <i class="fa-solid fa-boxes-stacked mr-1 text-[#FF7300]"></i> Katalog
+            </a>
+            <span class="text-gray-300 dark:text-gray-700">|</span>
+            <a href="status.html" class="hover:text-[#FF7300] font-medium transition-all">
+                <i class="fa-solid fa-magnifying-glass mr-1 text-[#FF7300]"></i> Cek Status
+            </a>
+            <span class="text-gray-300 dark:text-gray-700">|</span>
+            <a href="admin.html" class="hover:text-[#FF7300] font-medium transition-all">
+                <i class="fa-solid fa-shield-halved mr-1 text-[#FF7300]"></i> Area Pengurus
+            </a>
+        </div>
+    </footer>
+
+    <!-- JAVASCRIPT LOGIKA PANDUAN & THEME -->
+    <script>
+        // THEME MANAGEMENT (PERSISTENT WITH OTHER PAGES)
+        const STORAGE_KEY_THEME = "pinjamip_theme";
+        function initTheme() {
+            const saved = localStorage.getItem(STORAGE_KEY_THEME);
+            if (saved === 'dark') {
+                document.documentElement.classList.add('dark-mode');
+                updateThemeIcon(true);
+            } else {
+                document.documentElement.classList.remove('dark-mode');
+                updateThemeIcon(false);
+            }
+        }
+        function toggleTheme() {
+            const isDark = document.documentElement.classList.toggle('dark-mode');
+            localStorage.setItem(STORAGE_KEY_THEME, isDark ? 'dark' : 'light');
+            updateThemeIcon(isDark);
+        }
+        function updateThemeIcon(isDark) {
+            const icon = document.getElementById('theme-icon');
+            if (icon) {
+                icon.className = isDark ? 'fa-solid fa-sun text-xs sm:text-sm text-amber-400' : 'fa-solid fa-moon text-xs sm:text-sm';
+            }
+        }
+        initTheme();
+
+        // FAQ ACCORDION TOGGLE
+        function toggleFaq(num) {
+            const ans = document.getElementById(`faq-ans-${num}`);
+            const icon = document.getElementById(`faq-icon-${num}`);
+            if (!ans || !icon) return;
+            const isHidden = ans.classList.contains('hidden');
+            if (isHidden) {
+                ans.classList.remove('hidden');
+                icon.style.transform = 'rotate(180deg)';
+            } else {
+                ans.classList.add('hidden');
+                icon.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // SIMULATOR LOGIC
+        const simStepsData = {
+            1: {
+                badge: "MENUNGGU VERIFIKASI",
+                badgeClass: "bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30",
+                indicator: "Langkah 1 dari 5",
+                title: "Formulir Baru Masuk ke Sistem Pengurus",
+                desc: "Pengajuan Anda telah berhasil dicatat. Pengurus inventaris menerima notifikasi dan sedang memeriksa ketersediaan stok fisik serta mengecek apakah ada bentrok jadwal dengan pengajuan lain.",
+                action: "Aksi Peminjam: Cukup tunggu verifikasi dan pesan konfirmasi dari pengurus via WhatsApp."
+            },
+            2: {
+                badge: "MENUNGGU KONFIRMASI PEMINJAM",
+                badgeClass: "bg-orange-500/20 text-orange-700 dark:text-orange-300 border-orange-500/30",
+                indicator: "Langkah 2 dari 5",
+                title: "Admin Menghubungi Anda via WhatsApp",
+                desc: "Admin menyetujui pengajuan secara administratif dan mengirimkan rincian jadwal serta daftar barang ke nomor WhatsApp Anda.",
+                action: "Aksi Peminjam: Balas pesan WhatsApp Admin untuk konfirmasi persetujuan agar stok barang resmi dikunci."
+            },
+            3: {
+                badge: "DIKONFIRMASI (SIAP DIAMBIL)",
+                badgeClass: "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/30",
+                indicator: "Langkah 3 dari 5",
+                title: "Pengajuan Dikonfirmasi & Stok Terkunci",
+                desc: "Stok inventaris telah diamankan untuk Anda. Pengurus menyiapkan Surat Perjanjian Peminjaman fisik dan menyiapkan barang di sekretariat LDK IMIP.",
+                action: "Aksi Peminjam: Datang ke sekretariat pada tanggal pengambilan yang telah ditentukan."
+            },
+            4: {
+                badge: "SEDANG DIPINJAM",
+                badgeClass: "bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/30",
+                indicator: "Langkah 4 dari 5",
+                title: "Barang Telah Diserahterimakan",
+                desc: "Peminjam dan pengurus telah mengecek fisik barang dan menandatangani Surat Perjanjian. Barang resmi digunakan untuk kegiatan peminjam.",
+                action: "Aksi Peminjam: Jaga barang dengan baik dan kembalikan tepat waktu sesuai tanggal kesepakatan."
+            },
+            5: {
+                badge: "SELESAI",
+                badgeClass: "bg-emerald-600/20 text-emerald-800 dark:text-emerald-300 border-emerald-600/30",
+                indicator: "Langkah 5 dari 5",
+                title: "Barang Dikembalikan & Tuntas",
+                desc: "Barang telah dikembalikan ke pengurus dalam kondisi baik dan lengkap. Riwayat peminjaman Anda tercatat bersih di sistem inventaris organisasi.",
+                action: "Aksi Peminjam: Selesai! Terima kasih telah menjaga amanah fasilitas organisasi."
+            }
+        };
+
+        function setSimStep(stepNum) {
+            const data = simStepsData[stepNum];
+            if (!data) return;
+
+            // Update buttons active styles
+            for (let i = 1; i <= 5; i++) {
+                const btn = document.getElementById(`sim-btn-${i}`);
+                if (btn) {
+                    if (i === stepNum) {
+                        btn.className = "p-2.5 rounded-xl text-center text-xs font-bold transition-all border border-[#FF7300] bg-orange-500/20 text-[#FF7300] shadow-sm";
+                    } else {
+                        btn.className = "p-2.5 rounded-xl text-center text-xs font-bold transition-all ui-pill ui-muted hover:text-[#FF7300]";
+                    }
+                }
+            }
+
+            // Update card content
+            const badge = document.getElementById('sim-badge');
+            if (badge) {
+                badge.innerText = data.badge;
+                badge.className = `px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider border ${data.badgeClass}`;
+            }
+
+            const indicator = document.getElementById('sim-step-indicator');
+            if (indicator) indicator.innerText = data.indicator;
+
+            const title = document.getElementById('sim-title');
+            if (title) title.innerText = data.title;
+
+            const desc = document.getElementById('sim-desc');
+            if (desc) desc.innerText = data.desc;
+
+            const action = document.getElementById('sim-action');
+            if (action) {
+                action.innerHTML = `<i class="fa-solid fa-circle-info"></i> <span>${data.action}</span>`;
+            }
+        }
+
+        function resetSimulator() {
+            setSimStep(1);
+        }
+    </script>
+</body>
+</html>
