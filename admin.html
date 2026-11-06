@@ -591,13 +591,24 @@
             <div id="surat-scroll-container" class="overflow-x-auto overflow-y-auto flex-1 p-2 sm:p-6 bg-slate-900/70 block">
                 <div id="printable-surat" class="w-full min-w-[580px] max-w-2xl bg-white text-black p-6 sm:p-10 shadow-2xl space-y-4 rounded-xl border border-gray-200 mx-auto my-0">
                     <!-- KOP RESMI DARI BENDAHARA2026 -->
-                    <div class="w-full mb-2 text-center">
+                    <div class="w-full mb-1 text-center">
                         <img src="surat/assets/kop_spz_official.png" alt="Kop Surat Resmi LDK IMIP" class="w-full h-auto max-h-36 object-contain block mx-auto" onerror="this.style.display='none'">
                     </div>
 
-                    <div class="text-center space-y-1 border-b-2 border-black pb-2">
-                        <h2 class="font-bold tracking-wider uppercase underline">SURAT PERJANJIAN PEMINJAMAN INVENTARIS BARANG</h2>
-                        <p id="surat-no-dokumen" class="surat-nomor">Nomor: SPB/20261102/001/LDK-IMIP</p>
+                    <!-- NOMOR & HAL SURAT (SESUAI STANDAR SURAT RESMI IMIP, TANPA GARIS GANDA) -->
+                    <div class="pt-1 pb-1">
+                        <table class="w-full border-collapse">
+                            <tr>
+                                <td class="w-24 py-0.5">Nomor</td>
+                                <td class="w-4 py-0.5">:</td>
+                                <td id="surat-no-dokumen" class="py-0.5">SPB/20261102/001/LDK-IMIP</td>
+                            </tr>
+                            <tr>
+                                <td class="w-24 py-0.5">Hal</td>
+                                <td class="w-4 py-0.5">:</td>
+                                <td class="py-0.5">Peminjaman Barang</td>
+                            </tr>
+                        </table>
                     </div>
 
                     <div class="space-y-2">
@@ -2766,7 +2777,7 @@ Jazakumullah Khairan Katsiran.
             const elOrgTtd = document.getElementById('surat-org-name-ttd');
             if (elOrgTtd) elOrgTtd.innerText = `Pengurus Inventaris ${orgName}`;
 
-            document.getElementById('surat-no-dokumen').innerText = `Nomor: ${item.no_surat}`;
+            document.getElementById('surat-no-dokumen').innerText = item.no_surat;
             document.getElementById('surat-peminjam-nama').innerText = item.nama_peminjam;
 
             let waDisplay = String(item.kontak_wa || "");
