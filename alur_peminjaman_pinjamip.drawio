@@ -1,0 +1,220 @@
+<mxfile host="app.diagrams.net" modified="2026-11-06T08:35:00.000Z" agent="Mozilla/5.0" version="21.0.0" type="device">
+  <diagram id="AlurPeminjamanPinjamip" name="Alur Peminjaman Inventaris LDK IMIP">
+    <mxGraphModel dx="1422" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1300" pageHeight="1450" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- HEADER TITLE -->
+        <mxCell id="title_banner" value="&lt;b style=&quot;font-size:22px;&quot;&gt;ALUR LENGKAP SISTEM PEMINJAMAN INVENTARIS (PINJAMIP)&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:13px; color:#64748b;&quot;&gt;UKM Lembaga Dakwah Kampus Ikatan Mahasiswa Islam Politeknik (LDK IMIP)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#FF7300;strokeWidth=2;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="150" y="20" width="1000" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- SWIMLANE 1: PEMINJAM -->
+        <mxCell id="lane_peminjam" value="&lt;b style=&quot;font-size:15px; color:#FF7300;&quot;&gt;PEMINJAM (USER / ORMAWA)&lt;/b&gt;" style="swimlane;startSize=40;fillColor=#FFFBF7;strokeColor=#FF7300;strokeWidth=2;html=1;" vertex="1" parent="1">
+          <mxGeometry x="50" y="110" width="370" height="1280" as="geometry" />
+        </mxCell>
+
+        <!-- SWIMLANE 2: SISTEM WEB PINJAMIP -->
+        <mxCell id="lane_sistem" value="&lt;b style=&quot;font-size:15px; color:#2563EB;&quot;&gt;SISTEM WEB PINJAMIP (APLIKASI)&lt;/b&gt;" style="swimlane;startSize=40;fillColor=#F8FAFC;strokeColor=#3B82F6;strokeWidth=2;html=1;" vertex="1" parent="1">
+          <mxGeometry x="450" y="110" width="390" height="1280" as="geometry" />
+        </mxCell>
+
+        <!-- SWIMLANE 3: PENGURUS INVENTARIS (ADMIN) -->
+        <mxCell id="lane_admin" value="&lt;b style=&quot;font-size:15px; color:#059669;&quot;&gt;PENGURUS INVENTARIS (ADMIN)&lt;/b&gt;" style="swimlane;startSize=40;fillColor=#F0FDF4;strokeColor=#10B981;strokeWidth=2;html=1;" vertex="1" parent="1">
+          <mxGeometry x="870" y="110" width="380" height="1280" as="geometry" />
+        </mxCell>
+
+        <!-- TAHAP 1: MULAI & PILIH BARANG -->
+        <mxCell id="start_node" value="&lt;b style=&quot;font-size:14px;&quot;&gt;MULAI&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FF7300;strokeColor=#EA580C;fontColor=#ffffff;strokeWidth=2;" vertex="1" parent="lane_peminjam">
+          <mxGeometry x="125" y="60" width="120" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="step1_peminjam" value="&lt;b&gt;1. Buka Web &amp; Pilih Barang&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:11px; color:#475569;&quot;&gt;Telusuri katalog, cek foto/kondisi stok, dan tambahkan item ke keranjang&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#FF7300;strokeWidth=1.5;align=center;" vertex="1" parent="lane_peminjam">
+          <mxGeometry x="70" y="140" width="230" height="65" as="geometry" />
+        </mxCell>
+
+        <mxCell id="step2_peminjam" value="&lt;b&gt;2. Isi Formulir Pengajuan&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:11px; color:#475569;&quot;&gt;Data peminjam, No. WhatsApp, asal UKM, tanggal &amp; keperluan&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#FF7300;strokeWidth=1.5;align=center;" vertex="1" parent="lane_peminjam">
+          <mxGeometry x="70" y="240" width="230" height="65" as="geometry" />
+        </mxCell>
+
+        <!-- TAHAP 2: VALIDASI SISTEM -->
+        <mxCell id="rule_h3" value="&lt;b&gt;Validasi Jadwal &amp; Stok&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:11px;&quot;&gt;1. Apakah Tgl Ambil &amp;gt;= H-3?&lt;br&gt;2. Apakah jadwal bebas bentrok?&lt;/span&gt;" style="rhombus;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#3B82F6;strokeWidth=1.5;fontColor:#1E3A8A;align=center;" vertex="1" parent="lane_sistem">
+          <mxGeometry x="85" y="215" width="220" height="115" as="geometry" />
+        </mxCell>
+
+        <mxCell id="tolak_h3" value="&lt;b&gt;Peringatan Sistem!&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:11px; color:#991B1B;&quot;&gt;Pengambilan wajib H-3 atau jadwal bentrok. User diminta ganti tanggal.&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF2F2;strokeColor=#EF4444;strokeWidth=1.5;" vertex="1" parent="lane_sistem">
+          <mxGeometry x="95" y="360" width="200" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="simpan_db" value="&lt;b&gt;Pengajuan Diterima!&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:11px; color:#1E3A8A;&quot;&gt;Terbitkan Kode Pinjam (PJM-xxxx)&lt;br&gt;Status: &lt;b style=&quot;color:#D97706;&quot;&gt;MENUNGGU VERIFIKASI&lt;/b&gt;&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;strokeWidth=1.5;" vertex="1" parent="lane_sistem">
+          <mxGeometry x="85" y="445" width="220" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- TAHAP 3: VERIFIKASI ADMIN -->
+        <mxCell id="review_admin" value="&lt;b&gt;3. Review Pengajuan Masuk&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:11px; color:#064E3B;&quot;&gt;Admin cek detail peminjam, fisik barang, dan kelayakan kegiatan&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#10B981;strokeWidth=1.5;" vertex="1" parent="lane_admin">
+          <mxGeometry x="75" y="445" width="230" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="decide_admin" value="&lt;b&gt;Keputusan Admin?&lt;/b&gt;" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ECFDF5;strokeColor=#10B981;strokeWidth=1.5;fontColor:#064E3B;" vertex="1" parent="lane_admin">
+          <mxGeometry x="110" y="555" width="160" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="admin_tolak" value="&lt;b&gt;Tolak / Batalkan&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:11px; color:#991B1B;&quot;&gt;Beri alasan penolakan.&lt;br&gt;Status: &lt;b&gt;DITOLAK&lt;/b&gt;&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF2F2;strokeColor=#EF4444;strokeWidth=1.5;" vertex="1" parent="lane_admin">
+          <mxGeometry x="240" y="680" width="125" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="admin_approve" value="&lt;b&gt;Setujui (Approve)&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:11px; color:#064E3B;&quot;&gt;1. Kunci stok inventaris&lt;br&gt;2. Buat No. Dokumen Surat&lt;br&gt;3. Kirim chat WhatsApp resmi&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D1FAE5;strokeColor=#059669;strokeWidth=1.5;" vertex="1" parent="lane_admin">
+          <mxGeometry x="40" y="680" width="170" height="75" as="geometry" />
+        </mxCell>
+
+        <!-- TAHAP 4: KONFIRMASI PEMINJAM -->
+        <mxCell id="notif_wa" value="&lt;b&gt;Terima Chat WhatsApp Admin&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:11px; color:#475569;&quot;&gt;Rincian barang, tanggal &amp; permintaan konfirmasi persetujuan&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#FF7300;strokeWidth=1.5;" vertex="1" parent="lane_peminjam">
+          <mxGeometry x="70" y="680" width="230" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="balas_wa" value="&lt;b&gt;4. Balas Konfirmasi WA&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:11px; color:#475569;&quot;&gt;Peminjam membalas chat WA admin bahwa data sudah sesuai&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#FF7300;strokeWidth=1.5;" vertex="1" parent="lane_peminjam">
+          <mxGeometry x="70" y="785" width="230" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="status_dikonfirmasi" value="&lt;b&gt;Status: DIKONFIRMASI&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:11px; color:#064E3B;&quot;&gt;Stok aman terkunci 100%.&lt;br&gt;Siap diambil pada Hari-H.&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ECFDF5;strokeColor=#10B981;strokeWidth=1.5;" vertex="1" parent="lane_sistem">
+          <mxGeometry x="95" y="785" width="200" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- TAHAP 5: HARI H SERAH TERIMA -->
+        <mxCell id="ambil_barang" value="&lt;b&gt;5. Datang ke Sekre LDK IMIP&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:11px; color:#475569;&quot;&gt;Peminjam hadir pada tanggal pengambilan yang telah ditentukan&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#FF7300;strokeWidth=1.5;" vertex="1" parent="lane_peminjam">
+          <mxGeometry x="70" y="885" width="230" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="serah_terima" value="&lt;b&gt;Serah Terima &amp; Cetak Surat&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:11px; color:#064E3B;&quot;&gt;1. Pengecekan fisik barang bersama&lt;br&gt;2. Tanda tangan Surat Perjanjian Resmi&lt;br&gt;3. Admin klik &quot;Serahkan Barang&quot;&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#10B981;strokeWidth=1.5;" vertex="1" parent="lane_admin">
+          <mxGeometry x="65" y="875" width="250" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="status_dipinjam" value="&lt;b&gt;Status: SEDANG DIPINJAM&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:11px; color:#1E3A8A;&quot;&gt;Tanggal &amp; jam serah terima tercatat resmi di sistem&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;strokeWidth=1.5;" vertex="1" parent="lane_sistem">
+          <mxGeometry x="95" y="885" width="200" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- TAHAP 6: PENGEMBALIAN -->
+        <mxCell id="kembalikan_barang" value="&lt;b&gt;6. Kembalikan Barang ke Sekre&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:11px; color:#475569;&quot;&gt;Tepat waktu sebelum batas tanggal pengembalian, bersih &amp; lengkap&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#FF7300;strokeWidth=1.5;" vertex="1" parent="lane_peminjam">
+          <mxGeometry x="70" y="1000" width="230" height="65" as="geometry" />
+        </mxCell>
+
+        <mxCell id="cek_kembali" value="&lt;b&gt;Verifikasi Fisik Pengembalian&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:11px; color:#064E3B;&quot;&gt;Admin cek kelengkapan barang &amp; klik &quot;Terima Kembali Barang&quot;&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#10B981;strokeWidth=1.5;" vertex="1" parent="lane_admin">
+          <mxGeometry x="65" y="995" width="250" height="75" as="geometry" />
+        </mxCell>
+
+        <mxCell id="status_selesai" value="&lt;b&gt;Status: SELESAI&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:11px; color:#064E3B;&quot;&gt;Stok otomatis kembali tersedia di katalog publik&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D1FAE5;strokeColor=#059669;strokeWidth=2;" vertex="1" parent="lane_sistem">
+          <mxGeometry x="95" y="1110" width="200" height="65" as="geometry" />
+        </mxCell>
+
+        <mxCell id="end_node" value="&lt;b style=&quot;font-size:14px;&quot;&gt;SELESAI&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:10px;&quot;&gt;Tuntas &amp; Berkah&lt;/span&gt;" style="ellipse;whiteSpace=wrap;html=1;fillColor=#059669;strokeColor=#047857;fontColor=#ffffff;strokeWidth=2;" vertex="1" parent="lane_peminjam">
+          <mxGeometry x="125" y="1115" width="120" height="55" as="geometry" />
+        </mxCell>
+
+        <!-- CONNECTORS / PANAH ALUR -->
+        <mxCell id="e1" edge="1" source="start_node" target="step1_peminjam" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#FF7300;strokeWidth=2;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e2" edge="1" source="step1_peminjam" target="step2_peminjam" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#FF7300;strokeWidth=2;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e3" edge="1" source="step2_peminjam" target="rule_h3" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#FF7300;strokeWidth=2;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e4_tidak" edge="1" source="rule_h3" target="tolak_h3" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#EF4444;strokeWidth=2;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="lbl_tidak" value="Tidak" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontColor=#EF4444;fontStyle=1" vertex="1" connectable="0" parent="e4_tidak">
+          <mxGeometry x="-0.2" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="e4_revisi" edge="1" source="tolak_h3" target="step2_peminjam" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#EF4444;strokeWidth=1.5;dashed=1;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="490" y="500" />
+              <mxPoint x="490" y="380" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="lbl_revisi" value="Pilih Tanggal Baru" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontColor=#991B1B;fontStyle=0" vertex="1" connectable="0" parent="e4_revisi">
+          <mxGeometry x="0.1" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="e5_ya" edge="1" source="rule_h3" target="simpan_db" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2563EB;strokeWidth=2;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_ya" value="Ya (Valid)" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontColor=#2563EB;fontStyle=1" vertex="1" connectable="0" parent="e5_ya">
+          <mxGeometry x="-0.1" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="e6" edge="1" source="simpan_db" target="review_admin" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#10B981;strokeWidth=2;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e7" edge="1" source="review_admin" target="decide_admin" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#10B981;strokeWidth=2;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e8_tolak" edge="1" source="decide_admin" target="admin_tolak" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#EF4444;strokeWidth=2;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_tolak" value="Tolak" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontColor=#EF4444;fontStyle=1" vertex="1" connectable="0" parent="e8_tolak">
+          <mxGeometry x="-0.2" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="e8_approve" edge="1" source="decide_admin" target="admin_approve" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#059669;strokeWidth=2;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_setuju" value="Setujui" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontColor=#059669;fontStyle=1" vertex="1" connectable="0" parent="e8_approve">
+          <mxGeometry x="-0.2" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="e9_wa" edge="1" source="admin_approve" target="notif_wa" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#059669;strokeWidth=2;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e10" edge="1" source="notif_wa" target="balas_wa" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#FF7300;strokeWidth=2;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e11" edge="1" source="balas_wa" target="status_dikonfirmasi" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#10B981;strokeWidth=2;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e12" edge="1" source="status_dikonfirmasi" target="ambil_barang" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#3B82F6;strokeWidth=2;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e13" edge="1" source="ambil_barang" target="serah_terima" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#10B981;strokeWidth=2;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e14" edge="1" source="serah_terima" target="status_dipinjam" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2563EB;strokeWidth=2;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e15" edge="1" source="status_dipinjam" target="kembalikan_barang" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#FF7300;strokeWidth=2;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e16" edge="1" source="kembalikan_barang" target="cek_kembali" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#10B981;strokeWidth=2;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e17" edge="1" source="cek_kembali" target="status_selesai" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#059669;strokeWidth=2;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e18" edge="1" source="status_selesai" target="end_node" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#059669;strokeWidth=2;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
