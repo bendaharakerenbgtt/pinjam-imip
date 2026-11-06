@@ -362,9 +362,8 @@
                         <label class="block ui-heading font-semibold mb-1">Tanggal Pengambilan <span class="text-rose-500">*</span></label>
                         <input type="date" id="pjm-tgl-ambil" required
                                class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
-                        <p class="text-[11px] text-[#FF7300] font-medium mt-1.5 flex items-start gap-1.5 leading-snug">
-                            <i class="fa-solid fa-circle-info text-xs mt-0.5 shrink-0"></i>
-                            <span><strong>Catatan:</strong> Pengambilan hanya bisa minimal H-3 pengajuan. Bila ada yang ingin ditanyakan, bisa langsung ditanyakan ke Admin.</span>
+                        <p class="text-[10.5px] text-[#FF7300] font-semibold mt-1 flex items-center gap-1">
+                            <i class="fa-solid fa-clock"></i> Jeda minimal 3 hari (H-3 sebelum pengambilan)
                         </p>
                     </div>
                     <div>
@@ -387,16 +386,8 @@
                 </div>
 
                 <!-- Info Ketentuan Singkat -->
-                <div class="p-3 sm:p-3.5 rounded-xl bg-orange-500/10 border border-orange-500/25 text-[11.5px] ui-body leading-relaxed space-y-1">
-                    <p class="font-bold text-[#FF7300] flex items-center gap-1.5">
-                        <i class="fa-solid fa-circle-exclamation"></i> Catatan Ketentuan:
-                    </p>
-                    <p>
-                        Pengambilan hanya bisa <strong>minimal H-3 pengajuan</strong>. Bila ada yang ingin ditanyakan, bisa langsung ditanyakan ke Admin.
-                    </p>
-                    <p class="text-[11px] opacity-80 pt-0.5">
-                        *Pengajuan ini tidak langsung mengurangi stok sampai diverifikasi & disetujui oleh Admin Inventaris.
-                    </p>
+                <div class="p-3 rounded-xl bg-orange-500/10 border border-orange-500/20 text-[11px] ui-body leading-relaxed">
+                    <p><i class="fa-solid fa-circle-info text-[#FF7300] mr-1"></i> <strong>Ketentuan Waktu:</strong> Pengajuan wajib memiliki jeda minimal 3 hari (H-3) sebelum tanggal pengambilan untuk persiapan barang. Pengajuan ini tidak langsung mengurangi stok. Admin Inventaris akan memverifikasi ketersediaan barang dan menghubungi Anda melalui WhatsApp beserta Surat Perjanjian Peminjaman.</p>
                 </div>
 
                 <div class="pt-2 flex justify-end gap-2">
@@ -1071,7 +1062,7 @@
                 Swal.fire({
                     icon: 'warning',
                     title: 'Jeda Waktu Pengambilan',
-                    html: `<p class="text-xs mb-2 font-bold text-left" style="color: #E11D48;">Pengambilan hanya bisa minimal H-3 pengajuan.</p><p class="text-xs text-left font-medium" style="color: #334155;">Tanggal pengambilan paling cepat yang dapat dipilih adalah <strong>${minTglAmbil}</strong>.<br><br>Bila ada yang ingin ditanyakan, bisa langsung ditanyakan ke Admin.</p>`,
+                    html: `<p class="text-xs mb-2 font-bold text-left" style="color: #E11D48;">Pengajuan peminjaman wajib berjarak minimal 3 hari (H-3) sebelum pengambilan.</p><p class="text-xs text-left font-medium" style="color: #334155;">Tanggal pengambilan paling cepat yang dapat dipilih adalah <strong>${minTglAmbil}</strong> untuk persiapan dan verifikasi inventaris oleh pengurus.</p>`,
                     confirmButtonColor: '#FF7300'
                 });
                 return;

@@ -359,7 +359,7 @@ function handleAjukanPinjam(data) {
   if (tglAmbilA && tglAmbilA < minAmbilStr) {
     return jsonResponse({
       success: false,
-      message: "Pengambilan hanya bisa minimal H-3 pengajuan (paling cepat: " + minAmbilStr + "). Bila ada yang ingin ditanyakan, bisa langsung ditanyakan ke Admin."
+      message: "Pengajuan peminjaman wajib berjarak minimal 3 hari sebelum pengambilan barang (paling cepat: " + minAmbilStr + ") untuk persiapan inventaris."
     });
   }
 
