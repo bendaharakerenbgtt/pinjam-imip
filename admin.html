@@ -444,13 +444,19 @@
             <!-- TAB 3: RIWAYAT PEMINJAMAN (PRD SECTION 14) -->
             <!-- ========================================================= -->
             <div id="tab-riwayat" class="tab-content space-y-3 sm:space-y-4 hidden">
-                <div class="relative">
-                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 ui-muted text-sm"></i>
-                    <input type="text" id="riwayat-search" oninput="renderRiwayat()" placeholder="Cari nama peminjam atau organisasi..." 
-                           class="w-full pl-10 pr-4 py-2 rounded-xl ui-card text-xs ui-heading focus:outline-none focus:border-[#FF7300]">
+                <div class="flex items-center gap-2">
+                    <div class="relative flex-1">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 ui-muted text-sm"></i>
+                        <input type="text" id="riwayat-search" oninput="renderRiwayat()" placeholder="Cari nama peminjam, ormawa, atau tempat..." 
+                               class="w-full pl-10 pr-4 py-2 rounded-xl ui-card text-xs ui-heading focus:outline-none focus:border-[#FF7300]">
+                    </div>
+                    <button type="button" onclick="toggleAllRiwayatDetail()" id="btn-toggle-all-riwayat" class="px-3 py-2 rounded-xl ui-pill text-xs font-bold ui-muted hover:text-[#FF7300] flex items-center gap-1.5 whitespace-nowrap shadow-xs transition-all" title="Buka / Tutup Semua Detail">
+                        <i id="icon-toggle-all-riwayat" class="fa-solid fa-chevron-down text-[11px] transition-transform duration-200"></i>
+                        <span id="text-toggle-all-riwayat" class="hidden sm:inline">Buka Semua</span>
+                    </button>
                 </div>
 
-                <div id="list-riwayat" class="space-y-3">
+                <div id="list-riwayat" class="space-y-2.5">
                     <!-- populated dynamically -->
                 </div>
             </div>
@@ -2370,8 +2376,48 @@ Jazakumullah Khairan Katsiran.
         }
 
         // ==========================================
-        // TAB 3: RIWAYAT PEMINJAMAN
+        // TAB 3: RIWAYAT PEMINJAMAN (RINGKAS & EXPANDABLE)
         // ==========================================
+        function toggleRiwayatDetail(idPinjam) {
+            const detailEl = document.getElementById(`detail-riwayat-${idPinjam}`);
+            const chevronEl = document.getElementById(`chevron-riwayat-${idPinjam}`);
+            const textEl = document.getElementById(`text-detail-btn-${idPinjam}`);
+            if (!detailEl) return;
+            const isHidden = detailEl.classList.contains('hidden');
+            if (isHidden) {
+                detailEl.classList.remove('hidden');
+                if (chevronEl) chevronEl.style.transform = 'rotate(180deg)';
+                if (textEl) textEl.innerText = 'Tutup';
+            } else {
+                detailEl.classList.add('hidden');
+                if (chevronEl) chevronEl.style.transform = 'rotate(0deg)';
+                if (textEl) textEl.innerText = 'Detail';
+            }
+        }
+
+        let isAllRiwayatOpen = false;
+        function toggleAllRiwayatDetail() {
+            isAllRiwayatOpen = !isAllRiwayatOpen;
+            const details = document.querySelectorAll('.riwayat-detail-body');
+            const chevrons = document.querySelectorAll('.riwayat-detail-chevron');
+            const texts = document.querySelectorAll('.riwayat-detail-text');
+            const mainText = document.getElementById('text-toggle-all-riwayat');
+            const mainIcon = document.getElementById('icon-toggle-all-riwayat');
+
+            details.forEach(d => {
+                if (isAllRiwayatOpen) d.classList.remove('hidden');
+                else d.classList.add('hidden');
+            });
+            chevrons.forEach(c => {
+                c.style.transform = isAllRiwayatOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+            });
+            texts.forEach(t => {
+                t.innerText = isAllRiwayatOpen ? 'Tutup' : 'Detail';
+            });
+            if (mainText) mainText.innerText = isAllRiwayatOpen ? 'Tutup Semua' : 'Buka Semua';
+            if (mainIcon) mainIcon.style.transform = isAllRiwayatOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+        }
+
         function renderRiwayat() {
             const listEl = document.getElementById('list-riwayat');
             const search = (document.getElementById('riwayat-search')?.value || "").toLowerCase().trim();
@@ -2380,7 +2426,7 @@ Jazakumullah Khairan Katsiran.
             const riwayat = localDB.peminjaman.filter(p => {
                 const s = (p.status || "").toUpperCase();
                 const isHist = s === "SELESAI" || s === "DITOLAK" || s === "DIBATALKAN";
-                const match = (p.nama_peminjam || "").toLowerCase().includes(search) || (p.asal_organisasi || "").toLowerCase().includes(search) || (p.tempat_kegiatan || "").toLowerCase().includes(search);
+                const match = (p.nama_peminjam || "").toLowerCase().includes(search) || (p.asal_organisasi || "").toLowerCase().includes(search) || (p.tempat_kegiatan || "").toLowerCase().includes(search) || (p.id_pinjam || "").toLowerCase().includes(search);
                 return isHist && match;
             });
 
@@ -2407,34 +2453,60 @@ Jazakumullah Khairan Katsiran.
                 const safePinjamIdJs = escapeJsStr(item.id_pinjam);
 
                 const card = document.createElement('div');
-                card.className = "ui-card p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row sm:items-start justify-between gap-3 text-xs border-orange-200 dark:border-white/10";
+                card.className = "ui-card rounded-2xl overflow-hidden border border-orange-200/80 dark:border-white/10 transition-all hover:border-orange-400/80 shadow-xs";
                 card.innerHTML = `
-                    <div class="space-y-2 flex-1">
-                        <div class="flex flex-wrap items-center gap-2">
-                            <span class="font-mono text-xs font-bold text-[#FF7300] bg-orange-500/10 px-2.5 py-0.5 rounded border border-orange-300/60 dark:border-orange-500/30 whitespace-nowrap">${escapeHtml(item.id_pinjam)}</span>
-                            <span class="px-2.5 py-0.5 rounded text-[10px] font-black ${getStatusClass(item.status)}">${escapeHtml(item.status)}</span>
-                            ${tglKembaliAktualClean && tglKembaliAktualClean !== '-' ? `<span class="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-500/10 dark:bg-emerald-500/20 px-2.5 py-0.5 rounded border border-emerald-500/30"><i class="fa-solid fa-circle-check text-emerald-600 mr-1"></i> Kembali: ${tglKembaliAktualClean}</span>` : ''}
+                    <!-- Header Ringkas (Bisa diklik untuk buka/tutup detail) -->
+                    <div onclick="toggleRiwayatDetail('${safePinjamIdJs}')" class="p-3 sm:p-3.5 cursor-pointer hover:bg-orange-500/[0.04] transition-colors flex items-center justify-between gap-2.5">
+                        <div class="space-y-1 min-w-0 flex-1">
+                            <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                                <span class="font-mono text-[11px] font-bold text-[#FF7300] bg-orange-500/10 px-2 py-0.5 rounded border border-orange-300/60 dark:border-orange-500/30 whitespace-nowrap">${escapeHtml(item.id_pinjam)}</span>
+                                <span class="px-2 py-0.5 rounded text-[10px] font-black ${getStatusClass(item.status)}">${escapeHtml(item.status)}</span>
+                                ${tglKembaliAktualClean && tglKembaliAktualClean !== '-' ? `<span class="text-[10px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 hidden sm:inline-block"><i class="fa-solid fa-circle-check text-emerald-500 mr-1"></i>Selesai: ${tglKembaliAktualClean}</span>` : ''}
+                            </div>
+                            <h4 class="font-bold font-outfit text-xs sm:text-sm ui-heading truncate">
+                                ${escapeHtml(item.nama_peminjam)} 
+                                <span class="text-xs font-semibold ui-muted font-sans">• ${escapeHtml(item.asal_organisasi)}</span>
+                            </h4>
+                            <p class="text-[11px] ui-muted truncate flex items-center gap-1.5">
+                                <i class="fa-solid fa-box text-[#FF7300] text-[10px] shrink-0"></i>
+                                <span class="truncate">${itemsList || 'Perlengkapan'}</span>
+                            </p>
                         </div>
 
-                        <h4 class="font-black font-outfit text-sm sm:text-base ui-heading">
-                            ${escapeHtml(item.nama_peminjam)} 
-                            <span class="text-xs font-semibold ui-muted">(${escapeHtml(item.asal_organisasi)} • Ketua Pelaksana: ${escapeHtml(item.nama_penanggung_jawab || item.nama_peminjam)})</span>
-                        </h4>
-                        
+                        <div class="flex items-center gap-2 shrink-0">
+                            <button type="button" onclick="event.stopPropagation(); toggleRiwayatDetail('${safePinjamIdJs}')" class="px-2.5 py-1.5 rounded-xl ui-pill text-xs font-bold text-[#FF7300] hover:bg-orange-500/15 flex items-center gap-1.5 transition-all shadow-2xs">
+                                <span id="text-detail-btn-${safePinjamIdJs}" class="riwayat-detail-text">Detail</span>
+                                <i id="chevron-riwayat-${safePinjamIdJs}" class="fa-solid fa-chevron-down text-[10px] transition-transform duration-200 riwayat-detail-chevron"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Isi Detail (Tertutup by default, tampil saat diklik) -->
+                    <div id="detail-riwayat-${safePinjamIdJs}" class="hidden riwayat-detail-body p-3.5 sm:p-4 pt-3 border-t border-orange-200/60 dark:border-white/5 space-y-3 bg-orange-500/[0.02]">
                         <div class="ui-pill p-2.5 rounded-xl text-xs space-y-0.5 border border-orange-200/70 dark:border-gray-800">
-                            <span class="text-[10px] font-black uppercase text-[#FF7300] block tracking-wider">Barang Dipinjam:</span>
-                            <p class="font-black ui-heading text-xs">${itemsList || 'Perlengkapan'}</p>
+                            <span class="text-[10px] font-black uppercase text-[#FF7300] block tracking-wider">Daftar Barang Lengkap:</span>
+                            <p class="font-bold ui-heading text-xs">${itemsList || 'Perlengkapan'}</p>
                         </div>
 
-                        <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
-                            <p class="font-bold ui-body">
-                                <i class="fa-solid fa-calendar mr-1.5 text-[#FF7300]"></i> Periode: <strong class="ui-heading">${tglAmbilClean} s.d ${tglKembaliClean}</strong>
-                            </p>
-                            <p class="font-bold ui-body">
-                                <i class="fa-solid fa-location-dot mr-1 text-rose-500"></i> Tempat: <strong class="ui-heading text-[#FF7300]">${escapeHtml(item.tempat_kegiatan || '-')}</strong>
-                            </p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                            <div class="p-2.5 rounded-xl bg-orange-500/5 dark:bg-gray-800/40 border border-orange-200/40 dark:border-gray-700/50 space-y-0.5">
+                                <span class="text-[10px] font-bold ui-muted block">Jadwal Periode Pinjam:</span>
+                                <p class="font-bold ui-heading text-xs"><i class="fa-solid fa-calendar mr-1 text-[#FF7300]"></i> ${tglAmbilClean} s.d ${tglKembaliClean}</p>
+                                ${tglKembaliAktualClean && tglKembaliAktualClean !== '-' ? `<p class="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 pt-0.5"><i class="fa-solid fa-circle-check mr-1"></i> Kembali Aktual: ${tglKembaliAktualClean}</p>` : ''}
+                            </div>
+                            <div class="p-2.5 rounded-xl bg-orange-500/5 dark:bg-gray-800/40 border border-orange-200/40 dark:border-gray-700/50 space-y-0.5">
+                                <span class="text-[10px] font-bold ui-muted block">Tempat & Penanggung Jawab:</span>
+                                <p class="font-bold ui-heading text-xs"><i class="fa-solid fa-location-dot mr-1 text-rose-500"></i> ${escapeHtml(item.tempat_kegiatan || '-')}</p>
+                                <p class="text-[11px] ui-muted pt-0.5"><i class="fa-solid fa-user-tie mr-1 text-[#FF7300]"></i> PJ: ${escapeHtml(item.nama_penanggung_jawab || item.nama_peminjam)}</p>
+                            </div>
                         </div>
-                        ${item.tujuan ? `<p class="ui-muted italic text-xs">"${escapeHtml(item.tujuan)}"` + (item.tempat_kegiatan ? ` (${escapeHtml(item.tempat_kegiatan)})` : '') + `</p>` : ''}
+
+                        ${item.tujuan ? `
+                            <div class="text-xs">
+                                <span class="text-[10px] font-bold ui-muted block mb-0.5">Tujuan / Keperluan Acara:</span>
+                                <p class="ui-body italic text-xs bg-black/5 dark:bg-white/5 p-2 rounded-lg">"${escapeHtml(item.tujuan)}"</p>
+                            </div>
+                        ` : ''}
 
                         ${catatanTampil ? `
                             <div class="p-3 rounded-xl border-l-4 border-l-[#FF7300] border border-orange-300/80 dark:border-orange-500/30 text-xs shadow-xs space-y-1 bg-[#FFF7ED] dark:bg-orange-950/40">
@@ -2444,15 +2516,16 @@ Jazakumullah Khairan Katsiran.
                                 <p class="font-bold ui-body text-xs pl-0.5 leading-relaxed">${escapeHtml(catatanTampil)}</p>
                             </div>
                         ` : ''}
-                    </div>
 
-                    <div class="flex sm:flex-col items-center gap-2 self-stretch sm:self-auto sm:min-w-[130px] pt-1">
-                        <button type="button" onclick="bukaChatWa('${safePinjamIdJs}', 'riwayat')" class="flex-1 sm:w-full px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all">
-                            <i class="fa-brands fa-whatsapp text-sm"></i> Chat WA
-                        </button>
-                        <button onclick="bukaModalSuratPerjanjian('${safePinjamIdJs}')" class="flex-1 sm:w-full px-3 py-1.5 rounded-xl ui-pill font-bold text-xs ui-heading hover:text-[#FF7300] flex items-center justify-center gap-1.5">
-                            <i class="fa-solid fa-file-contract text-[#FF7300]"></i> Surat
-                        </button>
+                        <!-- Tombol Aksi Riwayat -->
+                        <div class="flex items-center gap-2 pt-1 border-t border-orange-200/40 dark:border-white/5">
+                            <button type="button" onclick="bukaChatWa('${safePinjamIdJs}', 'riwayat')" class="flex-1 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all">
+                                <i class="fa-brands fa-whatsapp text-sm"></i> Hubungi via WA
+                            </button>
+                            <button onclick="bukaModalSuratPerjanjian('${safePinjamIdJs}')" class="flex-1 px-3 py-2 rounded-xl ui-pill font-bold text-xs ui-heading hover:text-[#FF7300] flex items-center justify-center gap-1.5 transition-all">
+                                <i class="fa-solid fa-file-contract text-[#FF7300]"></i> Surat Perjanjian
+                            </button>
+                        </div>
                     </div>
                 `;
                 listEl.appendChild(card);
