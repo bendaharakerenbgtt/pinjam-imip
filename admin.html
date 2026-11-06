@@ -595,8 +595,11 @@
                         <img src="surat/assets/kop_spz_official.png" alt="Kop Surat Resmi LDK IMIP" class="w-full h-auto max-h-36 object-contain block mx-auto" onerror="this.style.display='none'">
                     </div>
 
-                    <!-- NOMOR & HAL SURAT (SESUAI STANDAR SURAT RESMI IMIP, TANPA GARIS GANDA) -->
-                    <div class="pt-1 pb-1">
+                    <!-- TANGGAL SURAT (RATA KANAN) & NOMOR/HAL SURAT (RATA KIRI) SESUAI STANDAR RESMI IMIP -->
+                    <div class="pt-1 pb-1 space-y-1">
+                        <div class="text-right">
+                            <p id="surat-tgl-atas" class="font-normal text-right">Jakarta, ...</p>
+                        </div>
                         <table class="w-full border-collapse">
                             <tr>
                                 <td class="w-24 py-0.5">Nomor</td>
@@ -1034,6 +1037,31 @@ Jazakumullah Khairan Katsiran.
         function formatTglRapi(dateStr) {
             if (!dateStr) return "-";
             return String(dateStr).replace(/(\s+|T)\d{2}:\d{2}:\d{2}.*$/i, "").trim() || String(dateStr);
+        }
+
+        function formatTglSurat(dateStr) {
+            const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+            if (!dateStr) {
+                const today = new Date();
+                const d = String(today.getDate()).padStart(2, '0');
+                return `Jakarta, ${d} ${months[today.getMonth()]} ${today.getFullYear()}`;
+            }
+            const cleanStr = String(dateStr).trim().slice(0, 10);
+            const m = cleanStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+            if (m) {
+                const y = parseInt(m[1], 10);
+                const mon = parseInt(m[2], 10) - 1;
+                const d = String(parseInt(m[3], 10)).padStart(2, '0');
+                if (mon >= 0 && mon < 12) {
+                    return `Jakarta, ${d} ${months[mon]} ${y}`;
+                }
+            }
+            const dObj = new Date(dateStr);
+            if (!isNaN(dObj.getTime())) {
+                const day = String(dObj.getDate()).padStart(2, '0');
+                return `Jakarta, ${day} ${months[dObj.getMonth()]} ${dObj.getFullYear()}`;
+            }
+            return `Jakarta, ${cleanStr}`;
         }
 
         function buatPesanKonfirmasiWa(item) {
@@ -2793,9 +2821,11 @@ Jazakumullah Khairan Katsiran.
             document.getElementById('surat-peminjam-periode').innerText = `${tglAmbilClean} s.d. ${tglKembaliClean}`;
             document.getElementById('surat-ttd-peminjam').innerText = `( ${item.nama_peminjam} )`;
 
-            const today = new Date();
-            const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
-            document.getElementById('surat-tgl-cetak').innerText = `Jakarta, ${today.getDate()} ${months[today.getMonth()]} ${today.getFullYear()}`;
+            const tglSuratStr = formatTglSurat(item.tgl_pengambilan);
+            const elTglAtas = document.getElementById('surat-tgl-atas');
+            if (elTglAtas) elTglAtas.innerText = tglSuratStr;
+            const elTglCetak = document.getElementById('surat-tgl-cetak');
+            if (elTglCetak) elTglCetak.innerText = tglSuratStr;
 
             let items = [];
             try { items = JSON.parse(item.items_json || "[]"); } catch(e) {}
