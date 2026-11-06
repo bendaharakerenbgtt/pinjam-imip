@@ -448,16 +448,11 @@
 
         <!-- INTERACTIVE STATUS SIMULATOR (LIVE VISUAL DEMO) -->
         <div class="ui-card rounded-2xl p-5 sm:p-6 space-y-4 border-orange-200 dark:border-white/10">
-            <div class="flex items-center justify-between flex-wrap gap-2">
-                <div>
-                    <h3 class="font-outfit font-bold text-base sm:text-lg ui-heading flex items-center gap-2">
-                        <i class="fa-solid fa-play text-[#FF7300]"></i> Simulasi Alur Status Peminjaman
-                    </h3>
-                    <p class="text-xs ui-muted">Klik tombol langkah di bawah ini untuk melihat bagaimana status pengajuan Anda berubah di sistem.</p>
-                </div>
-                <button onclick="resetSimulator()" class="px-3 py-1.5 rounded-xl ui-pill text-xs font-bold text-rose-500 hover:bg-rose-500/10 transition-all flex items-center gap-1">
-                    <i class="fa-solid fa-rotate-right"></i> Reset
-                </button>
+            <div>
+                <h3 class="font-outfit font-bold text-base sm:text-lg ui-heading flex items-center gap-2">
+                    <i class="fa-solid fa-play text-[#FF7300]"></i> Simulasi Alur Status Peminjaman
+                </h3>
+                <p class="text-xs ui-muted mt-0.5">Klik tombol langkah di bawah ini untuk melihat bagaimana status pengajuan Anda berubah di sistem.</p>
             </div>
 
             <!-- Simulation Interactive Stepper -->
@@ -599,17 +594,22 @@
             </div>
         </div>
 
-        <!-- CALL TO ACTION BANNER -->
-        <div class="ui-card rounded-3xl p-6 sm:p-8 text-center bg-gradient-to-br from-orange-500 to-[#EA580C] text-white shadow-xl space-y-3">
-            <h3 class="text-xl sm:text-2xl font-black font-outfit">Sudah Paham Alurnya?</h3>
-            <p class="text-xs sm:text-sm text-orange-100 max-w-md mx-auto leading-relaxed">
+        <!-- CALL TO ACTION BANNER (Vibrant Orange Hero Box) -->
+        <div class="rounded-3xl p-6 sm:p-8 text-center text-white shadow-xl space-y-3.5 relative overflow-hidden" style="background: linear-gradient(135deg, #FF7300 0%, #EA580C 100%);">
+            <div class="absolute -right-10 -top-10 w-36 h-36 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+            <div class="absolute -left-10 -bottom-10 w-36 h-36 bg-black/10 rounded-full blur-xl pointer-events-none"></div>
+            
+            <h3 class="text-xl sm:text-2xl font-black font-outfit text-white drop-shadow-xs">
+                Sudah Paham Alurnya?
+            </h3>
+            <p class="text-xs sm:text-sm text-white/95 max-w-md mx-auto leading-relaxed font-medium">
                 Segera cari dan pilih perlengkapan inventaris yang Anda perlukan untuk kegiatan Anda sekarang!
             </p>
-            <div class="flex items-center justify-center gap-2.5 pt-2 flex-wrap">
-                <a href="index.html" class="px-5 py-2.5 rounded-xl bg-white text-[#FF7300] font-black text-xs sm:text-sm shadow-md hover:bg-orange-50 transition-all flex items-center gap-2">
-                    <i class="fa-solid fa-cart-plus"></i> Buka Katalog Inventaris
+            <div class="flex items-center justify-center gap-2.5 pt-1.5 flex-wrap">
+                <a href="index.html" class="px-5 py-2.5 rounded-xl bg-white text-[#EA580C] font-black text-xs sm:text-sm shadow-lg hover:bg-orange-50 transition-all flex items-center gap-2 transform hover:-translate-y-0.5">
+                    <i class="fa-solid fa-cart-plus text-[#FF7300]"></i> Buka Katalog Inventaris
                 </a>
-                <a href="status.html" class="px-5 py-2.5 rounded-xl bg-orange-700/60 hover:bg-orange-700/80 text-white font-bold text-xs sm:text-sm border border-white/20 transition-all flex items-center gap-2">
+                <a href="status.html" class="px-5 py-2.5 rounded-xl bg-black/25 hover:bg-black/35 text-white font-bold text-xs sm:text-sm border border-white/30 transition-all flex items-center gap-2 backdrop-blur-xs">
                     <i class="fa-solid fa-clock-rotate-left"></i> Lacak Pengajuan Saya
                 </a>
             </div>
@@ -757,10 +757,6 @@
             if (action) {
                 action.innerHTML = `<i class="fa-solid fa-circle-info"></i> <span>${data.action}</span>`;
             }
-        }
-
-        function resetSimulator() {
-            setSimStep(1);
         }
     </script>
 </body>
