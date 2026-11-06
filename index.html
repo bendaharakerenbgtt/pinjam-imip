@@ -144,7 +144,7 @@
                 <h1 class="text-xl sm:text-2xl font-black font-outfit ui-heading tracking-tight">
                     Katalog Inventaris
                 </h1>
-                <div id="katalog-sync-pill" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-orange-500/10 text-[#FF7300] border border-orange-500/25 transition-all opacity-0 pointer-events-none shadow-xs">
+                <div id="katalog-sync-pill" class="hidden inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-orange-500/10 text-[#FF7300] border border-orange-500/25 transition-all duration-300 opacity-0 pointer-events-none shadow-xs">
                     <i id="katalog-sync-icon" class="fa-solid fa-arrows-rotate fa-spin text-[10px]"></i>
                     <span id="katalog-sync-text">Menyinkronkan...</span>
                 </div>
@@ -552,20 +552,23 @@
             if (!pill || !icon || !txt) return;
 
             if (state === 'loading') {
-                pill.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-orange-500/10 text-[#FF7300] border border-orange-500/25 transition-all opacity-100 shadow-xs";
+                pill.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-orange-500/10 text-[#FF7300] border border-orange-500/25 transition-all duration-300 opacity-100 shadow-xs";
                 icon.className = "fa-solid fa-arrows-rotate fa-spin text-[10px]";
                 txt.innerText = customText || "Menyinkronkan...";
             } else if (state === 'success') {
-                pill.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 transition-all opacity-100 shadow-xs";
+                pill.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 transition-all duration-300 opacity-100 shadow-xs";
                 icon.className = "fa-solid fa-circle-check text-[10px]";
                 txt.innerText = customText || "Katalog terupdate";
                 setTimeout(() => {
                     pill.classList.remove('opacity-100');
                     pill.classList.add('opacity-0');
-                }, 2000);
+                    setTimeout(() => {
+                        pill.classList.add('hidden');
+                    }, 250);
+                }, 1200);
             } else {
                 pill.classList.remove('opacity-100');
-                pill.classList.add('opacity-0');
+                pill.classList.add('opacity-0', 'hidden');
             }
         }
 
