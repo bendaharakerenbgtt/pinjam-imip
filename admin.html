@@ -19,8 +19,10 @@
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+    <style type="text/tailwindcss">
+        @custom-variant dark (&:where(.dark-mode, .dark, .dark-mode *, .dark *));
+    </style>
     <style>
-        @variant dark (&:where(.dark-mode, .dark, .dark-mode *, .dark *));
 
         :root {
             --bg-main: #FAF5EF;              /* Warm Cream */
@@ -940,7 +942,7 @@
                 Swal.fire({
                     icon: 'info',
                     title: 'Perbaiki Nomor WhatsApp',
-                    html: `<p class="text-xs text-slate-700 dark:text-slate-300 mb-2">Nomor di spreadsheet untuk peminjam ini (<strong>${escapeHtml(item.nama_peminjam)}</strong>) sempat error (<code>#ERROR!</code>). Masukkan nomor WhatsApp yang benar untuk langsung chat & perbarui database:</p>`,
+                    html: `<p class="text-xs mb-2 font-medium" style="color: #334155;">Nomor di spreadsheet untuk peminjam ini (<strong style="color: #0F172A;">${escapeHtml(item.nama_peminjam)}</strong>) sempat error (<code>#ERROR!</code>). Masukkan nomor WhatsApp yang benar untuk langsung chat & perbarui database:</p>`,
                     input: 'tel',
                     inputValue: '',
                     inputPlaceholder: 'Contoh: 081234567890',
@@ -1799,11 +1801,31 @@ Jazakumullah Khairan Katsiran.
             });
 
             if (barangHabis.length > 0) {
-                const listStr = barangHabis.map(bh => `• ${escapeHtml(bh.nama)} (Tersedia: ${bh.tersedia} unit, Diminta: ${bh.diminta} unit)`).join('\n');
+                const habisCardsHtml = barangHabis.map(bh => `
+                    <div style="background-color: #FFF1F2; color: #881337; border: 1px solid #FECDD3;" class="p-3 rounded-xl text-left text-xs mb-2 shadow-2xs">
+                        <div class="flex items-center justify-between font-bold mb-1" style="color: #9F1239;">
+                            <span>📦 ${escapeHtml(bh.nama)}</span>
+                            <span style="background-color: #FFE4E6; color: #9F1239; border: 1px solid #FDA4AF;" class="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase">Stok Habis</span>
+                        </div>
+                        <div class="text-[11.5px] font-semibold" style="color: #4C0519;">
+                            Tersedia: <strong>${bh.tersedia} unit</strong> &bull; Diminta: <strong>${bh.diminta} unit</strong>
+                        </div>
+                    </div>
+                `).join('');
                 Swal.fire({
                     icon: 'error',
                     title: 'Tidak Bisa Disetujui!',
-                    html: `<p class="text-xs mb-2 text-rose-600 font-bold">Barang berikut saat ini stoknya habis atau sedang aktif dipinjam peminjam lain:</p><pre class="text-xs bg-gray-100 dark:bg-gray-800 p-2.5 rounded-xl text-left font-sans whitespace-pre-wrap leading-relaxed">${listStr}</pre><p class="text-xs mt-2 text-slate-700 dark:text-slate-300">Anda tidak dapat menyetujui pengajuan ini sebelum barang tersebut dikembalikan atau pengajuan lain dibatalkan.</p>`,
+                    html: `
+                        <p class="text-xs mb-2.5 font-bold text-left" style="color: #E11D48;">
+                            Barang berikut saat ini stoknya habis atau sedang aktif dipinjam peminjam lain:
+                        </p>
+                        <div class="my-2 max-h-48 overflow-y-auto">
+                            ${habisCardsHtml}
+                        </div>
+                        <p class="text-xs mt-2.5 text-left leading-relaxed font-medium" style="color: #334155;">
+                            Anda tidak dapat menyetujui pengajuan ini sebelum barang tersebut dikembalikan atau pengajuan lain dibatalkan.
+                        </p>
+                    `,
                     confirmButtonColor: '#FF7300',
                     confirmButtonText: 'Tutup'
                 });

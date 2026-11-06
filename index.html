@@ -20,8 +20,10 @@
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+    <style type="text/tailwindcss">
+        @custom-variant dark (&:where(.dark-mode, .dark, .dark-mode *, .dark *));
+    </style>
     <style>
-        @variant dark (&:where(.dark-mode, .dark, .dark-mode *, .dark *));
 
         :root {
             --bg-main: #FAF5EF;              /* Warm Cream */
@@ -958,11 +960,11 @@
                 return b && (parseInt(b.stok_tersedia, 10) || 0) < it.jumlah;
             });
             if (itemHabis.length > 0) {
-                const listHabis = itemHabis.map(h => `• ${h.nama_barang}`).join('\n');
+                const listHabis = itemHabis.map(h => `<div style="background-color: #FFF1F2; color: #881337; border: 1px solid #FECDD3;" class="p-2.5 rounded-xl text-left text-xs font-bold mb-1.5">📦 ${escapeHtml(h.nama_barang)}</div>`).join('');
                 Swal.fire({
                     icon: 'error',
                     title: 'Barang Tidak Tersedia',
-                    html: `<p class="text-xs mb-2 text-rose-600 font-bold">Barang berikut saat ini sedang habis atau dipinjam orang lain:</p><pre class="text-xs bg-gray-100 dark:bg-gray-800 p-2 rounded text-left font-sans">${listHabis}</pre><p class="text-xs mt-2 text-slate-600 dark:text-slate-300">Silakan hapus barang tersebut dari keranjang Anda.</p>`,
+                    html: `<p class="text-xs mb-2 font-bold text-left" style="color: #E11D48;">Barang berikut saat ini sedang habis atau dipinjam orang lain:</p><div class="my-2">${listHabis}</div><p class="text-xs mt-2 text-left font-medium" style="color: #334155;">Silakan hapus barang tersebut dari keranjang Anda.</p>`,
                     confirmButtonColor: '#FF7300'
                 });
                 return;
@@ -1025,11 +1027,11 @@
                 return b && (parseInt(b.stok_tersedia, 10) || 0) < it.jumlah;
             });
             if (itemHabis.length > 0) {
-                const listHabis = itemHabis.map(h => `• ${h.nama_barang}`).join('\n');
+                const listHabis = itemHabis.map(h => `<div style="background-color: #FFF1F2; color: #881337; border: 1px solid #FECDD3;" class="p-2.5 rounded-xl text-left text-xs font-bold mb-1.5">📦 ${escapeHtml(h.nama_barang)}</div>`).join('');
                 Swal.fire({
                     icon: 'error',
                     title: 'Barang Tidak Tersedia',
-                    html: `<p class="text-xs mb-2 text-rose-600 font-bold">Barang berikut saat ini sedang habis atau dipinjam orang lain:</p><pre class="text-xs bg-gray-100 dark:bg-gray-800 p-2 rounded text-left font-sans">${listHabis}</pre><p class="text-xs mt-2 text-slate-600 dark:text-slate-300">Pengajuan tidak dapat dikirim untuk barang yang sedang habis.</p>`,
+                    html: `<p class="text-xs mb-2 font-bold text-left" style="color: #E11D48;">Barang berikut saat ini sedang habis atau dipinjam orang lain:</p><div class="my-2">${listHabis}</div><p class="text-xs mt-2 text-left font-medium" style="color: #334155;">Pengajuan tidak dapat dikirim untuk barang yang sedang habis.</p>`,
                     confirmButtonColor: '#FF7300'
                 });
                 return;
@@ -1088,10 +1090,11 @@
             });
 
             if (daftarBentrok.length > 0) {
+                const cardsBentrok = daftarBentrok.map(b => `<div style="background-color: #FFF1F2; color: #881337; border: 1px solid #FECDD3;" class="p-2.5 rounded-xl text-left text-xs font-semibold mb-1.5">${escapeHtml(b)}</div>`).join('');
                 Swal.fire({
                     icon: 'error',
                     title: 'Jadwal Tanggal Bentrok!',
-                    html: `<p class="text-xs mb-2 text-rose-600 font-bold">Barang berikut sudah terjadwal/dipinjam pada rentang tanggal yang Anda pilih:</p><pre class="text-xs bg-gray-100 dark:bg-gray-800 p-2.5 rounded-xl text-left font-sans whitespace-pre-wrap">${daftarBentrok.join('\n')}</pre><p class="text-xs mt-2 text-slate-600 dark:text-slate-300">Silakan pilih tanggal pengambilan/pengembalian lain atau hapus barang tersebut dari keranjang.</p>`,
+                    html: `<p class="text-xs mb-2 font-bold text-left" style="color: #E11D48;">Barang berikut sudah terjadwal/dipinjam pada rentang tanggal yang Anda pilih:</p><div class="my-2 max-h-44 overflow-y-auto">${cardsBentrok}</div><p class="text-xs mt-2 text-left font-medium" style="color: #334155;">Silakan pilih tanggal pengambilan/pengembalian lain atau hapus barang tersebut dari keranjang.</p>`,
                     confirmButtonColor: '#FF7300'
                 });
                 return;
@@ -1194,13 +1197,13 @@
                 icon: 'success',
                 title: 'Pengajuan Berhasil Dikirim!',
                 html: `
-                    <p class="text-xs ui-muted mb-2">Simpan Nomor Referensi Anda:</p>
-                    <div class="p-3 rounded-xl bg-orange-100 dark:bg-gray-800 text-[#FF7300] font-mono font-bold text-base select-all">
-                        ${idPinjam}
+                    <p class="text-xs font-medium mb-2" style="color: #475569;">Simpan Nomor Referensi Anda:</p>
+                    <div style="background-color: #FFF7ED; color: #EA580C; border: 1px solid #FED7AA;" class="p-3 rounded-xl font-mono font-extrabold text-base select-all">
+                        ${escapeHtml(idPinjam)}
                     </div>
-                    <p class="text-xs ui-muted mt-3">
-                        Status saat ini: <strong class="text-amber-500">MENUNGGU VERIFIKASI</strong>.<br>
-                        Anda dapat memeriksa perkembangan pengajuan kapan saja di halaman <a href="status.html" class="text-[#FF7300] font-bold underline">Cek Status Peminjaman</a>.
+                    <p class="text-xs font-medium mt-3 leading-relaxed" style="color: #334155;">
+                        Status saat ini: <strong style="color: #D97706;">MENUNGGU VERIFIKASI</strong>.<br>
+                        Anda dapat memeriksa perkembangan pengajuan kapan saja di halaman <a href="status.html" style="color: #FF7300;" class="font-bold underline">Cek Status Peminjaman</a>.
                     </p>
                 `,
                 confirmButtonText: 'Tutup',
