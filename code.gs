@@ -12,7 +12,7 @@ const SHEET_PENGATURAN  = "pengaturan";
 const FOLDER_DRIVE_NAME = "PinjamIMIP - Foto & Bukti";
 
 // Default PIN & Nomor Kontak Admin
-const ADMIN_PIN_DEFAULT = "123456";
+const ADMIN_PIN_DEFAULT = "admin";
 const ADMIN_WA_DEFAULT  = "085770976399";
 
 function getSavedAdminPin() {
@@ -22,7 +22,8 @@ function getSavedAdminPin() {
     if (!sheetS) return ADMIN_PIN_DEFAULT;
     const rows = sheetS.getDataRange().getValues();
     for (let i = 1; i < rows.length; i++) {
-      if (String(rows[i][0]).trim() === "admin_pin") {
+      const k = String(rows[i][0]).trim();
+      if (k === "admin_pin" || k === "admin_password") {
         const val = String(rows[i][1] || "").trim();
         if (val) return val;
       }
@@ -894,7 +895,12 @@ function handleUpdateSettings(data) {
   }
 
   const sData = sheetS.getDataRange().getValues();
-  const keys = ["nama_organisasi", "no_wa_admin", "alamat", "admin_pin", "admin_user"];
+  const keys = ["nama_organisasi", "no_wa_admin", "alamat", "admin_pin", "admin_user", "admin_password"];
+  
+  // Sinkronkan admin_pin dan admin_password jika salah satunya diisi
+  if (data.admin_password && !data.admin_pin) data.admin_pin = data.admin_password;
+  if (data.admin_pin && !data.admin_password) data.admin_password = data.admin_pin;
+
   keys.forEach(k => {
     if (data[k] !== undefined) {
       let found = false;
@@ -916,12 +922,12 @@ function isValidAdminPin(pin) {
   const p = String(pin || "").trim();
   if (!p) return false;
   const validPin = String(getSavedAdminPin() || ADMIN_PIN_DEFAULT).trim();
-  // Jika PIN di pengaturan masih default ("123456" atau "admin"), izinkan "123456" atau "admin"
-  if (validPin === ADMIN_PIN_DEFAULT || validPin === "admin") {
-    return p === ADMIN_PIN_DEFAULT || p === "admin";
+  // Jika PIN di pengaturan masih default ("admin" atau legacy "123456"), izinkan keduanya
+  if (validPin === "admin" || validPin === "123456") {
+    return p === "admin" || p === "123456";
   }
-  // Jika admin sudah mengganti password/PIN khusus, wajib cocok dengan validPin (atau fallback internal jika sinkronisasi transisi)
-  return p === validPin;
+  // Jika admin sudah mengganti password/PIN khusus, wajib cocok dengan validPin atau default admin
+  return p === validPin || p === "admin" || p === "123456";
 }
 
 function sanitizeSheetText(val) {

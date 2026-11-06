@@ -871,7 +871,7 @@
             no_wa_admin: "085770976399",
             alamat: "Politeknik Negeri Media Kreatif Jakarta",
             admin_user: "admin",
-            admin_pin: "123456"
+            admin_pin: "admin"
         };
 
         try {
@@ -1136,10 +1136,12 @@ Jazakumullah Khairan Katsiran.
         function getBackendPin() {
             const savedBackendPin = localStorage.getItem("PINJAM_IMIP_BACKEND_PIN");
             if (savedBackendPin) return savedBackendPin.trim();
-            if (appSettings && appSettings.admin_pin && appSettings.admin_pin !== "admin") {
+            const savedPass = localStorage.getItem(STORAGE_KEY_PASS);
+            if (savedPass) return savedPass.trim();
+            if (appSettings && appSettings.admin_pin && appSettings.admin_pin !== "123456" && appSettings.admin_pin !== "admin") {
                 return String(appSettings.admin_pin).trim();
             }
-            return "123456";
+            return getAdminPassword();
         }
 
         const STORAGE_KEY_PENDING = "PINJAM_IMIP_PENDING_SYNC";
@@ -2767,12 +2769,14 @@ Jazakumullah Khairan Katsiran.
             saveSettingsLocal();
             applySettingsToUI();
 
+            const currentPass = getAdminPassword();
             const resJson = await postAdminApi({
                 action: "admin_update_settings",
                 nama_organisasi: appSettings.nama_organisasi,
                 no_wa_admin: appSettings.no_wa_admin,
                 alamat: appSettings.alamat,
-                admin_pin: newPassword || getBackendPin(),
+                admin_pin: newPassword || currentPass,
+                admin_password: newPassword || currentPass,
                 admin_user: newUsername || getAdminUsername()
             });
 
