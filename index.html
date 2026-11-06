@@ -140,16 +140,14 @@
 
         <!-- Header Katalog -->
         <div class="flex items-center justify-between gap-2 pt-1 pb-1">
-            <div class="flex items-center gap-2 flex-wrap">
-                <h1 class="text-xl sm:text-2xl font-black font-outfit ui-heading tracking-tight">
-                    Katalog Inventaris
-                </h1>
-                <div id="katalog-sync-pill" class="hidden inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-orange-500/10 text-[#FF7300] border border-orange-500/25 transition-all duration-300 opacity-0 pointer-events-none shadow-xs">
-                    <i id="katalog-sync-icon" class="fa-solid fa-arrows-rotate fa-spin text-[10px]"></i>
-                    <span id="katalog-sync-text">Menyinkronkan...</span>
-                </div>
-            </div>
-            <div class="flex items-center gap-1.5 sm:gap-2">
+            <h1 class="text-xl sm:text-2xl font-black font-outfit ui-heading tracking-tight flex items-center gap-2">
+                <span>Katalog Inventaris</span>
+                <span id="katalog-sync-pill" class="hidden text-xs text-[#FF7300] font-normal" title="Menyinkronkan stok...">
+                    <i id="katalog-sync-icon" class="fa-solid fa-arrows-rotate fa-spin"></i>
+                    <span id="katalog-sync-text" class="hidden sm:inline text-[11px] font-semibold text-orange-600 dark:text-orange-400"></span>
+                </span>
+            </h1>
+            <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 <a href="panduan.html" class="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl ui-pill text-xs font-bold ui-heading hover:text-[#FF7300] flex items-center gap-1.5 shadow-xs transition-all whitespace-nowrap" title="Panduan Alur Peminjaman">
                     <i class="fa-solid fa-compass text-[#FF7300]"></i> <span>Panduan</span>
                 </a>
@@ -552,23 +550,17 @@
             if (!pill || !icon || !txt) return;
 
             if (state === 'loading') {
-                pill.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-orange-500/10 text-[#FF7300] border border-orange-500/25 transition-all duration-300 opacity-100 shadow-xs";
-                icon.className = "fa-solid fa-arrows-rotate fa-spin text-[10px]";
+                pill.classList.remove('hidden');
+                icon.className = "fa-solid fa-arrows-rotate fa-spin text-xs text-[#FF7300]";
                 txt.innerText = customText || "Menyinkronkan...";
             } else if (state === 'success') {
-                pill.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 transition-all duration-300 opacity-100 shadow-xs";
-                icon.className = "fa-solid fa-circle-check text-[10px]";
-                txt.innerText = customText || "Katalog terupdate";
+                icon.className = "fa-solid fa-circle-check text-xs text-emerald-500";
+                txt.innerText = customText || "Terupdate";
                 setTimeout(() => {
-                    pill.classList.remove('opacity-100');
-                    pill.classList.add('opacity-0');
-                    setTimeout(() => {
-                        pill.classList.add('hidden');
-                    }, 250);
+                    pill.classList.add('hidden');
                 }, 1200);
             } else {
-                pill.classList.remove('opacity-100');
-                pill.classList.add('opacity-0', 'hidden');
+                pill.classList.add('hidden');
             }
         }
 
