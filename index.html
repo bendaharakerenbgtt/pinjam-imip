@@ -362,6 +362,9 @@
                         <label class="block ui-heading font-semibold mb-1">Tanggal Pengambilan <span class="text-rose-500">*</span></label>
                         <input type="date" id="pjm-tgl-ambil" required
                                class="w-full px-3.5 py-2.5 rounded-xl ui-card ui-heading focus:outline-none focus:border-[#FF7300]">
+                        <p class="text-[10.5px] text-[#FF7300] font-semibold mt-1 flex items-center gap-1">
+                            <i class="fa-solid fa-clock"></i> Jeda minimal 3 hari (H-3 sebelum pengambilan)
+                        </p>
                     </div>
                     <div>
                         <label class="block ui-heading font-semibold mb-1">Tanggal Pengembalian <span class="text-rose-500">*</span></label>
@@ -384,7 +387,7 @@
 
                 <!-- Info Ketentuan Singkat -->
                 <div class="p-3 rounded-xl bg-orange-500/10 border border-orange-500/20 text-[11px] ui-body leading-relaxed">
-                    <p><i class="fa-solid fa-circle-info text-[#FF7300] mr-1"></i> <strong>Catatan:</strong> Pengajuan ini tidak langsung mengurangi stok. Admin Inventaris akan memverifikasi ketersediaan barang dan menghubungi Anda melalui WhatsApp beserta Surat Perjanjian Peminjaman.</p>
+                    <p><i class="fa-solid fa-circle-info text-[#FF7300] mr-1"></i> <strong>Ketentuan Waktu:</strong> Pengajuan wajib memiliki jeda minimal 3 hari (H-3) sebelum tanggal pengambilan untuk persiapan barang. Pengajuan ini tidak langsung mengurangi stok. Admin Inventaris akan memverifikasi ketersediaan barang dan menghubungi Anda melalui WhatsApp beserta Surat Perjanjian Peminjaman.</p>
                 </div>
 
                 <div class="pt-2 flex justify-end gap-2">
@@ -948,6 +951,15 @@
         // ==========================================
         // FORM PENGAJUAN PINJAM
         // ==========================================
+        function getMinTglAmbil(offsetDays = 3) {
+            const d = new Date();
+            d.setDate(d.getDate() + offsetDays);
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        }
+
         function lanjutKeFormPengajuan() {
             if (cart.length === 0) {
                 Swal.fire({ icon: 'warning', title: 'Keranjang Kosong', text: 'Pilih minimal satu barang.', timer: 1500, showConfirmButton: false });
@@ -985,17 +997,17 @@
                 summaryEl.appendChild(row);
             });
 
-            // Set default dates (hari ini & lusa)
-            const today = new Date().toISOString().split('T')[0];
+            // Set default dates (minimal H+3 dari hari ini / jeda 3 hari)
+            const minAmbil = getMinTglAmbil(3);
             const elTglAmbil = document.getElementById('pjm-tgl-ambil');
             const elTglKembali = document.getElementById('pjm-tgl-kembali');
-            elTglAmbil.value = today;
-            elTglAmbil.min = today;
-            elTglKembali.value = today;
-            elTglKembali.min = today;
+            elTglAmbil.value = minAmbil;
+            elTglAmbil.min = minAmbil;
+            elTglKembali.value = minAmbil;
+            elTglKembali.min = minAmbil;
 
             elTglAmbil.onchange = () => {
-                elTglKembali.min = elTglAmbil.value || today;
+                elTglKembali.min = elTglAmbil.value || minAmbil;
                 if (elTglKembali.value < elTglAmbil.value) {
                     elTglKembali.value = elTglAmbil.value;
                 }
@@ -1043,11 +1055,16 @@
                 return;
             }
 
-            const today = new Date().toISOString().split('T')[0];
+            const minTglAmbil = getMinTglAmbil(3);
             const tglAmbil = document.getElementById('pjm-tgl-ambil').value;
             const tglKembali = document.getElementById('pjm-tgl-kembali').value;
-            if (tglAmbil < today) {
-                Swal.fire({ icon: 'warning', title: 'Tanggal Tidak Valid', text: 'Tanggal pengambilan tidak boleh di masa lalu.', confirmButtonColor: '#FF7300' });
+            if (tglAmbil < minTglAmbil) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Jeda Waktu Pengambilan',
+                    html: `<p class="text-xs mb-2 font-bold text-left" style="color: #E11D48;">Pengajuan peminjaman wajib berjarak minimal 3 hari (H-3) sebelum pengambilan.</p><p class="text-xs text-left font-medium" style="color: #334155;">Tanggal pengambilan paling cepat yang dapat dipilih adalah <strong>${minTglAmbil}</strong> untuk persiapan dan verifikasi inventaris oleh pengurus.</p>`,
+                    confirmButtonColor: '#FF7300'
+                });
                 return;
             }
             if (tglKembali < tglAmbil) {

@@ -352,6 +352,17 @@ function handleAjukanPinjam(data) {
   const tglKembaliA = (data.tgl_pengembalian || "").slice(0, 10);
   const lockedStatuses = ["MENUNGGU KONFIRMASI PEMINJAM", "DIKONFIRMASI", "SEDANG DIPINJAM"];
 
+  // Validasi jeda pengambilan minimal 3 hari (H-3 pengajuan)
+  const submissionDate = new Date();
+  const minAmbilObj = new Date(submissionDate.getFullYear(), submissionDate.getMonth(), submissionDate.getDate() + 3);
+  const minAmbilStr = Utilities.formatDate(minAmbilObj, "Asia/Jakarta", "yyyy-MM-dd");
+  if (tglAmbilA && tglAmbilA < minAmbilStr) {
+    return jsonResponse({
+      success: false,
+      message: "Pengajuan peminjaman wajib berjarak minimal 3 hari sebelum pengambilan barang (paling cepat: " + minAmbilStr + ") untuk persiapan inventaris."
+    });
+  }
+
   if (tglAmbilA && tglKembaliA) {
     for (let idx = 0; idx < items.length; idx++) {
       const it = items[idx];
